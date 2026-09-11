@@ -2,6 +2,7 @@ import { translateInline } from '../utils/translateInline';
 import React, { useState, useEffect } from 'react';
 import { Fingerprint, Scan, ShieldAlert, KeyRound, CheckCircle2, X, AlertTriangle, Camera } from 'lucide-react';
 import { triggerNativeWebAuthn } from '../utils/auth';
+import { performStrictFaceScan } from '../utils/faceRecognition';
 import {
   recordFailedAuthAttempt,
   resetFailedAttempts,
@@ -125,6 +126,26 @@ export const DeviceAuthModal: React.FC<DeviceAuthModalProps> = ({
       setIsScanning(false);
       handleSuccess();
     }, 900);
+  };
+
+  // Perform strict face analysis using real camera feed
+  const handleFaceScan = async () => {
+    setIsScanning(true);
+    setErrorMsg(null);
+    try {
+      const result = await performStrictFaceScan();
+      setIsScanning(false);
+      if (result.faceDetected) {
+        handleSuccess();
+      } else {
+        await handleFailedAttempt(
+          result.reason || translateInline(lang, 'Face not recognized or camera directed away', 'لم يتم التعرف على الوجه أو الكاميرا موجهة لمكان آخر')
+        );
+      }
+    } catch {
+      setIsScanning(false);
+      await handleFailedAttempt(translateInline(lang, 'Face detection error / camera inaccessible', 'خطأ في فحص الوجه أو تعذر الوصول للكاميرا'));
+    }
   };
 
   // Simulate an intruder touching the biometric sensor with wrong fingerprint
@@ -310,14 +331,14 @@ export const DeviceAuthModal: React.FC<DeviceAuthModalProps> = ({
           <div className="flex flex-col items-center justify-center py-4">
             <button
               id="face-recognition-btn"
-              onClick={handleBiometricTouch}
+              onClick={handleFaceScan}
               disabled={isScanning || authSuccess}
               className={`relative w-24 h-24 rounded-2xl flex items-center justify-center transition-all duration-300 ${
                 authSuccess
                   ? 'bg-emerald-500/20 border-2 border-emerald-500 text-emerald-400'
                   : isScanning
-                  ? 'bg-teal-500/20 border-2 border-teal-400 text-teal-300'
-                  : 'bg-slate-800/80 border-2 border-slate-600 hover:border-teal-400 text-slate-300'
+                  ? 'bg-teal-500/20 border-2 border-teal-400 text-teal-300 animate-pulse'
+                  : 'bg-slate-800/80 border-2 border-slate-600 hover:border-teal-400 text-slate-300 active:scale-95'
               }`}
             >
               {authSuccess ? (
@@ -329,10 +350,10 @@ export const DeviceAuthModal: React.FC<DeviceAuthModalProps> = ({
 
             <p className="mt-4 text-xs font-medium text-slate-300 text-center">
               {authSuccess
-                ? translateInline(lang, 'Face recognized successfully!', 'تم التعرف على الوجه بنجاح!')
+                ? translateInline(lang, 'Face recognized successfully!', 'تم التحقق من الوجه بنجاح!')
                 : isScanning
-                ? translateInline(lang, 'Matching device approved face features...', 'جاري مطابقة ملامح الوجه المعتمدة بالجهاز...')
-                : translateInline(lang, 'Look at the camera to verify via Face Unlock (Owner Face)', 'انظر إلى الكاميرا للتحقق عبر Face Unlock (وجه المالك)')}
+                ? translateInline(lang, 'Scanning camera frame for owner face features...', 'جاري فحص إطار الكاميرا للتعرف على ملامح الوجه...')
+                : translateInline(lang, 'Look at the camera and click to scan face (Live Camera Verification)', 'انظر للكاميرا واضغط للتحقق من الوجه (فحص حي بالكاميرا)')}
             </p>
             <div className="flex items-center gap-3 mt-3">
               <button
