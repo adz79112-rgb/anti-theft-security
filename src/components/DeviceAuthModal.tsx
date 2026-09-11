@@ -292,9 +292,16 @@ export const DeviceAuthModal: React.FC<DeviceAuthModalProps> = ({
                 ? translateInline(lang, 'Verifying fingerprint via Android system...', 'جاري التحقق من بصمة الإصبع عبر نظام Android...')
                 : translateInline(lang, 'Touch fingerprint sensor to authenticate via phone security (Owner Fingerprint)', 'المس مستشعر البصمة للمصادقة عبر أمان الهاتف (بصمة المالك)')}
             </p>
-            <p className="text-[11px] text-slate-500 mt-1">
-              (Android BiometricPrompt • disableDeviceFallback: false)
-            </p>
+            <div className="flex items-center gap-2 mt-3">
+              <button
+                id="simulate-wrong-fingerprint-btn"
+                onClick={handleIntruderBiometricScan}
+                disabled={isScanning || authSuccess}
+                className="text-xs text-rose-400/90 hover:text-rose-300 hover:underline flex items-center gap-1"
+              >
+                <span>{translateInline(lang, '⚠️ Test Wrong Fingerprint (Intruder)', '⚠️ تجربة بصمة خاطئة (متسلل)')}</span>
+              </button>
+            </div>
           </div>
         )}
 
