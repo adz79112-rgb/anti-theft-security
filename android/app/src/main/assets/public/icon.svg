@@ -1,0 +1,51 @@
+
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#020617" />
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="50%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+    <linearGradient id="redAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f43f5e" />
+      <stop offset="100%" stop-color="#e11d48" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#0284c7" flood-opacity="0.45" />
+    </filter>
+  </defs>
+
+  <!-- Background rounded rect -->
+  <rect width="512" height="512" rx="110" fill="url(#bgGrad)" />
+  <rect width="504" height="504" x="4" y="4" rx="106" fill="none" stroke="#334155" stroke-width="6" opacity="0.6" />
+
+  <!-- Outer Cyber Ring -->
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#0ea5e9" stroke-width="3" stroke-dasharray="24 16" opacity="0.4" />
+  <circle cx="256" cy="256" r="195" fill="none" stroke="#f43f5e" stroke-width="2" stroke-dasharray="10 20" opacity="0.3" />
+
+  <!-- Shield Base with Glow -->
+  <g filter="url(#glow)">
+    <path d="M256 70 C340 100 410 110 410 230 C410 330 330 395 256 438 C182 395 102 330 102 230 C102 110 172 100 256 70 Z"
+          fill="url(#shieldGrad)" />
+  </g>
+
+  <!-- Shield Inner Layer -->
+  <path d="M256 94 C324 120 384 128 384 228 C384 314 316 372 256 410 C196 372 128 314 128 228 C128 128 188 120 256 94 Z"
+        fill="#091428" />
+
+  <!-- Internal Circuit Lines -->
+  <path d="M256 120 L256 210 M170 200 L256 210 L342 200 M256 270 L256 360 M190 320 L256 270 L322 320"
+        stroke="#38bdf8" stroke-width="4" stroke-linecap="round" opacity="0.5" />
+
+  <!-- Red Center Alert Core -->
+  <circle cx="256" cy="240" r="48" fill="url(#redAccent)" />
+  <circle cx="256" cy="240" r="54" fill="none" stroke="#fda4af" stroke-width="3" opacity="0.8" />
+
+  <!-- Keyhole / Security Padlock Icon in Center -->
+  <path d="M244 228 C244 221.37 249.37 216 256 216 C262.63 216 268 221.37 268 228 C268 232.5 265.5 236.4 261.8 238.4 L264 254 L248 254 L250.2 238.4 C246.5 236.4 244 232.5 244 228 Z"
+        fill="#ffffff" />
+</svg>

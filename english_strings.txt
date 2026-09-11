@@ -1,0 +1,108 @@
+src/App.tsx:Dismiss
+src/App.tsx:ltr
+src/components/AntiUninstallProtectionCard.tsx:Anti-Uninstall & Device Admin Policy
+src/components/AntiUninstallProtectionCard.tsx:Attempt Deactivation & Verify
+src/components/AntiUninstallProtectionCard.tsx:Biometric Auth Unit:
+src/components/AntiUninstallProtectionCard.tsx:Cancel
+src/components/AntiUninstallProtectionCard.tsx:Cancel & Return
+src/components/AntiUninstallProtectionCard.tsx:Cannot Uninstall Package
+src/components/AntiUninstallProtectionCard.tsx:Device Admin Policy:
+src/components/AntiUninstallProtectionCard.tsx:OK (Uninstall)
+src/components/AppEntryGate.tsx:Biometrics Verified!
+src/components/AppEntryGate.tsx:Scanning biometric credentials...
+src/components/CyberpunkConsole.tsx:A) Reverse SMS (GPS only):
+src/components/CyberpunkConsole.tsx:ARMED
+src/components/CyberpunkConsole.tsx:B) User Gmail Report:
+src/components/CyberpunkConsole.tsx:CLICK TO ARM
+src/components/CyberpunkConsole.tsx:CLICK TO DISARM
+src/components/CyberpunkConsole.tsx:Command Alert Executed Successfully!
+src/components/CyberpunkConsole.tsx:C) Telegram Bot:
+src/components/CyberpunkConsole.tsx:Default Bot Token
+src/components/CyberpunkConsole.tsx:✓ Direct GPS link only
+src/components/CyberpunkConsole.tsx:Enter Telegram Chat ID
+src/components/CyberpunkConsole.tsx:Executing Command Alert...
+src/components/CyberpunkConsole.tsx:✓ Full report sent to Gmail
+src/components/CyberpunkConsole.tsx:Not set
+src/components/CyberpunkConsole.tsx:Recipient:
+src/components/CyberpunkConsole.tsx:STANDBY
+src/components/CyberpunkConsole.tsx:Telegram Chat ID (Optional):
+src/components/CyberpunkConsole.tsx:Trigger Command:
+src/components/DispatchLog.tsx:Camera Report
+src/components/DispatchLog.tsx:Dual-SIM: Redundant SMS
+src/components/DispatchLog.tsx:Emergency SMS
+src/components/DispatchLog.tsx:Pathway 1: Reverse GPS SMS
+src/components/DispatchLog.tsx:Pathway 2: Gmail Report
+src/components/DispatchLog.tsx:Stealth Mode: Periodic Dispatch
+src/components/DispatchLog.tsx:System Ping
+src/components/DispatchLog.tsx:Telegram: Alert
+src/components/DispatchLog.tsx:Telegram: GPS Location
+src/components/DispatchLog.tsx:Telegram: Photo
+src/components/DispatchLog.tsx:WhatsApp: Live Emergency Report
+src/components/DualSimNetworkCard.tsx:Auto-Detect Carriers
+src/components/DualSimNetworkCard.tsx:Scanning Carriers...
+src/components/GmailSecurityCard.tsx:00:00:00 (Completed)
+src/components/GmailSecurityCard.tsx:72h Lock Protected
+src/components/GmailSecurityCard.tsx:Auto-fill
+src/components/GmailSecurityCard.tsx:Back
+src/components/GmailSecurityCard.tsx:Cancel
+src/components/GmailSecurityCard.tsx:Cancel Request & Keep Old Email
+src/components/GmailSecurityCard.tsx:Confirm
+src/components/GmailSecurityCard.tsx:Confirm & Bind Email
+src/components/GmailSecurityCard.tsx:Current Active Recipient:
+src/components/GmailSecurityCard.tsx:Current registered email receiving OTP:
+src/components/GmailSecurityCard.tsx:✓ Email verified & bound successfully!
+src/components/GmailSecurityCard.tsx:Emergency User Gmail (Stealth Reports)
+src/components/GmailSecurityCard.tsx:Enter 6-Digit OTP Code:
+src/components/GmailSecurityCard.tsx:Fast-forward 72h (Test)
+src/components/GmailSecurityCard.tsx:Locked
+src/components/GmailSecurityCard.tsx:Pending New Email:
+src/components/GmailSecurityCard.tsx:Please enter a valid email address!
+src/components/GmailSecurityCard.tsx:Please enter a valid new email address!
+src/components/GmailSecurityCard.tsx:Please enter the OTP!
+src/components/GmailSecurityCard.tsx:Please enter the OTP sent to old email!
+src/components/GmailSecurityCard.tsx:Quick preview OTP:
+src/components/GmailSecurityCard.tsx:Request Email Change
+src/components/GmailSecurityCard.tsx:Resend Code
+src/components/GmailSecurityCard.tsx:Sending Approval OTP...
+src/components/GmailSecurityCard.tsx:Sending Verification Code...
+src/components/GmailSecurityCard.tsx:Sent approval OTP:
+src/components/GmailSecurityCard.tsx:Sent to:
+src/components/GmailSecurityCard.tsx:Start 72h Cooldown
+src/components/GmailSecurityCard.tsx:Unverified
+src/components/GmailSecurityCard.tsx:Verified & Bound
+src/components/GmailSecurityCard.tsx:What happens after approval?
+src/components/GmailTabScreen.tsx:Error sending test email
+src/components/GmailTabScreen.tsx:Failed to send email
+src/components/GmailTabScreen.tsx:Gmail Security Reports Settings
+src/components/GmailTabScreen.tsx:Sending Test...
+src/components/GmailTabScreen.tsx:Send Test Email Report
+src/components/SmsEmergencyTabScreen.tsx:Broadcasting Dual SMS...
+src/components/SmsEmergencyTabScreen.tsx:✓ Dual SMS Broadcast Completed Successfully!
+src/components/SmsEmergencyTabScreen.tsx:Emergency Number Active
+src/components/SmsEmergencyTabScreen.tsx:Not configured
+src/components/SmsEmergencyTabScreen.tsx:Save Number
+src/components/SmsEmergencyTabScreen.tsx:Simulated Command Sender Number:
+src/components/SmsEmergencyTabScreen.tsx:SMS & Emergency Dispatch
+src/components/SmsEmergencyTabScreen.tsx:Synchronous Dispatch Pathway:
+src/components/SmsEmergencyTabScreen.tsx:Synchronous Dual SMS Dispatch Engine
+src/components/SmsEmergencyTabScreen.tsx:Target 1: Primary Emergency Phone
+src/components/SmsEmergencyTabScreen.tsx:Target 2: Trigger Command Sender
+src/components/SmsEmergencyTabScreen.tsx:Test
+src/components/SmsEmergencyTabScreen.tsx:Unsaved
+src/components/SmsEmergencyTabScreen.tsx:Verified Emergency Phone Number
+src/components/StealthStatusBadge.tsx:Reset counter
+src/components/StealthStatusBadge.tsx:Stealth Alert Badge
+src/components/StealthStolenScreen.tsx:Cycle
+src/components/StealthStolenScreen.tsx:Direct Dispatch Channels:
+src/components/StealthStolenScreen.tsx:Next dispatch:
+src/components/StealthStolenScreen.tsx:Powering off...
+src/components/StealthStolenScreen.tsx:Stealth Stolen Mode Active
+src/components/StealthStolenScreen.tsx:Touch fingerprint sensor to unlock
+src/components/TelegramConfigCard.tsx:Bot Token
+src/components/TelegramConfigCard.tsx:Chat ID
+src/components/TelegramConfigCard.tsx:Test Connection
+src/components/TelegramConfigCard.tsx:Testing...
+src/components/TelegramConfigCard.tsx:Toggle Telegram Alerts
+src/components/TelegramTabScreen.tsx:Chat ID:
+src/components/TelegramTabScreen.tsx:Not configured
+src/components/TelegramTabScreen.tsx:Telegram Bot Alert Channel

@@ -1,0 +1,36 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+  
+  .font-mono-code {
+    font-family: 'JetBrains Mono', monospace;
+  }
+}
+
+@keyframes sirenFlash {
+  0%, 100% {
+    box-shadow: 0 0 50px rgba(239, 68, 68, 0.4), inset 0 0 40px rgba(239, 68, 68, 0.3);
+    border-color: rgba(239, 68, 68, 0.9);
+  }
+  50% {
+    box-shadow: 0 0 80px rgba(59, 130, 246, 0.4), inset 0 0 40px rgba(59, 130, 246, 0.3);
+    border-color: rgba(59, 130, 246, 0.9);
+  }
+}
+
+.animate-siren-strobe {
+  animation: sirenFlash 0.8s infinite ease-in-out;
+}
+
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}

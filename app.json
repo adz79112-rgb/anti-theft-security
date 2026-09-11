@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "DroidGuard Anti-Theft",
+    "slug": "droidguard-anti-theft",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./public/favicon.svg",
+    "userInterfaceStyle": "dark",
+    "android": {
+      "package": "com.droidguard.antitheft",
+      "permissions": [
+        "RECEIVE_SMS",
+        "READ_SMS",
+        "SEND_SMS",
+        "CAMERA",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION"
+      ]
+    },
+    "extra": {
+      "defaultBotToken": "8818517549:AAF7e5ziwfasqWtm8cXjFXS_wf1kZNh-ZhI",
+      "defaultTriggerCommand": "#TRACK"
+    }
+  }
+}

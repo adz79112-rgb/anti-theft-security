@@ -1,0 +1,398 @@
+src/components/CyberpunkConsole.tsx:      translateInline(lang, '1/4 Acquiring GPS coordinates...', '1/4 جاري استخراج إحداثيات GPS الدقيقة...')
+src/components/CyberpunkConsole.tsx:          translateInline(lang, '2/4 [Pathway 1]: Dispatching reverse SMS with GPS link only...', '2/4 [المسار 1]: إرسال SMS عكسي فوري يحتوي على رابط GPS فقط...')
+src/components/CyberpunkConsole.tsx:          translateInline(lang, '3/4 [Pathway 2]: Dispatching comprehensive report to user Gmail...', '3/4 [المسار 2]: إرسال تقرير شامل لبريد Gmail مع الصورة الحية ورابط GPS...')
+src/components/CyberpunkConsole.tsx:          translateInline(lang, '4/4 [Pathway 3]: Dispatching photo & location to Telegram...', '4/4 [المسار 3]: إرسال الصورة وإحداثيات الموقع لحساب التليجرام...')
+src/components/CyberpunkConsole.tsx:              {translateInline(lang, 'Stealth Command-Based Alert Daemon (Zero noisy automatic alarms)', 'نظام أمني خفي يعمل بالأوامر السرية حصراً (بدون إنذارات تلقائية عشوائية)')}
+src/components/CyberpunkConsole.tsx:            {translateInline(lang, 'Trigger Command:', 'الأمر السري:')}
+src/components/CyberpunkConsole.tsx:            title={translateInline(lang, 'Copy Code', 'نسخ الكود')}
+src/components/CyberpunkConsole.tsx:          {translateInline(lang, '✓ All automated ambient alarms cancelled. DroidGuard responds strictly to secret trigger commands (#TRACK).', '✓ تم إلغاء كافة الإنذارات التلقائية (مثل إدخال الرمز الخاطئ أو فتح الشاشة). النظام يستجيب فقط عند استلام الأمر السري (#TRACK) لضمان الخصوصية والسرية التامة.')}
+src/components/CyberpunkConsole.tsx:                    {translateInline(lang, 'ARMED', 'الحماية نشطة')}
+src/components/CyberpunkConsole.tsx:                    {translateInline(lang, 'CLICK TO DISARM', 'انقر للتعطيل')}
+src/components/CyberpunkConsole.tsx:                    {translateInline(lang, 'STANDBY', 'الحماية متوقفة')}
+src/components/CyberpunkConsole.tsx:                    {translateInline(lang, 'CLICK TO ARM', 'انقر للتفعيل')}
+src/components/CyberpunkConsole.tsx:                ? translateInline(lang, 'Listener active waiting for #TRACK command', 'المستمع النشط ينتظر الأمر السري (#TRACK)')
+src/components/CyberpunkConsole.tsx:                : translateInline(lang, 'Surveillance daemon paused', 'النظام في وضع السكون المؤقت')}
+src/components/CyberpunkConsole.tsx:                <span>{translateInline(lang, 'Telegram Chat ID (Optional):', 'معرّف تليجرام (Telegram Chat ID) - اختياري:')}</span>
+src/components/CyberpunkConsole.tsx:                placeholder={translateInline(lang, 'Enter Telegram Chat ID', 'أدخل Chat ID لحسابك (مثال: 987654321)')}
+src/components/CyberpunkConsole.tsx:              {translateInline(lang, '🤖 Sends the same photo & GPS pin to Telegram if configured.', '🤖 إرسال نفس التقرير والصورة إلى حساب التليجرام إذا كان مفاداً في الإعدادات.')}
+src/components/CyberpunkConsole.tsx:                  {translateInline(lang, 'Default Bot Token', 'الموثق الافتراضي (BOT TOKEN)')}
+src/components/CyberpunkConsole.tsx:                  <span>{translateInline(lang, 'Executing Command Alert...', 'جاري تنفيذ استجابة الأمر السري...')}</span>
+src/components/CyberpunkConsole.tsx:                    {translateInline(lang, '⚡ Execute Secret Command Test (#TRACK)', '⚡ تجربة استجابة الأمر السري (#TRACK Alert Simulation)')}
+src/components/CyberpunkConsole.tsx:              <span>{translateInline(lang, 'Command Alert Executed Successfully!', 'تم تنفيذ استجابة الأمر السري بنجاح!')}</span>
+src/components/CyberpunkConsole.tsx:                <span>{translateInline(lang, 'A) Reverse SMS (GPS only):', 'أ) SMS عكسي (GPS فقط):')}</span>
+src/components/CyberpunkConsole.tsx:                {translateInline(lang, 'Recipient:', 'المرسل:')}{' '}
+src/components/CyberpunkConsole.tsx:                {translateInline(lang, '✓ Direct GPS link only', '✓ رابط موقع GPS المباشر فقط')}
+src/components/CyberpunkConsole.tsx:                <span>{translateInline(lang, 'B) User Gmail Report:', 'ب) بريد المستخدم (Gmail):')}</span>
+src/components/CyberpunkConsole.tsx:                {translateInline(lang, 'Recipient:', 'المستلم:')}{' '}
+src/components/CyberpunkConsole.tsx:                <span className="text-red-300 font-bold break-all">{testResult.userEmail || translateInline(lang, 'Not configured', 'غير محدد')}</span>
+src/components/CyberpunkConsole.tsx:                <p>{translateInline(lang, '✓ Google Maps GPS Link', '✓ رابط موقع GPS على Google Maps')}</p>
+src/components/CyberpunkConsole.tsx:                <p>{translateInline(lang, '✓ Live photo captured via front camera', '✓ صورة حية ملتقطة عبر الكاميرا الأمامية')}</p>
+src/components/CyberpunkConsole.tsx:                {translateInline(lang, '✓ Full report sent to Gmail', '✓ تم إرسال التقرير الشامل فوراً')}
+src/components/CyberpunkConsole.tsx:                <span>{translateInline(lang, 'C) Telegram Bot:', 'ج) بوت التليجرام:')}</span>
+src/components/CyberpunkConsole.tsx:                  {testResult.telegramChatId || (translateInline(lang, 'Not set', 'غير محدد (تم تخطيه)'))}
+src/components/CyberpunkConsole.tsx:                  {testResult.telegramPhotoSent ? translateInline(lang, '✓ Intruder photo uploaded', '✓ صورة المتسلل مرفوعة') : translateInline(lang, '• Not sent', '• لم يتم الإرسال')}
+src/components/CyberpunkConsole.tsx:                  {testResult.telegramLocationSent ? translateInline(lang, '✓ Live GPS coordinates', '✓ إحداثيات GPS المباشرة') : translateInline(lang, '• Not sent', '• لم يتم الإرسال')}
+src/components/IntruderGallery.tsx:      `🚨 [${translateInline(lang, 'Emergency Security Report - Anti-Theft App', 'بلاغ أمني طارئ - تطبيق مكافحة السرقة')}]\n${translateInline(lang, 'Photo of the person holding the phone captured at:', 'تم التقاط صورة للممسك بالهاتف في:')}\n${capture.timestamp}\n${translateInline(lang, 'Geographical Location:', 'الموقع الجغرافي:')}\n${capture.location.mapsUrl}`
+src/components/IntruderGallery.tsx:      `🚨 [${translateInline(lang, 'DroidGuard Security Report', 'بلاغ أمني DroidGuard')}] ${translateInline(lang, 'Photo of the person holding the phone captured', 'تم التقاط صورة للممسك بالهاتف')}\n⏰ ${translateInline(lang, 'Time:', 'الوقت:')} ${capture.timestamp}\n📍 ${translateInline(lang, 'Location:', 'الموقع:')} ${capture.location.mapsUrl}`
+src/components/IntruderGallery.tsx:              {captures.length} {captures.length === 1 ? translateInline(lang, 'captured photo', 'صورة ملتقطة') : translateInline(lang, 'captured photos', 'صور ملتقطة')} {translateInline(lang, 'via front camera', 'عبر الكاميرا الأمامية')}
+src/components/IntruderGallery.tsx:              >{translateInline(lang, 'Clear All', 'مسح الكل')}</button>
+src/components/IntruderGallery.tsx:            <span className="text-xs bg-rose-500/10 text-rose-400 px-3 py-1 rounded-full font-bold border border-rose-500/20">{translateInline(lang, 'Intruders Gallery', 'سجل المتسللين')}</span>
+src/components/IntruderGallery.tsx:            {translateInline(lang, 'Upon receiving a \'camera\' command or an alarm trigger, a silent photo will be captured and saved here', 'عند استلام أمر "كاميرا" أو حدوث إنذار، سيتم التقاط صورة صامتة وحفظها هنا')}
+src/components/IntruderGallery.tsx:                  <span className="text-slate-400">{translateInline(lang, 'Sender:', 'المرسل:')}</span>
+src/components/IntruderGallery.tsx:                    <span>{translateInline(lang, 'Map', 'الخريطة')}</span>
+src/components/IntruderGallery.tsx:                    title={translateInline(lang, 'Share via Telegram', 'مشاركة عبر تليجرام')}
+src/components/IntruderGallery.tsx:                    <span>{translateInline(lang, 'Telegram', 'تليجرام')}</span>
+src/components/IntruderGallery.tsx:                    <span>{translateInline(lang, 'WhatsApp', 'واتساب')}</span>
+src/components/IntruderGallery.tsx:                    title={translateInline(lang, 'Download Photo', 'تحميل الصورة')}
+src/components/IntruderGallery.tsx:                    title={translateInline(lang, 'Delete', 'حذف')}
+src/components/IntruderGallery.tsx:                <h3 className="text-base font-bold text-slate-100">{translateInline(lang, 'Intruder Photo Details', 'تفاصيل صورة المتسلل')}</h3>
+src/components/IntruderGallery.tsx:              >{translateInline(lang, 'Close', 'إغلاق')}</button>
+src/components/IntruderGallery.tsx:              <p>{translateInline(lang, 'Time: ', 'الوقت: ')}<span className="text-slate-100">{selectedCapture.timestamp}</span></p>
+src/components/IntruderGallery.tsx:              <p>{translateInline(lang, 'Trigger Number: ', 'الرقم المحرك: ')}<span className="text-blue-300">{selectedCapture.senderNumber}</span></p>
+src/components/IntruderGallery.tsx:              <p>{translateInline(lang, 'Location: ', 'الموقع: ')}<span className="text-emerald-400">{selectedCapture.location.latitude}, {selectedCapture.location.longitude}</span></p>
+src/components/IntruderGallery.tsx:              <p>{translateInline(lang, 'Google Maps Link: ', 'رابط خرائط Google: ')}<a href={selectedCapture.location.mapsUrl} target="_blank" rel="noreferrer" className="text-teal-400 underline">{selectedCapture.location.mapsUrl}</a></p>
+src/components/DispatchLog.tsx:          label: translateInline(lang, 'Telegram: Alert', 'تليجرام: إنذار طوارئ'),
+src/components/DispatchLog.tsx:          label: translateInline(lang, 'Telegram: Photo', 'تليجرام: صورة المتسلل'),
+src/components/DispatchLog.tsx:          label: translateInline(lang, 'Telegram: GPS Location', 'تليجرام: إحداثيات GPS'),
+src/components/DispatchLog.tsx:          label: translateInline(lang, 'Pathway 1: Reverse GPS SMS', 'مسار أول: SMS عكسي (GPS فقط)'),
+src/components/DispatchLog.tsx:          label: translateInline(lang, 'WhatsApp: Live Emergency Report', 'واتساب: تقرير طوارئ مباشر'),
+src/components/DispatchLog.tsx:          label: translateInline(lang, 'Pathway 2: Gmail Report', 'مسار ثانٍ: تقرير Gmail شامل'),
+src/components/DispatchLog.tsx:          label: translateInline(lang, 'Emergency SMS', 'SMS طوارئ'),
+src/components/DispatchLog.tsx:          label: translateInline(lang, 'Dual-SIM: Redundant SMS', 'Dual-SIM: إرسال مزدوج عبر الشريحتين'),
+src/components/DispatchLog.tsx:          label: translateInline(lang, 'Stealth Mode: Periodic Dispatch', 'وضع السرقة الخفي: بث دوري'),
+src/components/DispatchLog.tsx:          label: translateInline(lang, 'Camera Report', 'تقرير كاميرا'),
+src/components/DispatchLog.tsx:          label: translateInline(lang, 'System Ping', 'إشعار نظام'),
+src/components/DispatchLog.tsx:            <p className="text-xs text-slate-400">{translateInline(lang, 'Log of automated emergency reports (SMS & Telegram)', 'سجل البلاغات والتقارير المرسلة آلياً (SMS & Telegram)')}</p>
+src/components/DispatchLog.tsx:          >{translateInline(lang, 'Clear Log', 'مسح السجل')}</button>
+src/components/DispatchLog.tsx:            {translateInline(lang, 'Upon receiving any emergency command, automated reply messages and Telegram notifications will be logged here', 'عند استلام أي أمر طوارئ، سيتم تسجيل رسائل الرد التلقائية وإشعارات تليجرام هنا')}
+src/components/DispatchLog.tsx:                          ? translateInline(lang, 'Direct dispatch to:', 'إرسال مباشر إلى:')
+src/components/DispatchLog.tsx:                          : translateInline(lang, 'Auto-reply to sender:', 'الرد التلقائي إلى نفس رقم المرسل:')}{' '}
+src/components/DispatchLog.tsx:                      ? translateInline(lang, 'Sent to Telegram', 'تم الإرسال لتليجرام')
+src/components/DispatchLog.tsx:                      : translateInline(lang, 'Delivered', 'تم التسليم للشبكة')}
+src/components/DualSimNetworkCard.tsx:    const msg = `${translateInline(lang, 'SIM ${slot} carrier updated to: ${preset.name} (${preset.networkType})', 'تم تحديث مشغل SIM ${slot} إلى: ${preset.name} (${preset.networkType})')}`;
+src/components/DualSimNetworkCard.tsx:        translateInline(lang, 'Mobile data turned OFF! When a theft command arrives, DroidGuard will auto-enable it on the best SIM.', 'تم إيقاف بيانات الهاتف يدوياً! عند استلام أمر السرقة، سيقوم التطبيق بإعادة تفعيلها آلياً على الشريحة ذات الباقة الأكبر.')
+src/components/DualSimNetworkCard.tsx:        translateInline(lang, 'Mobile data turned ON.', 'تم تشغيل بيانات الهاتف.')
+src/components/DualSimNetworkCard.tsx:      content: `${translateInline(lang, '[Smart Data Check] ${res.reason}', '[فحص البيانات الذكية] ${res.reason}')}`,
+src/components/DualSimNetworkCard.tsx:      const body = `${translateInline(lang, '[DroidGuard Security Test] Dual GPS location dispatch via SIM 1 and SIM 2: ${mapsUrl}', '[تجربة أمان DroidGuard] فحص إرسال موقع GPS المزدوج عبر SIM 1 و SIM 2: ${mapsUrl}')}`;
+src/components/DualSimNetworkCard.tsx:        content: `${translateInline(lang, '[Dual-SIM SMS 1] Dispatched via SIM 1 (${res.sim1Details.carrier})', '[Dual-SIM SMS 1] تم الإرسال عبر SIM 1 (${res.sim1Details.carrier})')}`,
+src/components/DualSimNetworkCard.tsx:        content: `${translateInline(lang, '[Dual-SIM SMS 2 Fallback] Dispatched via SIM 2 (${res.sim2Details.carrier})', '[Dual-SIM SMS 2 احتياطية] تم الإرسال عبر SIM 2 (${res.sim2Details.carrier})')}`,
+src/components/DualSimNetworkCard.tsx:                {translateInline(lang, 'Dual-SIM & Carrier Network Management', 'إدارة شرائح الاتصال المزدوجة ومزود الخدمة (Dual-SIM & Carrier)')}
+src/components/DualSimNetworkCard.tsx:              {translateInline(lang, 'Auto-detection of Carrier Names (Mobilis, Djezzy, Ooredoo) with Dual-SIM SMS Fallback', 'التعرف التلقائي على اسم المشغل (Mobilis, Djezzy, Ooredoo) وإرسال GPS عبر الشريحتين')}
+src/components/DualSimNetworkCard.tsx:                ? translateInline(lang, 'Scanning Carriers...', 'جاري فحص المشغل...')
+src/components/DualSimNetworkCard.tsx:                : translateInline(lang, 'Auto-Detect Carriers', 'فحص واكتشاف المشغل تلقائياً')}
+src/components/DualSimNetworkCard.tsx:              {translateInline(lang, 'Launch Stealth Mode', 'تفعيل وضع السرقة (Stealth Mode)')}
+src/components/DualSimNetworkCard.tsx:              <span className="font-bold text-sm text-slate-100">${translateInline(lang, 'SIM 1 Slot', 'منفذ الشريحة 1 (SIM 1)')}</span>
+src/components/DualSimNetworkCard.tsx:                <span>${translateInline(lang, 'Primary Data SIM', 'شريحة البيانات الرئيسية')}</span>
+src/components/DualSimNetworkCard.tsx:              <span className="text-xs text-slate-400">${translateInline(lang, 'Detected Carrier Name:', 'اسم مزود الخدمة المكتشف:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'Operator Code (MCC/MNC):', 'الرمز التقني للمشغل:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'Network Type:', 'نوع الشبكة:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'Phone Number:', 'رقم الشريحة:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'Signal Strength:', 'قوة الإشارة:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span className="text-emerald-400 font-bold">{sim1.signalPercent}% ${translateInline(lang, '(Excellent Coverage)', '(تغطية ممتازة)')}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'Internet Plan:', 'باقة الإنترنت:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span className="text-cyan-400">{translateInline(lang, `Active (${sim1.dataTrafficMB} MB used)`, `نشطة (${sim1.dataTrafficMB} MB مستهلكة)`)}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'SMS Status:', 'حالة الـ SMS:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span className="text-emerald-400 font-semibold">${translateInline(lang, 'Ready for direct dispatch', 'جاهز للإرسال المباشر')}</span>
+src/components/DualSimNetworkCard.tsx:              <span className="text-[11px] text-slate-400">${translateInline(lang, 'Quick Carrier Switch:', 'تغيير المشغل السريع:')}</span>
+src/components/DualSimNetworkCard.tsx:                <span>${translateInline(lang, 'Select another carrier', 'اختيار مشغل آخر')}</span>
+src/components/DualSimNetworkCard.tsx:              <span className="font-bold text-sm text-slate-100">${translateInline(lang, 'SIM 2 Slot', 'منفذ الشريحة 2 (SIM 2)')}</span>
+src/components/DualSimNetworkCard.tsx:                <span>${translateInline(lang, 'Active Data SIM', 'شريحة البيانات النشطة')}</span>
+src/components/DualSimNetworkCard.tsx:                <span>${translateInline(lang, 'Security Fallback (SMS)', 'احتياط أمان (SMS Fallback)')}</span>
+src/components/DualSimNetworkCard.tsx:              <span className="text-xs text-slate-400">${translateInline(lang, 'Detected Carrier Name:', 'اسم مزود الخدمة المكتشف:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'Operator Code (MCC/MNC):', 'الرمز التقني للمشغل:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'Network Type:', 'نوع الشبكة:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'Phone Number:', 'رقم الشريحة:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'Signal Strength:', 'قوة الإشارة:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span className="text-cyan-400 font-bold">{sim2.signalPercent}% ${translateInline(lang, '(Very Good Coverage)', '(تغطية جيدة جداً)')}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'Internet Plan:', 'باقة الإنترنت:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span className="text-cyan-300">{translateInline(lang, `Ready (${sim2.dataTrafficMB} MB used)`, `جاهزة (${sim2.dataTrafficMB} MB مستهلكة)`)}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'SMS Status:', 'حالة الـ SMS:')}</span>
+src/components/DualSimNetworkCard.tsx:              <span className="text-cyan-400 font-semibold">${translateInline(lang, 'Confirmed alternate secure line (SIM 2)', 'خط أمان بديل مؤكد (SIM 2)')}</span>
+src/components/DualSimNetworkCard.tsx:              <span className="text-[11px] text-slate-400">${translateInline(lang, 'Quick Carrier Switch:', 'تغيير المشغل السريع:')}</span>
+src/components/DualSimNetworkCard.tsx:                <span>${translateInline(lang, 'Select another carrier', 'اختيار مشغل آخر')}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'Mobile Data ON', 'بيانات الهاتف مفعلة (Mobile Data ON)')}</span>
+src/components/DualSimNetworkCard.tsx:              <span>${translateInline(lang, 'Mobile Data OFF (Will auto-enable on theft)', 'بيانات الهاتف مغلقة (سيتم تفعيلها آلياً عند السرقة)')}</span>
+src/components/DualSimNetworkCard.tsx:              ? translateInline(lang, 'Simulate Data Off (Test Off)', 'محاكاة إغلاق البيانات (Test Off)')
+src/components/DualSimNetworkCard.tsx:              : translateInline(lang, 'Turn Data ON', 'تشغيل البيانات (Turn ON)')}
+src/components/DualSimNetworkCard.tsx:            <span>${translateInline(lang, 'Auto check and switch data to best SIM', 'فحص وتبديل البيانات تلقائياً للشريحة الأفضل')}</span>
+src/components/DualSimNetworkCard.tsx:            <span>${translateInline(lang, 'Test Dual-SIM SMS Dispatch', 'تجربة الإرسال المزدوج (Dual-SIM SMS)')}</span>
+src/components/AntiUninstallProtectionCard.tsx:        translateInline(lang, 'Biometric verification required to deactivate Device Administrator', 'تأكيد الهوية البيومترية لإلغاء صلاحية مدير الجهاز (Device Admin Deactivation)')
+src/components/AntiUninstallProtectionCard.tsx:        translateInline(lang, 'Device Admin Policy & Anti-Uninstall activated successfully!', 'تم تفعيل صلاحية مدير الجهاز وحماية إلغاء التثبيت بنجاح!')
+src/components/AntiUninstallProtectionCard.tsx:        translateInline(lang, 'Owner biometric verified. Device Admin deactivated temporarily.', 'تم التحقق من بصمة المالك وإلغاء صلاحية مدير الجهاز مؤقتاً.')
+src/components/AntiUninstallProtectionCard.tsx:        translateInline(lang, '✓ Owner identity verified! In a real environment, only the true owner can proceed.', '✓ تم تأكيد هوية مالك الجهاز! في بيئة العمل الحقيقية يسمح فقط للمالك الأصلي بمتابعة الإجراء.')
+src/components/AntiUninstallProtectionCard.tsx:      translateInline(lang, '⛔ Operation rejected! Uninstallation blocked, app protected, and user redirected.', '⛔ تم رفض العملية تلقائياً! تم حظر محاولة إلغاء التثبيت وحماية التطبيق وإعادة التوجيه للأمان.');
+src/components/AntiUninstallProtectionCard.tsx:        content: `🚨 ${translateInline(lang, '[Anti-Uninstall Block] Unauthorized attempt to uninstall DroidGuard or disable Device Admin. Blocked by biometrics and app protected.', '[Anti-Uninstall Block] محاولة غير مصرح بها لإلغاء تثبيت DroidGuard أو تعطيل صلاحية مدير الجهاز. تم الرفض البيومتري وحماية التطبيق.')}`,
+src/components/AntiUninstallProtectionCard.tsx:                {translateInline(lang, 'Anti-Uninstall & Device Admin Policy', 'حماية إلغاء التثبيت وصلاحية مدير الجهاز')}
+src/components/AntiUninstallProtectionCard.tsx:              {translateInline(lang, 'Prevent uninstallation from Android settings with mandatory biometric check', 'منع إلغاء تثبيت التطبيق من إعدادات أندرويد مع التحقق البيومتري الإلزامي')}
+src/components/AntiUninstallProtectionCard.tsx:              {translateInline(lang, '🔒 Device Admin active, operation aborted and user redirected to protect device.', '🔒 صلاحية مدير الجهاز نشطة، تم إحباط العملية وإعادة توجيه المستخدم لحماية جهازك.')}
+src/components/AntiUninstallProtectionCard.tsx:            <span>{translateInline(lang, 'Device Admin Unit (DevicePolicyManager):', 'وحدة مدير الجهاز (DevicePolicyManager):')}</span>
+src/components/AntiUninstallProtectionCard.tsx:            {translateInline(lang, 'Bound to DroidGuardDeviceAdminReceiver to disable Android "Uninstall" button.', 'مربوط بمكون DroidGuardDeviceAdminReceiver لمنع زر "إلغاء التثبيت" في نظام أندرويد من العمل.')}
+src/components/AntiUninstallProtectionCard.tsx:            <span>{translateInline(lang, 'Biometric Auth (expo-local-authentication):', 'التحقق البيومتري (expo-local-authentication):')}</span>
+src/components/AntiUninstallProtectionCard.tsx:            {translateInline(lang, 'Requires Fingerprint, Face ID, or system PIN for any deactivation attempt.', 'يشترط بصمة الإصبع، التعرف على الوجه، أو PIN النظام لأي محاولة تعطيل أو خروج.')}
+src/components/AntiUninstallProtectionCard.tsx:              ? translateInline(lang, 'Deactivate Protection (Biometrics Required)', 'تعطيل الحماية (يتطلب التحقق البيومتري)')
+src/components/AntiUninstallProtectionCard.tsx:              : translateInline(lang, 'Activate Anti-Uninstall Protection Now', 'تفعيل حماية إلغاء التثبيت الآن')}
+src/components/AntiUninstallProtectionCard.tsx:            {translateInline(lang, '⚡ Simulate Uninstall Attempt from Android Settings', '⚡ محاكاة محاولة إلغاء التثبيت من إعدادات أندرويد')}
+src/components/AntiUninstallProtectionCard.tsx:                    {translateInline(lang, 'Do you want to uninstall DroidGuard?', 'هل تريد إلغاء تثبيت تطبيق DroidGuard؟')}
+src/components/AntiUninstallProtectionCard.tsx:                    {translateInline(lang, 'Simulation of thief or intruder pressing uninstall button in phone settings.', 'محاكاة لضغط السارق أو المتطفل على زر إلغاء التثبيت داخل إعدادات الهاتف.')}
+src/components/AntiUninstallProtectionCard.tsx:                    {translateInline(lang, 'Cancel', 'إلغاء')}
+src/components/AntiUninstallProtectionCard.tsx:                          translateInline(lang, 'Protection inactive, uninstallation allowed!', 'الحماية غير مفعلة، سيتم إلغاء التثبيت بدون مانع!')
+src/components/AntiUninstallProtectionCard.tsx:                    {translateInline(lang, 'OK (Uninstall)', 'موافق (إلغاء التثبيت)')}
+src/components/AntiUninstallProtectionCard.tsx:                      {translateInline(lang, 'Cannot Uninstall (Device Admin Block)', 'تعذر إلغاء التثبيت (Device Admin Block)')}
+src/components/AntiUninstallProtectionCard.tsx:                    {translateInline(lang, '⚠️ DroidGuard cannot be uninstalled because it is an active Device Administrator.', '⚠️ لا يمكن إلغاء تثبيت DroidGuard لأن التطبيق مفعل كمدير لجهاز أندرويد (Device Administrator).')}
+src/components/AntiUninstallProtectionCard.tsx:                    {translateInline(lang, 'To uninstall, you must deactivate Device Admin first, which requires mandatory biometrics (Fingerprint, Face, or PIN).', 'لمتابعة إلغاء التثبيت، يجب إلغاء تفعيل صلاحية مدير الجهاز أولاً، وهو ما يتطلب اجتياز التحقق البيومتري الإلزامي (بصمة الإصبع أو الوجه أو PIN المالك).')}
+src/components/AntiUninstallProtectionCard.tsx:                        translateInline(lang, 'Request deactivation of Device Admin for uninstall attempt', 'طلب إلغاء صلاحية مدير الجهاز لمحاولة إلغاء التثبيت')
+src/components/AntiUninstallProtectionCard.tsx:                      {translateInline(lang, 'Attempt deactivation and verify now', 'محاولة إلغاء التفعيل والتحقق الآن')}
+src/components/AntiUninstallProtectionCard.tsx:                    {translateInline(lang, 'Close and return to app', 'إغلاق والرجوع للتطبيق')}
+src/components/AntiUninstallProtectionCard.tsx:          translateInline(lang, 'Android Biometric Prompt • Mandatory Biometrics', 'Android Biometric Prompt • التحقق البيومتري الإلزامي')
+src/components/SmsEmergencyTabScreen.tsx:        translateInline(lang, '❌ Please enter a valid international phone number', '❌ يرجى إدخال رقم هاتف صحيح بصيغة دولية (مثال: +213661123456 أو +966501234567)')
+src/components/SmsEmergencyTabScreen.tsx:      translateInline(lang, '✓ Primary Emergency phone verified & saved to secure storage!', '✓ تم حفظ واعتماد رقم هاتف الطوارئ في الذاكرة الدائمة بنجاح!')
+src/components/SmsEmergencyTabScreen.tsx:    const testMessage = `${translateInline(lang, '[DroidGuard Security Test]\nLive GPS Location Link:\nhttps://maps.google.com/?q=36.7538,3.0588\nSuccessfully dispatched to verified emergency number.', '[اختبار أمان DroidGuard]nرابط الموقع المباشر (GPS):nhttps://maps.google.com/?q=36.7538,3.0588nتم الإرسال بنجاح إلى رقم الطوارئ المعتمد.')}`;
+src/components/SmsEmergencyTabScreen.tsx:        recipient: `${emergencyPhone} ${translateInline(lang, '(Verified Emergency Number)', '(رقم الطوارئ المعتمد)')}`,
+src/components/SmsEmergencyTabScreen.tsx:        content: `${translateInline(lang, '[Emergency SMS Test] Test message dispatched to verified emergency number:', '[اختبار SMS طوارئ] تم إرسال رسالة تجريبية إلى رقم الطوارئ المعتمد:')} ${res.summary}`,
+src/components/SmsEmergencyTabScreen.tsx:                  {translateInline(lang, 'SMS & Emergency Dispatch', 'الرسائل والطوارئ (SMS & Emergency)')}
+src/components/SmsEmergencyTabScreen.tsx:                {translateInline(lang, 'Manage primary emergency contact & synchronous dual-SMS dispatch with automatic SIM fallback', 'إدارة رقم هاتف الطوارئ المعتمد والإرسال المزدوج المتزامن مع التبديل الذكي بين الشريحتين SIM 1 و SIM 2')}
+src/components/SmsEmergencyTabScreen.tsx:              <span>{isSaved ? (translateInline(lang, 'Emergency Number Active', 'رقم الطوارئ معتمد')) : (translateInline(lang, 'Unsaved', 'يرجى الحفظ'))}</span>
+src/components/SmsEmergencyTabScreen.tsx:                {translateInline(lang, 'Verified Emergency Phone Number', 'رقم هاتف الطوارئ المعتمد (Primary Emergency Phone)')}
+src/components/SmsEmergencyTabScreen.tsx:                {translateInline(lang, 'Primary contact receiving instant GPS coordinates & map link upon theft or command', 'الرقم الأساسي الموثوق الذي يستقبل رابط موقع GPS وصورة الحادثة تلقائياً عند أي طارئ أو أمر سرقة')}
+src/components/SmsEmergencyTabScreen.tsx:            <span className="text-slate-500">${translateInline(lang, 'Quick Codes:', 'رموز سريعة:')}</span>
+src/components/SmsEmergencyTabScreen.tsx:              placeholder="${translateInline(lang, '+44 7911 123456 or +1 202 555 0123', '+213 661 12 34 56 أو +966 50 123 4567')}"
+src/components/SmsEmergencyTabScreen.tsx:              <span>{translateInline(lang, 'Save Number', 'حفظ وتأكيد')}</span>
+src/components/SmsEmergencyTabScreen.tsx:              title="${translateInline(lang, 'Send instant test SMS to this number', 'إرسال SMS تجريبي فوري إلى هذا الرقم')}"
+src/components/SmsEmergencyTabScreen.tsx:              <span className="hidden sm:inline">{translateInline(lang, 'Test', 'تجربة إرسال')}</span>
+src/components/SmsEmergencyTabScreen.tsx:                <span>${translateInline(lang, '✓ Test SMS message dispatched successfully via active SIM!', '✓ تم إرسال رسالة SMS التجريبية بنجاح عبر الشريحة النشطة!')}</span>
+src/components/SmsEmergencyTabScreen.tsx:              <span>${translateInline(lang, 'Recipient:', 'المستلم:')} <b className="text-amber-300">{emergencyPhone}</b></span>
+src/components/SmsEmergencyTabScreen.tsx:              <span className="text-emerald-400">${translateInline(lang, 'Delivery Status: Confirmed (Delivered)', 'حالة التسليم: مؤكد (Delivered)')}</span>
+src/components/SmsEmergencyTabScreen.tsx:              {translateInline(lang, 'Synchronous Dual SMS Dispatch Engine', 'محرك الإرسال المتزامن المزدوج (Dual SMS Dispatch)')}
+src/components/SmsEmergencyTabScreen.tsx:              {translateInline(lang, 'Broadcasts GPS coordinates instantly and simultaneously upon command trigger', 'عند استقبال رسالة أمر أو تفعيل وضع السرقة، يتم بث رسالة SMS برابط الموقع المباشر في آن واحد')}
+src/components/SmsEmergencyTabScreen.tsx:            <span>{translateInline(lang, 'Synchronous Dispatch Pathway:', 'مسار الإرسال المتزامن:')}</span>
+src/components/SmsEmergencyTabScreen.tsx:                  <span>{translateInline(lang, 'Target 1: Primary Emergency Phone', 'المستلم 1: رقم الطوارئ المعتمد')}</span>
+src/components/SmsEmergencyTabScreen.tsx:                  ${translateInline(lang, 'Static & Verified', 'ثابت ومؤكد')}
+src/components/SmsEmergencyTabScreen.tsx:                {emergencyPhone || (translateInline(lang, 'Not configured', 'لم يُحدد بعد'))}
+src/components/SmsEmergencyTabScreen.tsx:                {translateInline(lang, 'Receives direct Google Maps GPS tracking link via SMS.', 'يستلم رابط موقع GPS المباشر وإحداثيات الخريطة بدقة عالية عبر رسالة SMS.')}
+src/components/SmsEmergencyTabScreen.tsx:                  <span>{translateInline(lang, 'Target 2: Trigger Command Sender', 'المستلم 2: رقم مرسل أمر التتبع')}</span>
+src/components/SmsEmergencyTabScreen.tsx:                  {translateInline(lang, 'Dynamic', 'ديناميكي')}
+src/components/SmsEmergencyTabScreen.tsx:                {translateInline(lang, 'Instantly replies to the phone that sent the secret SMS trigger command.', 'إذا أرسل شخص أمر #TRACK من أي هاتف، يُرسل له الرد برابط الموقع فوراً وبشكل مستقل.')}
+src/components/SmsEmergencyTabScreen.tsx:              {translateInline(lang, '✓ Automatic Dual-SIM Fallback: If SIM 1 fails due to lack of signal or credit, SIM 2 immediately handles dispatch.', '✓ يدعم النظام التبديل التلقائي بين الشريحتين (SIM 1 و SIM 2 Fallback): إذا تعثرت شريحة 1 لأي سبب (انعدام رصيد أو شبكة)، يتم فوراً تحويل الإرسال إلى شريحة 2 لضمان وصول الرسالة.')}
+src/components/SmsEmergencyTabScreen.tsx:                {translateInline(lang, 'Simulated Command Sender Number:', 'رقم هاتف مرسل الأمر الافتراضي للتجربة:')}
+src/components/SmsEmergencyTabScreen.tsx:                    <span>{translateInline(lang, 'Broadcasting Dual SMS...', 'جاري بث الـ SMS المزدوج...')}</span>
+src/components/SmsEmergencyTabScreen.tsx:                      {translateInline(lang, 'Simulate #TRACK & Dispatch to Both', 'محاكاة أمر #TRACK وبث SMS متزامن للرقمين')}
+src/components/SmsEmergencyTabScreen.tsx:                  <span>{translateInline(lang, '✓ Dual SMS Broadcast Completed Successfully!', '✓ تم إرسال رسائل SMS المتزامنة بنجاح لكلا الرقمين!')}</span>
+src/components/SmsEmergencyTabScreen.tsx:                    {translateInline(lang, '1. Verified Emergency Number:', '1. رقم الطوارئ المعتمد:')} {commandAlertResult.emergencyRecipient || emergencyPhone}
+src/components/SmsEmergencyTabScreen.tsx:                  <span className="text-emerald-400 block">{translateInline(lang, '✓ Delivered via SIM 1 + SIM 2 Fallback', '✓ تم التسليم عبر SIM 1 + SIM 2 Fallback')}</span>
+src/components/SmsEmergencyTabScreen.tsx:                    {translateInline(lang, '2. Command Sender Number:', '2. رقم مرسل الأمر:')} {simulatedSender}
+src/components/SmsEmergencyTabScreen.tsx:                  <span className="text-emerald-400 block">{translateInline(lang, '✓ Delivered via instant auto-reply', '✓ تم التسليم بالرد العكسي الفوري')}</span>
+src/components/TelegramTabScreen.tsx:                  {translateInline(lang, 'Telegram Bot Alert Channel', 'إعدادات بوت تليجرام (Telegram Bot)')}
+src/components/TelegramTabScreen.tsx:                {translateInline(lang, 'Dedicated window to configure Bot Token, Chat ID, and trigger real-time test alerts with intruder snapshots.', 'نافذة مخصصة لإدخال مفتاح البوت (Bot Token) ومعرف المحادثة (Chat ID) مع زر اختبار الإرسال الفوري للصور والإحداثيات.')}
+src/components/TelegramTabScreen.tsx:              {translateInline(lang, 'Chat ID:', 'معرف الدردشة:')}{' '}
+src/components/TelegramTabScreen.tsx:                {config.telegramChatId || (translateInline(lang, 'Not configured', 'غير محدد بعد'))}
+src/components/TelegramTabScreen.tsx:            <span>{translateInline(lang, 'Instantly upload front camera photos', 'رفع صور الكاميرا الأمامية فوراً')}</span>
+src/components/TelegramTabScreen.tsx:            <span>{translateInline(lang, 'Send interactive Live Location', 'إرسال Live Location تفاعلي')}</span>
+src/components/TelegramTabScreen.tsx:            <span>{translateInline(lang, 'Operates completely silently with no SMS cost', 'يعمل بصمت تام وبدون تكلفة SMS')}</span>
+src/components/AppEntryGate.tsx:        `🚨 [${translateInline(lang, 'Intruder photo captured silently!', 'تم التقاط صورة المتسلل صامتاً!')}] تم استنفاد 3 محاولات فاشلة. تم إرسال الموقع الجغرافي وصورة الكاميرا فوراً لقنوات الطوارئ (Telegram, Gmail, Dual-SMS).`
+src/components/AppEntryGate.tsx:        `${reason} ${translateInline(lang, '(Failed attempt ${res.newCount} of 3). On the 3rd attempt, intruder photo will be captured and emergency reports sent.', '(محاولة فاشلة ${res.newCount} من 3). عند المحاولة الثالثة سيتم التقاط صورة الدخيل وإرسال تقارير الطوارئ.')}`
+src/components/AppEntryGate.tsx:    setScanFeedback(translateInline(lang, 'Scanning biometric credentials...', 'جاري التحقق من البصمة البيومترية...'));
+src/components/AppEntryGate.tsx:      setScanFeedback(translateInline(lang, 'Biometrics Verified!', 'تم تأكيد الهوية بنجاح!'));
+src/components/AppEntryGate.tsx:    setScanFeedback(translateInline(lang, 'Scanning fingerprint...', 'جاري فحص البصمة...'));
+src/components/AppEntryGate.tsx:      handleFailed(translateInline(lang, 'Intruder fingerprint not matched', 'بصمة متسلل غير مطابقة'));
+src/components/AppEntryGate.tsx:          await handleFailed(translateInline(lang, 'Incorrect PIN', 'رمز PIN غير صحيح'));
+src/components/AppEntryGate.tsx:              <span>{translateInline(lang, 'Simulate unmatched intruder fingerprint (Test 3-attempts check)', 'محاكاة بصمة دخيل غير مطابقة (اختبار فحص الـ 3 محاولات)')}</span>
+src/components/AppEntryGate.tsx:              {translateInline(lang, 'Enter phone lock PIN (Default PIN: ', 'أدخل رمز قفل الهاتف (الرمز الافتراضي: ')}<span className="font-mono-code font-bold text-emerald-400">{ownerPin}</span>{translateInline(lang, '):', '):')}
+src/components/AppEntryGate.tsx:                {translateInline(lang, 'Clear', 'مسح')}
+src/components/AppEntryGate.tsx:              onClick={() => handleFailed(translateInline(lang, 'Incorrect PIN entered', 'تم إدخال رمز PIN خاطئ'))}
+src/components/AppEntryGate.tsx:            >{translateInline(lang, 'Simulate incorrect PIN entry (Intruder detection check)', 'محاكاة إدخال رمز خاطئ (فحص رصد الدخيل)')}</button>
+src/components/AppEntryGate.tsx:              <span>{translateInline(lang, 'Return to fingerprint authentication', 'العودة للمصادقة بالبصمة')}</span>
+src/components/AppEntryGate.tsx:              <span>{translateInline(lang, 'Intruder photo captured silently!', 'تم التقاط صورة المتسلل صامتاً!')}</span>
+src/components/StealthStolenScreen.tsx:          ? `${translateInline(lang, 'Stealth Stolen Mode unlocked successfully via fingerprint. Completed ${totalCycles} periodic dispatch cycles to email, caller number, and Telegram.', 'تم فك قفل وضع السرقة الخفي بنجاح عبر البصمة المعتمدة. تم تنفيذ ${totalCycles} دورة إرسال دورية بنجاح إلى البريد ورقم المتصل وتليجرام.')}`
+src/components/StealthStolenScreen.tsx:              ? translateInline(lang, 'Hide Telemetry HUD (Pure Black)', 'إخفاء الشاشة الفنية (العودة للسواد التام)')
+src/components/StealthStolenScreen.tsx:              : translateInline(lang, 'View Telemetry HUD', 'مراقبة البث الدوري (Telemetry HUD)')}
+src/components/StealthStolenScreen.tsx:              {translateInline(lang, 'Next dispatch:', 'الإرسال القادم بعد:')}{' '}
+src/components/StealthStolenScreen.tsx:              {translateInline(lang, 'Powering off...', 'إيقاف التشغيل...')}
+src/components/StealthStolenScreen.tsx:                    <span>{translateInline(lang, 'Stealth Stolen Mode Active', 'وضع السرقة الخفي النشط')}</span>
+src/components/StealthStolenScreen.tsx:                      ${translateInline(lang, 'Fake Off • Silent', 'Fake Off • صامت')}
+src/components/StealthStolenScreen.tsx:                    {translateInline(lang, 'Screen looks completely powered off while auto-dispatching every 2 minutes', 'الهاتف يبدو مطفأ تماماً بينما يرسل الموقع والصورة دورياً كل دقيقتين')}
+src/components/StealthStolenScreen.tsx:                  #{currentCycle} {translateInline(lang, 'Cycle', 'الدورة')}
+src/components/StealthStolenScreen.tsx:                    ? translateInline(lang, 'Dispatching...', 'جارٍ البث الآن...')
+src/components/StealthStolenScreen.tsx:                    : translateInline(lang, 'Standby', 'في الانتظار')}
+src/components/StealthStolenScreen.tsx:                    {translateInline(lang, 'Periodic Auto-Dispatch Timer (Every 2 Minutes)', 'مؤقت البث الدوري التلقائي (كل دقيقتين - Every 2 Minutes)')}
+src/components/StealthStolenScreen.tsx:                  <p>${translateInline(lang, 'Number: ', 'الرقم: ')}{networkState?.simCards[0].phoneNumber || '+966 50 123 4567'}</p>
+src/components/StealthStolenScreen.tsx:                  <p className="text-emerald-400">${translateInline(lang, '✓ Primary GPS coordinates SMS sent', '✓ تم إرسال SMS إحداثيات GPS الأولية')}</p>
+src/components/StealthStolenScreen.tsx:                  <p>${translateInline(lang, 'Number: ', 'الرقم: ')}{networkState?.simCards[1].phoneNumber || '+966 56 987 6543'}</p>
+src/components/StealthStolenScreen.tsx:                  <p className="text-cyan-400">${translateInline(lang, '✓ Confirmed Backup Dispatch (Dual-SIM SMS)', '✓ تم الإرسال الاحتياطي المؤكد (Dual-SIM SMS)')}</p>
+src/components/StealthStolenScreen.tsx:                <span>{translateInline(lang, 'Direct Dispatch Channels:', 'قنوات الإرسال المباشرة:')}</span>
+src/components/StealthStolenScreen.tsx:                  {translateInline(lang, '⚡ Run Dispatch Cycle Now (Test)', '⚡ تشغيل دورة الإرسال فوراً (محاكاة انقضاء الدقيقتين)')}
+src/components/StealthStolenScreen.tsx:                {translateInline(lang, 'Touch sensor below to unlock', 'ضع إصبعك على المستشعر أدناه لإلغاء وضع السرقة')}
+src/components/StealthStolenScreen.tsx:              {translateInline(lang, '• Screen appears powered off (click top button to view live telemetry) •', '• شاشة مطفأة وهمياً (انقر على الزر بالأعلى لعرض تقرير البث) •')}
+src/components/StealthStolenScreen.tsx:            {translateInline(lang, 'In-display Fingerprint Sensor (Touch to unlock):', 'مستشعر البصمة المدمج (المس لفك قفل الجهاز واستعادة الشاشة):')}
+src/components/StealthStolenScreen.tsx:          title={translateInline(lang, 'Touch fingerprint sensor to unlock', 'ضع إصبعك هنا لإلغاء وضع السرقة')}
+src/components/StealthStolenScreen.tsx:              {translateInline(lang, '✓ Authentic Fingerprint Verified! Restoring device UI...', '✓ تم التحقق من البصمة المعتمدة! جارٍ فك قفل الجهاز...')}
+src/components/StealthStolenScreen.tsx:          translateInline(lang, 'Authenticate owner identity to dismiss Stealth Stolen Mode and restore device interface', 'تأكيد هوية المالك لإلغاء وضع السرقة والتشغيل الوهمي واستعادة واجهة النظام')
+src/components/TelegramConfigCard.tsx:          translateInline(lang, 'Please enter Bot Token and Chat ID before testing', 'يرجى إدخال Bot Token ومعرف المحادثة Chat ID قبل بدء الاختبار'),
+src/components/TelegramConfigCard.tsx:        message: err instanceof Error ? err.message : translateInline(lang, 'Test failed', 'فشل الاختبار'),
+src/components/TelegramConfigCard.tsx:                {translateInline(lang, 'Telegram Bot Instant Notifications', 'ربط بوت تليجرام للإشعارات الفورية')}
+src/components/TelegramConfigCard.tsx:                  ? translateInline(lang, 'Active', 'متصل ونشط')
+src/components/TelegramConfigCard.tsx:                  : translateInline(lang, 'Inactive', 'غير مفعل')}
+src/components/TelegramConfigCard.tsx:              {translateInline(lang, 'Receive real-time theft alerts, GPS links, and front-cam intruder snapshots via Telegram', 'استلام تنبيهات السرقة الحية، إحداثيات GPS المباشرة، وصور الكاميرا فوراً')}
+src/components/TelegramConfigCard.tsx:            title={translateInline(lang, 'Toggle Telegram Alerts', 'تبديل تفعيل إشعارات تليجرام')}
+src/components/TelegramConfigCard.tsx:              <span>{translateInline(lang, 'Bot Token', 'رمز البوت (Bot Token)')}</span>
+src/components/TelegramConfigCard.tsx:              title={showToken ? translateInline(lang, 'Hide Token', 'إخفاء الرمز') : translateInline(lang, 'Show Token', 'إظهار الرمز')}
+src/components/TelegramConfigCard.tsx:            {translateInline(lang, 'Create a free bot with @BotFather to get your token', 'احصل عليه مجاناً بإنشاء بوت جديد عبر @BotFather في تليجرام')}
+src/components/TelegramConfigCard.tsx:              <span>{translateInline(lang, 'Chat ID', 'معرف المحادثة (Chat ID)')}</span>
+src/components/TelegramConfigCard.tsx:            {translateInline(lang, 'Your personal User ID or Channel ID to receive alerts', 'معرف حسابك الشخصي أو القناة لاستلام التنبيهات (يمكنك معرفته عبر @userinfobot)')}
+src/components/TelegramConfigCard.tsx:            {translateInline(lang, 'Theft alarms and captured snapshots will automatically dispatch to your Telegram', 'عند إطلاق أمر السرقة أو الكاميرا، سيتم إرسال الصورة والإحداثيات فوراً إلى تليجرام')}
+src/components/TelegramConfigCard.tsx:                <span>{translateInline(lang, 'Testing...', 'جاري التحقق...')}</span>
+src/components/TelegramConfigCard.tsx:                <span>{translateInline(lang, 'Test Connection', 'تجربة إرسال للتحقق من الاتصال')}</span>
+src/components/TelegramConfigCard.tsx:                {translateInline(lang, 'Token and Chat ID verified successfully! Ready for live alerts.', 'تم التحقق من صحة التوكن والمعرف! النظام جاهز لإرسال التقارير التلقائية.')}
+src/components/TelegramConfigCard.tsx:                {translateInline(lang, 'Make sure you have pressed Start (/start) in your bot chat on Telegram first', 'تأكد أنك قمت ببدء محادثة مع البوت بالضغط على Start (/start) أولاً في تليجرام')}
+src/components/GmailTabScreen.tsx:              ? `${translateInline(lang, '✓ Test email report successfully sent to ${activeEmail} including GPS coordinates and camera photo.', '✓ تم إرسال التقرير البريدي التجريبي بنجاح إلى ${activeEmail} شاملاً إحداثيات GPS وصورة الكاميرا.')}`
+src/components/GmailTabScreen.tsx:          content: `${translateInline(lang, '[Gmail Test Dispatch] Test emergency report with GPS and photo delivered to ${activeEmail}', '[تجربة إرسال Gmail] تم تسليم تقرير طوارئ تجريبي مع إحداثيات GPS وصورة الكاميرا إلى ${activeEmail}')}`,
+src/components/GmailTabScreen.tsx:          message: res.error || (translateInline(lang, 'Failed to send email', 'فشل إرسال البريد')),
+src/components/GmailTabScreen.tsx:        message: err.message || (translateInline(lang, 'Error sending test email', 'حدث خطأ أثناء الإرسال')),
+src/components/GmailTabScreen.tsx:                  {translateInline(lang, 'Gmail Security Reports Settings', 'إعدادات بريد تقارير الأمان (Gmail)')}
+src/components/GmailTabScreen.tsx:                {translateInline(lang, 'Dedicated window to set recipient email, verify OTP, lock with 72h anti-tamper protection, and run instant tests.', 'نافذة مخصصة لإدخال بريد الاستقبال وتأكيد اعتماده مع قفل أمني مشدد لمنع العبث واختبار الإرسال الفوري.')}
+src/components/GmailTabScreen.tsx:                ? translateInline(lang, 'Sending Test...', 'جاري الإرسال التجريبي...')
+src/components/GmailTabScreen.tsx:                : translateInline(lang, 'Send Test Email Report', 'إرسال تقرير تجريبي لـ Gmail')}
+src/components/GmailTabScreen.tsx:            <span>${translateInline(lang, 'Front intruder photo attached', 'صورة المتسلل الأمامية ملحقة')}</span>
+src/components/GmailTabScreen.tsx:            <span>${translateInline(lang, 'Direct Google Maps link', 'رابط موقع Google Maps مباشر')}</span>
+src/components/GmailTabScreen.tsx:            <span>${translateInline(lang, '72-hour anti-tamper security lock', 'قفل أمني 72 ساعة ضد التعديل')}</span>
+src/components/Header.tsx:                translateInline(lang, 'Simulate thief power-off attempt (Fake Power-Off Trap)', 'محاكاة محاولة السارق إطفاء الهاتف وتفعيل وضع الإيقاف الوهمي (Fake Power-Off)')
+src/components/StealthStatusBadge.tsx:            ? `${translateInline(lang, 'Stealth Security Badge: Detected ${attempts} unauthorized entry attempts', 'شارة الأمان الخفية: رصد ${attempts} محاولة دخول غير مصرح بها')}`
+src/components/StealthStatusBadge.tsx:              <span>{translateInline(lang, 'Stealth Alert Badge', 'شارة الأمان الخفية')}</span>
+src/components/StealthStatusBadge.tsx:              ? `${translateInline(lang, 'Recorded ${attempts} incorrect entry attempts. Intruder photo captured and GPS location sent on the 3rd attempt.', 'تم تسجيل ${attempts} محاولة دخول خاطئة. تم التقاط صورة المتسلل وإرسال الموقع الجغرافي عند المحاولة الثالثة.')}`
+src/components/StealthStatusBadge.tsx:            {translateInline(lang, 'Auto-resets to zero when owner unlocks correctly.', 'تتصفر الشارة تلقائياً بمجرد فتح القفل بالبصمة أو الرمز الصحيح.')}
+src/components/StealthStatusBadge.tsx:              <span>{translateInline(lang, 'Reset counter', 'تصفير العداد يدوياً')}</span>
+src/components/GmailSecurityCard.tsx:    if (ms <= 0) return translateInline(lang, '00:00:00 (Completed)', '00:00:00 (اكتملت المهلة)');
+src/components/GmailSecurityCard.tsx:        return `${translateInline(lang, '${days} days and ${pad(hours)}:${pad(minutes)}:${pad(seconds)}', '${days} يوم و ${pad(hours)}:${pad(minutes)}:${pad(seconds)}')}`;
+src/components/GmailSecurityCard.tsx:        translateInline(lang, 'Please enter a valid email address!', 'يرجى إدخال عنوان بريد إلكتروني صالح!')
+src/components/GmailSecurityCard.tsx:          ? `${translateInline(lang, 'OTP sent to ${emailToVerify}', 'تم إرسال رمز التأكيد (OTP) إلى ${emailToVerify}')}`
+src/components/GmailSecurityCard.tsx:      setInitialOtpError(translateInline(lang, 'Please enter the OTP!', 'يرجى إدخال رمز التأكيد!'));
+src/components/GmailSecurityCard.tsx:        translateInline(lang, 'Invalid OTP code! Please check the code.', 'رمز التأكيد غير صحيح! يرجى التأكد من الرمز المدخل.')
+src/components/GmailSecurityCard.tsx:      translateInline(lang, '✓ Email verified & bound successfully!', '✓ تم تأكيد وربط البريد الإلكتروني بنجاح!')
+src/components/GmailSecurityCard.tsx:      setChangeError(translateInline(lang, 'Please enter the OTP sent to old email!', 'يرجى إدخال رمز التأكيد المرسل للبريد القديم!'));
+src/components/GmailSecurityCard.tsx:        translateInline(lang, 'Invalid OTP! Cannot initiate change without old email approval.', 'رمز التأكيد غير صحيح! لا يمكن بدء طلب التغيير بدون موافقة البريد الحالي.')
+src/components/GmailSecurityCard.tsx:        translateInline(lang, 'Please enter a valid new email address!', 'يرجى إدخال عنوان البريد الإلكتروني الجديد الصالح!')
+src/components/GmailSecurityCard.tsx:        translateInline(lang, 'New email is identical to current active email!', 'البريد الجديد هو نفس البريد الحالي بالفعل!')
+src/components/GmailSecurityCard.tsx:        ? `${translateInline(lang, '✓ Change request cancelled immediately. Kept (${oldEmail}) as active and verified DroidGuard alerts email.', '✓ تم إلغاء طلب التغيير فوراً والاحتفاظ بالبريد (${oldEmail}) كبريد نشط ومعتمد لتنبيهات DroidGuard.')}`
+src/components/GmailSecurityCard.tsx:        ? `${translateInline(lang, '⚡ [Instant Simulation]: 72h cooldown completed successfully! New verified email is: ${finalEmail}', '⚡ [محاكاة فورية]: اكتملت فترة الـ 72 ساعة بنجاح! البريد المعتمد الجديد أصبح: ${finalEmail}')}`
+src/components/GmailSecurityCard.tsx:              {translateInline(lang, 'Emergency User Gmail (Stealth Reports)', 'بريد الطوارئ (Gmail) للتقارير الشاملة')}
+src/components/GmailSecurityCard.tsx:              {translateInline(lang, 'Receives live GPS link & stealth photos on #TRACK command', 'يستقبل رابط GPS وصور الكاميرا الأمامية عند استلام الأمر (#TRACK)')}
+src/components/GmailSecurityCard.tsx:            <span>{translateInline(lang, '72h Lock Protected', 'محمي بقفل 72 ساعة')}</span>
+src/components/GmailSecurityCard.tsx:              <span>{translateInline(lang, 'Verified & Bound', 'Verified / تم الربط')}</span>
+src/components/GmailSecurityCard.tsx:              <span>{translateInline(lang, 'Unverified', 'غير موثق')}</span>
+src/components/GmailSecurityCard.tsx:                {translateInline(lang, '⚠️ Email Change Request Pending (72-Hour Security Cooldown)', '⚠️ طلب تغيير البريد قيد الانتظار الأمني (فترة الحظر 72 ساعة)')}
+src/components/GmailSecurityCard.tsx:            {translateInline(lang, 'During this 72-hour period, the OLD email remains active for all DroidGuard alerts and intruder photos, protecting against unauthorized theft redirects.', 'خلال هذه الفترة الأمنية، يظل البريد القديم هو البريد النشط الفعّال لكافة تنبيهات DroidGuard وصور المتسلل، وذلك لمنع أي سارق من تحويل مسار التنبيهات.')}
+src/components/GmailSecurityCard.tsx:                {translateInline(lang, 'Current Active Recipient:', 'البريد النشط حالياً (يستقبل التقارير):')}
+src/components/GmailSecurityCard.tsx:                {translateInline(lang, 'Pending New Email:', 'البريد الجديد المطلوب (قيد الانتظار):')}
+src/components/GmailSecurityCard.tsx:              <span>{translateInline(lang, 'Cancel Request & Keep Old Email', 'إلغاء طلب التغيير فوراً والاحتفاظ بالبريد القديم')}</span>
+src/components/GmailSecurityCard.tsx:              <span>{translateInline(lang, 'Fast-forward 72h (Test)', 'تسريع 72 ساعة (للتجربة الفورية)')}</span>
+src/components/GmailSecurityCard.tsx:                ? translateInline(lang, 'Verified & Bound Email Address:', 'عنوان البريد الموثق والمربوط بالنظام:')
+src/components/GmailSecurityCard.tsx:                : translateInline(lang, 'Enter Email Address for Verification:', 'أدخل البريد الإلكتروني للربط والتأكيد:')}
+src/components/GmailSecurityCard.tsx:              <span>{translateInline(lang, 'Request Email Change', 'طلب تغيير البريد')}</span>
+src/components/GmailSecurityCard.tsx:              <span>{translateInline(lang, 'Locked', 'مربوط ومحمي')}</span>
+src/components/GmailSecurityCard.tsx:                    <span>{translateInline(lang, 'Sending Verification Code...', 'جاري إرسال رمز التحقق...')}</span>
+src/components/GmailSecurityCard.tsx:                    <span>{translateInline(lang, 'Confirm & Bind Email', 'تأكيد وربط البريد الإلكتروني')}</span>
+src/components/GmailSecurityCard.tsx:                    <span>{translateInline(lang, 'Enter 6-Digit OTP Code:', 'أدخل رمز التأكيد (OTP من 6 أرقام):')}</span>
+src/components/GmailSecurityCard.tsx:                    {translateInline(lang, 'Sent to:', 'أرسل إلى:')} {initialInputEmail}
+src/components/GmailSecurityCard.tsx:                      <span>{translateInline(lang, 'Quick preview OTP:', 'رمز المعاينة السريعة:')}</span>
+src/components/GmailSecurityCard.tsx:                      <span>{translateInline(lang, 'Auto-fill', 'تعبئة فورية')}</span>
+src/components/GmailSecurityCard.tsx:                    {translateInline(lang, 'Confirm', 'تأكيد')}
+src/components/GmailSecurityCard.tsx:                    {translateInline(lang, 'Resend Code', 'إعادة إرسال الرمز')}
+src/components/GmailSecurityCard.tsx:                    {translateInline(lang, 'Cancel', 'إلغاء')}
+src/components/GmailSecurityCard.tsx:                  {translateInline(lang, 'Security Protocol: Request Change of Verified Email', 'إجراء أمني: طلب تغيير بريد التنبيهات الموثق')}
+src/components/GmailSecurityCard.tsx:              {translateInline(lang, '🛡️ To prevent theft tampering, immediate change is forbidden. You must approve using an OTP sent to your old email, followed by a mandatory 72-hour security cooldown.', '🛡️ لحماية جهازك من السرقة والعبث، لا يمكن تغيير البريد فورياً. يتطلب ذلك رمز تأكيد من البريد القديم الحالي، ثم تبدأ فترة حظر أمني لمدة 3 أيام (72 ساعة) يظل فيها البريد الحالي مستقبلاً لكافة البلاغات.')}
+src/components/GmailSecurityCard.tsx:                    {translateInline(lang, 'Current registered email receiving OTP:', 'البريد الحالي المسجل الذي سيستلم رمز الموافقة:')}
+src/components/GmailSecurityCard.tsx:                      <span>{translateInline(lang, 'Sending Approval OTP...', 'جاري إرسال رمز الموافقة...')}</span>
+src/components/GmailSecurityCard.tsx:                        {translateInline(lang, 'Send Approval OTP to Current Email', 'إرسال رمز التأكيد (OTP) إلى البريد الحالي')}
+src/components/GmailSecurityCard.tsx:                      <span>{translateInline(lang, 'Sent approval OTP:', 'رمز الموافقة المرسل:')}</span>
+src/components/GmailSecurityCard.tsx:                      <span>{translateInline(lang, 'Auto-fill', 'تعبئة الرمز')}</span>
+src/components/GmailSecurityCard.tsx:                    {translateInline(lang, '1. Enter approval OTP from old email:', '1. أدخل رمز التأكيد الوارد لبريدك الحالي:')}
+src/components/GmailSecurityCard.tsx:                    {translateInline(lang, '2. Enter requested new Gmail address:', '2. أدخل عنوان بريد Gmail الجديد المطلوب:')}
+src/components/GmailSecurityCard.tsx:                    {translateInline(lang, 'What happens after approval?', 'ماذا سيحدث بعد التأكيد؟')}
+src/components/GmailSecurityCard.tsx:                    {translateInline(lang, '• A 72-hour (3-day) countdown begins.', '• سيبدأ عداد تنازلي لمدة 72 ساعة (3 أيام).')}
+src/components/GmailSecurityCard.tsx:                    {translateInline(lang, '• The old email continues receiving all stealth alerts and photos on #TRACK.', '• يستمر البريد القديم في استلام كل تقارير وصور السارق في حال إرسال #TRACK.')}
+src/components/GmailSecurityCard.tsx:                    {translateInline(lang, '• You can cancel the request at any time.', '• يمكنك إلغاء الطلب في أي لحظة من الواجهة.')}
+src/components/GmailSecurityCard.tsx:                    {translateInline(lang, 'Back', 'رجوع')}
+src/components/GmailSecurityCard.tsx:                    <span>{translateInline(lang, 'Start 72h Cooldown', 'بدء فترة القفل (72 ساعة)')}</span>
+src/components/TriggerTerminal.tsx:    { label: translateInline(lang, 'Phone 1', 'رقم هاتف 1'), number: '+966 55 123 4567' },
+src/components/TriggerTerminal.tsx:    { label: translateInline(lang, 'Phone 2', 'رقم هاتف 2'), number: '+970 59 876 5432' },
+src/components/TriggerTerminal.tsx:    { label: translateInline(lang, 'Phone 3', 'رقم هاتف 3'), number: '+20 100 444 8888' },
+src/components/TriggerTerminal.tsx:    { label: translateInline(lang, 'Intl Phone', 'رقم دولي'), number: '+44 7911 123456' }
+src/components/TriggerTerminal.tsx:  const [messageInput, setMessageInput] = useState(`${config.code}.${config.secretKey}.{translateInline(lang, 'theft', 'سرقة')}`);
+src/components/TriggerTerminal.tsx:              title={translateInline(lang, 'Generate random number for test', 'توليد رقم عشوائي لاختبار الاستجابة')}
+src/components/TriggerTerminal.tsx:              <span>{translateInline(lang, 'Random Number', 'رقم عشوائي')}</span>
+src/components/TriggerTerminal.tsx:            <span>{translateInline(lang, '✓ Auto-reply will return directly to this number', '✓ الرد التلقائي سيعود مباشرة لهذا الرقم')}</span>
+src/components/TriggerTerminal.tsx:              placeholder={`${config.code}.${config.secretKey}.{translateInline(lang, 'theft', 'سرقة')}`}
+src/components/TriggerTerminal.tsx:          <span>{translateInline(lang, 'Choose a different sender number to test auto-reply:', 'اختر رقم مرسل مختلف لتجربة الرد التلقائي عليه:')}</span>
+src/components/TriggerTerminal.tsx:            <span className="text-[10px] text-cyan-400 font-black">{translateInline(lang, '★ Dual Path:', '★ مسار مزدوج:')}</span>
+src/components/TriggerTerminal.tsx:            onClick={() => setQuickPreset(`${config.code}.${config.secretKey}.{translateInline(lang, 'theft', 'سرقة')}`)}
+src/components/TriggerTerminal.tsx:            <span className="text-[10px] text-rose-400 font-bold">{translateInline(lang, '1. Theft:', '1. سرقة:')}</span>
+src/components/TriggerTerminal.tsx:            <span>{config.code}.{config.secretKey}.{translateInline(lang, 'theft', 'سرقة')}</span>
+src/components/TriggerTerminal.tsx:            onClick={() => setQuickPreset(`${config.code}.${config.secretKey}.{translateInline(lang, 'camera', 'كاميرا')}`)}
+src/components/TriggerTerminal.tsx:            <span className="text-[10px] text-emerald-400 font-bold">{translateInline(lang, '2. Camera:', '2. كاميرا:')}</span>
+src/components/TriggerTerminal.tsx:            <span>{config.code}.{config.secretKey}.{translateInline(lang, 'camera', 'كاميرا')}</span>
+src/components/TriggerTerminal.tsx:            onClick={() => setQuickPreset(`999.xyz.{translateInline(lang, 'theft', 'سرقة')}`)}
+src/components/TriggerTerminal.tsx:            <span className="text-[10px] text-amber-400 font-bold">{translateInline(lang, '3. Invalid Code:', '3. رمز خاطئ:')}</span>
+src/components/TriggerTerminal.tsx:            <span>999.xyz.{translateInline(lang, 'theft', 'سرقة')}</span>
+src/components/TriggerTerminal.tsx:                  ? `تم التحقق بنجاح وتفعيل: [${lastParsed.action === 'theft' ? translateInline(lang, 'Theft Mode', 'وضع السرقة (Theft Mode)') : translateInline(lang, 'Camera Capture', 'كاميرا المتسلل (Camera Capture)')}]`
+src/components/TriggerTerminal.tsx:                  : translateInline(lang, 'Message verification failed (Security Rejection)', translateInline(lang, 'Message verification failed (Security Rejection)', 'فشل التحقق من الرسالة (Security Rejection)'))}
+src/components/TriggerTerminal.tsx:              {translateInline(lang, 'Rejection Reason: ', 'سبب الرفض: ')}{lastParsed.errorReason}
+src/components/TriggerTerminal.tsx:              <span className="text-slate-300">{translateInline(lang, 'Auto-reply:', 'الرد التلقائي:')}</span>
+src/components/TriggerTerminal.tsx:                {translateInline(lang, 'Emergency report and coordinates sent directly to the same number', 'تم إرسال بلاغ الطوارئ والإحداثيات مباشرة لنفس الرقم')} ($*{lastParsed.senderNumber})
+src/components/Dashboard.tsx:                  : translateInline(lang, 'Background monitoring stopped. Commands will not respond until reactivated.', 'تم إيقاف خدمة المراقبة الخلفية. لن تستجيب الأوامر حتى إعادة تفعيلها.')}
+src/components/Dashboard.tsx:              <span>{config.isProtectionActive ? translateInline(lang, 'Stop Protection', 'إيقاف الحماية') : translateInline(lang, 'Start Protection Now', 'تشغيل الحماية الآن')}</span>
+src/components/Dashboard.tsx:            <span>{translateInline(lang, 'Accepted Response Format:', 'صيغة الرسالة المعتمدة للاستجابة:')}</span>
+src/components/Dashboard.tsx:              {config.code || '123'}.{config.secretKey || 'ABC'}.[{translateInline(lang, 'Command', 'الأمر')}]
+src/components/Dashboard.tsx:              <p className="text-xs text-slate-400">{translateInline(lang, 'Set secret codes to unlock remote commands', 'تحديد الرموز السرية لفتح قفل الأوامر عن بُعد')}</p>
+src/components/Dashboard.tsx:                    <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">{translateInline(lang, 'No specific number', 'بدون رقم محدد')}</span>
+src/components/Dashboard.tsx:                    <span>{translateInline(lang, 'Reply Path:', 'مسار الرد:')}</span>
+src/components/Dashboard.tsx:                    <span>{translateInline(lang, '[Any Phone] ➔ [Reply to same number]', '[أي رقم هاتف] ➔ [الرد لنفس الرقم]')}</span>
+src/components/Dashboard.tsx:                <h3 className="text-base font-bold text-slate-100">{translateInline(lang, 'Immediate Protection & Activation Keys', 'مفاتيح التفعيل والحماية الفورية')}</h3>
+src/components/Dashboard.tsx:                <p className="text-xs text-slate-400">{translateInline(lang, 'Customize automatically allowed actions', 'تخصيص الإجراءات المسموح بتنفيذها تلقائياً')}</p>
+src/components/Dashboard.tsx:              title={translateInline(lang, 'Simulate phone shutdown by thief and start stealth periodic service every 2 mins', 'محاكاة إطفاء الهاتف من قبل السارق وبدء الخدمة الدورية الخفية كل دقيقتين')}
+src/components/Dashboard.tsx:              <span>{translateInline(lang, 'Fake Power-Off Trap', 'فخ إيقاف التشغيل الوهمي (Fake Power-Off Trap)')}</span>
+src/components/Dashboard.tsx:              <span>{translateInline(lang, 'Test Secret Camera Capture', 'تجربة التقاط الكاميرا السرية')}</span>
+src/components/Dashboard.tsx:                {config.code}.{config.secretKey}.{translateInline(lang, 'theft', 'سرقة')}
+src/components/Dashboard.tsx:                {config.code}.{config.secretKey}.{translateInline(lang, 'camera', 'كاميرا')}
+src/components/EmergencyLockOverlay.tsx:          <span>{translateInline(lang, 'SECURITY LOCKDOWN', 'SECURITY LOCKDOWN • وضع الحماية القصوى')}</span>
+src/components/EmergencyLockOverlay.tsx:              <span>{translateInline(lang, 'Current Device GPS Coordinates', 'إحداثيات الموقع الحالي للجهاز (GPS)')}</span>
+src/components/EmergencyLockOverlay.tsx:              {translateInline(lang, 'Accuracy: ', 'دقة: ')}{location?.accuracy || 12}m
+src/components/EmergencyLockOverlay.tsx:                <span>{translateInline(lang, 'Google Maps', 'خرائط Google')}</span>
+src/components/EmergencyLockOverlay.tsx:            <span>{translateInline(lang, 'Emergency report sent automatically via SMS', 'تم إرسال بلاغ الطوارئ تلقائياً بالرسائل النصية')}</span>
+src/components/EmergencyLockOverlay.tsx:            {translateInline(lang, 'Location coordinates and map link sent to the trigger number:', 'تم إرسال إحداثيات الموقع ورابط الخريطة إلى رقم المفتاح المحرّك:')}
+src/components/EmergencyLockOverlay.tsx:            {translateInline(lang, 'Authentication handled via internal device security (Fingerprint, Face, Pattern, or PIN)', 'المصادقة تتم عبر أمان الهاتف الداخلي (بصمة، وجه، نمط، أو PIN شاشة الهاتف)')}
+src/components/ErrorBoundary.tsx:            <h2 className="text-xl font-bold text-slate-100">{translateInline('en', 'An error occurred while loading the interface', 'حدث خطأ أثناء تحميل الواجهة')}</h2>
+src/components/ErrorBoundary.tsx:              <span>{translateInline('en', 'Restart and update app', 'إعادة تشغيل وتحديث التطبيق')}</span>
+src/components/DeviceAuthDialog.tsx:  title = translateInline(lang, 'Verify Device Owner Identity (Android System)', 'تأكيد هوية مالك الجهاز (Android System)'),
+src/components/DeviceAuthDialog.tsx:  subtitle = translateInline(lang, 'Use Fingerprint, Face ID, or Screen Lock', 'استخدم بصمة الإصبع أو الوجه أو قفل شاشة الهاتف'),
+src/components/DeviceAuthDialog.tsx:        translateInline(lang, '🚨 [Intruder photo captured silently in background!] 3 failed attempts exhausted. Camera snapshot and location coordinates sent directly to Telegram, Gmail, and Dual-SMS emergency contacts.', '🚨 [تم التقاط صورة المتسلل صامتاً في الخلفية!] تم استنفاد 3 محاولات فاشلة. تم إرسال لقطة الكاميرا وإحداثيات الموقع مباشرة إلى تليجرام، بريد Gmail، ورسائل الطوارئ Dual-SMS.')
+src/components/DeviceAuthDialog.tsx:        `${reasonText} ${translateInline(lang, `(Failed attempt ${res.newCount} of 3). Intruder photo will be captured and emergency reports sent on the third attempt.`, `(محاولة فاشلة ${res.newCount} من 3). سيتم التقاط صورة المتسلل وإرسال تقارير الطوارئ عند المحاولة الثالثة.`)}`
+src/components/DeviceAuthDialog.tsx:      handleFailedAttempt(translateInline(lang, 'Fingerprint does not match device owner', 'بصمة غير مطابقة لهوية مالك الجهاز'));
+src/components/DeviceAuthDialog.tsx:          await handleFailedAttempt(translateInline(lang, 'Incorrect screen lock PIN', 'رمز PIN قفل الشاشة غير صحيح'));
+src/components/DeviceAuthDialog.tsx:          await handleFailedAttempt(translateInline(lang, 'Incorrect screen lock pattern', 'نمط قفل الشاشة غير صحيح'));
+src/components/DeviceAuthDialog.tsx:            <span>{translateInline(lang, 'Fingerprint', 'بصمة')}</span>
+src/components/DeviceAuthDialog.tsx:            <span>{translateInline(lang, 'Face ID', 'الوجه')}</span>
+src/components/DeviceAuthDialog.tsx:            <span>{translateInline(lang, 'Device PIN', 'PIN الجهاز')}</span>
+src/components/DeviceAuthDialog.tsx:            <span>{translateInline(lang, 'Pattern', 'النمط')}</span>
+src/components/DeviceAuthDialog.tsx:                ? translateInline(lang, 'Device fingerprint verified successfully!', 'تم التحقق من بصمة الجهاز بنجاح!')
+src/components/DeviceAuthDialog.tsx:                ? translateInline(lang, 'Verifying fingerprint via Android system...', 'جاري التحقق من بصمة الإصبع عبر نظام Android...')
+src/components/DeviceAuthDialog.tsx:                : translateInline(lang, 'Touch fingerprint sensor to authenticate via phone security (Owner Fingerprint)', 'المس مستشعر البصمة للمصادقة عبر أمان الهاتف (بصمة المالك)')}
+src/components/DeviceAuthDialog.tsx:              <span>{translateInline(lang, 'Simulate unmatched intruder fingerprint (Alarm Test)', 'محاكاة بصمة دخيل غير مطابقة (اختبار الإنذار)')}</span>
+src/components/DeviceAuthDialog.tsx:                ? translateInline(lang, 'Face recognized successfully!', 'تم التعرف على الوجه بنجاح!')
+src/components/DeviceAuthDialog.tsx:                ? translateInline(lang, 'Matching device approved face features...', 'جاري مطابقة ملامح الوجه المعتمدة بالجهاز...')
+src/components/DeviceAuthDialog.tsx:                : translateInline(lang, 'Look at the camera to verify via Face Unlock (Owner Face)', 'انظر إلى الكاميرا للتحقق عبر Face Unlock (وجه المالك)')}
+src/components/DeviceAuthDialog.tsx:              >{translateInline(lang, 'Scan Owner Face', 'مسح وجه المالك')}</button>
+src/components/DeviceAuthDialog.tsx:                onClick={() => handleFailedAttempt(translateInline(lang, 'Facial features do not match device owner', 'ملامح وجه غير مطابقة لمالك الجهاز'))}
+src/components/DeviceAuthDialog.tsx:              >{translateInline(lang, 'Simulate Intruder Face', 'محاكاة وجه متسلل')}</button>
+src/components/DeviceAuthDialog.tsx:                {translateInline(lang, 'Enter phone lock code (Owner Code:', 'أدخل رمز قفل الهاتف (رمز المالك:')} <span className="font-mono-code font-bold text-emerald-400">{ownerPinHint}</span>):
+src/components/DeviceAuthDialog.tsx:              >{translateInline(lang, 'Clear', 'مسح')}</button>
+src/components/DeviceAuthDialog.tsx:                onClick={() => handleFailedAttempt(translateInline(lang, 'Incorrect PIN entered', 'تم إدخال رمز PIN خاطئ'))}
+src/components/DeviceAuthDialog.tsx:              >{translateInline(lang, 'Simulate incorrect PIN entry (Intruder Detection Test)', 'محاكاة إدخال رمز خاطئ (اختبار رصد الدخيل)')}</button>
+src/components/DeviceAuthDialog.tsx:            <p className="text-xs text-slate-400 mb-3">{translateInline(lang, 'Draw device lock pattern (Connect at least 4 dots):', 'ارسم نمط قفل الجهاز (حدد 4 نقاط على الأقل):')}</p>
+src/components/DeviceAuthDialog.tsx:              >{translateInline(lang, 'Redraw Pattern', 'إعادة رسم النمط')}</button>
+src/components/DeviceAuthDialog.tsx:              <span>{translateInline(lang, 'Intruder photo captured silently', 'تم التقاط صورة المتسلل صامتاً')}</span>
+src/components/DeviceAuthDialog.tsx:            {translateInline(lang, 'Uses built-in Android OS security • No app-specific code required', 'يستخدم أمان نظام التشغيل Android المدمج • لا يتم طلب أي رمز خاص بالتطبيق')}
+src/App.tsx:    document.documentElement.dir = translateInline(lang, 'ltr', 'rtl');
+src/App.tsx:      const reportMsg = `[${translateInline(lang, 'Intruder Camera Report', 'تقرير كاميرا المتسلل')}] ${translateInline(lang, 'Intruder photo successfully captured with location coordinates:', 'تم التقاط صورة للممسك بالهاتف بنجاح وإحداثيات الموقع:')} ${loc.mapsUrl}`;
+src/App.tsx:          `📸 <b>[${translateInline(lang, 'Intruder Camera Report - DroidGuard', 'تقرير كاميرا المتسلل - DroidGuard')}]</b>\n${translateInline(lang, 'Silent photo of the person holding the phone captured!', 'تم التقاط صورة صامتة للممسك بالهاتف!')}\n📍 <b>${translateInline(lang, 'Location:', 'الموقع:')}</b> <a href="${loc.mapsUrl}">${translateInline(lang, 'Google Maps', 'خرائط Google')}</a>\n📱 <b>${translateInline(lang, 'Sender:', 'المرسل:')}</b> ${senderNumber}`
+src/App.tsx:                content: `[${translateInline(lang, 'Telegram Photo', 'صورة تليجرام')}] ${translateInline(lang, 'Intruder photo and location coordinates uploaded directly to Telegram account', 'تم رفع صورة المتسلل وإحداثيات الموقع مباشرة لحساب تليجرام')}`,
+src/App.tsx:              {translateInline(lang, 'Dismiss', 'إغلاق')}
+src/App.tsx:              content: `[${translateInline(lang, 'Cancel Theft Mode', 'إلغاء وضع السرقة')}] ${translateInline(lang, 'Device successfully restored and unlocked via owner verified fingerprint', 'تم استعادة الجهاز بنجاح وفك القفل عبر البصمة المعتمدة للمالك')}`,

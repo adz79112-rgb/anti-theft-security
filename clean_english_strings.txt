@@ -1,0 +1,103 @@
+00
+72h Lock Protected
+Anti-Uninstall & Device Admin Policy
+A) Reverse SMS (GPS only)
+ARMED
+Attempt Deactivation & Verify
+Auto-Detect Carriers
+Auto-fill
+Back
+Biometric Auth Unit
+Biometrics Verified!
+Bot Token
+Broadcasting Dual SMS...
+B) User Gmail Report
+Camera Report
+Cancel
+Cancel Request & Keep Old Email
+Cancel & Return
+Cannot Uninstall Package
+Chat ID
+CLICK TO ARM
+CLICK TO DISARM
+Command Alert Executed Successfully!
+Confirm
+Confirm & Bind Email
+C) Telegram Bot
+Current Active Recipient
+Current registered email receiving OTP
+Cycle
+Default Bot Token
+Device Admin Policy
+Direct Dispatch Channels
+✓ Direct GPS link only
+Dismiss
+Dual-SIM
+✓ Dual SMS Broadcast Completed Successfully!
+✓ Email verified & bound successfully!
+Emergency Number Active
+Emergency SMS
+Emergency User Gmail (Stealth Reports)
+Enter 6-Digit OTP Code
+Enter Telegram Chat ID
+Error sending test email
+Executing Command Alert...
+Failed to send email
+Fast-forward 72h (Test)
+✓ Full report sent to Gmail
+Gmail Security Reports Settings
+Locked
+ltr
+Next dispatch
+Not configured
+Not set
+OK (Uninstall)
+Pathway 1
+Pathway 2
+Pending New Email
+Please enter a valid email address!
+Please enter a valid new email address!
+Please enter the OTP!
+Please enter the OTP sent to old email!
+Powering off...
+Quick preview OTP
+Recipient
+Request Email Change
+Resend Code
+Reset counter
+Save Number
+Scanning biometric credentials...
+Scanning Carriers...
+Sending Approval OTP...
+Sending Test...
+Sending Verification Code...
+Send Test Email Report
+Sent approval OTP
+Sent to
+Simulated Command Sender Number
+SMS & Emergency Dispatch
+STANDBY
+Start 72h Cooldown
+Stealth Alert Badge
+Stealth Mode
+Stealth Stolen Mode Active
+Synchronous Dispatch Pathway
+Synchronous Dual SMS Dispatch Engine
+System Ping
+Target 1
+Target 2
+Telegram
+Telegram Bot Alert Channel
+Telegram Chat ID (Optional)
+Test
+Test Connection
+Testing...
+Toggle Telegram Alerts
+Touch fingerprint sensor to unlock
+Trigger Command
+Unsaved
+Unverified
+Verified & Bound
+Verified Emergency Phone Number
+What happens after approval?
+WhatsApp

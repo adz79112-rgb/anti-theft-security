@@ -1,0 +1,2039 @@
+{
+  "):": {
+    "zh": "):",
+    "fr": "):",
+    "es": "):",
+    "ru": "):"
+  },
+  "${days} days and ${pad(hours)}:${pad(minutes)}:${pad(seconds)}": {
+    "zh": "${days} 天和 ${pad(小时)}:${pad(分钟)}:${pad(秒)}",
+    "fr": "${days} jours et ${pad(hours)}:${pad(minutes)}:${pad(seconds)}",
+    "es": "${días} días y ${pad(horas)}:${pad(minutos)}:${pad(segundos)}",
+    "ru": "${days} дней и ${pad(часы)}:${pad(минуты)}:${pad(секунды)}"
+  },
+  "00:00:00 (Completed)": {
+    "zh": "00:00:00（已完成）",
+    "fr": "00:00:00 (Terminé)",
+    "es": "00:00:00 (Terminado)",
+    "ru": "00:00:00 (Завершено)"
+  },
+  "1/4 Acquiring GPS coordinates...": {
+    "zh": "1/4 获取GPS坐标...",
+    "fr": "1/4 Acquisition des coordonnées GPS...",
+    "es": "1/4 Adquiriendo coordenadas GPS...",
+    "ru": "1/4 Получение координат GPS..."
+  },
+  "1. Enter approval OTP from old email:": {
+    "zh": "1. 输入旧电子邮件中的批准 OTP：",
+    "fr": "1. Saisissez l'OTP d'approbation de l'ancien e-mail :",
+    "es": "1. Ingrese la OTP de aprobación del correo electrónico anterior:",
+    "ru": "1. Введите одноразовый код подтверждения из старого адреса электронной почты:"
+  },
+  "1. Theft:": {
+    "zh": "1. 盗窃：",
+    "fr": "1. Vol :",
+    "es": "1. Robo:",
+    "ru": "1. Кража:"
+  },
+  "1. Verified Emergency Number:": {
+    "zh": "1. 已验证的紧急电话号码：",
+    "fr": "1. Numéro d'urgence vérifié :",
+    "es": "1. Número de emergencia verificado:",
+    "ru": "1. Подтвержденный номер службы экстренной помощи:"
+  },
+  "2/4 [Pathway 1]: Dispatching reverse SMS with GPS link only...": {
+    "zh": "2/4 [途径 1]：仅使用 GPS 链接发送反向短信...",
+    "fr": "2/4 [Voie 1] : Envoi de SMS inversés avec liaison GPS uniquement...",
+    "es": "2/4 [Ruta 1]: Envío de SMS inversos solo con enlace GPS...",
+    "ru": "2/4 [Путь 1]: Отправка обратных SMS только с помощью GPS-связи..."
+  },
+  "2. Camera:": {
+    "zh": "2. 相机：",
+    "fr": "2. Caméra :",
+    "es": "2. Cámara:",
+    "ru": "2. Камера:"
+  },
+  "2. Command Sender Number:": {
+    "zh": "2. 命令发送号码：",
+    "fr": "2. Numéro de l'expéditeur de la commande :",
+    "es": "2. Número del remitente del comando:",
+    "ru": "2. Номер отправителя команды:"
+  },
+  "2. Enter requested new Gmail address:": {
+    "zh": "2. 输入请求的新 Gmail 地址：",
+    "fr": "2. Saisissez la nouvelle adresse Gmail demandée :",
+    "es": "2. Ingrese la nueva dirección de Gmail solicitada:",
+    "ru": "2. Введите запрошенный новый адрес Gmail:"
+  },
+  "3/4 [Pathway 2]: Dispatching comprehensive report to user Gmail...": {
+    "zh": "3/4 [途径 2]：向用户 Gmail 发送综合报告...",
+    "fr": "3/4 [Voie 2] : Envoi d'un rapport complet à l'utilisateur Gmail...",
+    "es": "3/4 [Ruta 2]: Envío de un informe completo al usuario Gmail...",
+    "ru": "3/4 [Путь 2]: Отправка подробного отчета пользователю Gmail..."
+  },
+  "3. Invalid Code:": {
+    "zh": "3. 无效代码：",
+    "fr": "3. Code invalide :",
+    "es": "3. Código no válido:",
+    "ru": "3. Неверный код:"
+  },
+  "+44 7911 123456 or +1 202 555 0123": {
+    "zh": "+44 7911 123456 或 +1 202 555 0123",
+    "fr": "+44 7911 123456 ou +1 202 555 0123",
+    "es": "+44 7911 123456 o +1 202 555 0123",
+    "ru": "+44 7911 123456 или +1 202 555 0123"
+  },
+  "4/4 [Pathway 3]: Dispatching photo & location to Telegram...": {
+    "zh": "4/4 [途径 3]：将照片和位置发送到 Telegram...",
+    "fr": "4/4 [Voie 3] : Envoi de la photo et de l'emplacement vers Telegram...",
+    "es": "4/4 [Ruta 3]: Envío de foto y ubicación a Telegram...",
+    "ru": "4/4 [Путь 3]: Отправка фотографии и местоположения в Telegram..."
+  },
+  "72h Lock Protected": {
+    "zh": "72小时锁定保护",
+    "fr": "Verrouillage protégé 72h",
+    "es": "Bloqueo protegido 72 h",
+    "ru": "72-часовая блокировка защищена"
+  },
+  "72-hour anti-tamper security lock": {
+    "zh": "72小时防篡改安全锁",
+    "fr": "Verrou de sécurité anti-effraction 72 heures",
+    "es": "Cerradura de seguridad antimanipulación 72 horas",
+    "ru": "Замок с защитой от несанкционированного доступа на 72 часа"
+  },
+  "• A 72-hour (3-day) countdown begins.": {
+    "zh": "• 72 小时（3 天）倒计时开始。",
+    "fr": "• Un compte à rebours de 72 heures (3 jours) commence.",
+    "es": "• Comienza una cuenta regresiva de 72 horas (3 días).",
+    "ru": "• Начинается 72-часовой (3-дневный) обратный отсчет."
+  },
+  "Accepted Response Format:": {
+    "zh": "接受的响应格式：",
+    "fr": "Format de réponse accepté :",
+    "es": "Formato de respuesta aceptado:",
+    "ru": "Принятый формат ответа:"
+  },
+  "Accuracy:": {
+    "zh": "准确性：",
+    "fr": "Précision:",
+    "es": "Exactitud:",
+    "ru": "Точность:"
+  },
+  "Activate Anti-Uninstall Protection Now": {
+    "zh": "立即激活反卸载保护",
+    "fr": "Activez la protection anti-désinstallation maintenant",
+    "es": "Active la protección antidesinstalación ahora",
+    "ru": "Активируйте защиту от удаления прямо сейчас"
+  },
+  "Active": {
+    "zh": "活跃",
+    "fr": "Actif",
+    "es": "Activo",
+    "ru": "Активный"
+  },
+  "Active Data SIM": {
+    "zh": "活动数据 SIM",
+    "fr": "SIM de données active",
+    "es": "SIM de datos activa",
+    "ru": "SIM-карта с активными данными"
+  },
+  "✓ All automated ambient alarms cancelled. DroidGuard responds strictly to secret trigger commands (#TRACK).": {
+    "zh": "✓ 所有自动环境警报均已取消。 DroidGuard 严格响应秘密触发命令 (#TRACK)。",
+    "fr": "✓ Toutes les alarmes ambiantes automatisées annulées. DroidGuard répond strictement aux commandes de déclenchement secrètes (#TRACK).",
+    "es": "✓ Todas las alarmas ambientales automatizadas canceladas. DroidGuard responde estrictamente a comandos de activación secretos (#TRACK).",
+    "ru": "✓ Все автоматические сигналы тревоги по окружающей среде отменены. DroidGuard строго реагирует на секретные триггерные команды (#TRACK)."
+  },
+  "Android Biometric Prompt • Mandatory Biometrics": {
+    "zh": "Android 生物识别提示 • 强制生物识别",
+    "fr": "Invite biométrique Android • Biométrie obligatoire",
+    "es": "Aviso biométrico de Android • Datos biométricos obligatorios",
+    "ru": "Биометрическая подсказка Android • Обязательная биометрия"
+  },
+  "[Anti-Uninstall Block] Unauthorized attempt to uninstall DroidGuard or disable Device Admin. Blocked by biometrics and app protected.": {
+    "zh": "[反卸载阻止] 未经授权尝试卸载 DroidGuard 或禁用设备管理。被生物识别技术阻止并受到应用程序保护。",
+    "fr": "[Blocage anti-désinstallation] Tentative non autorisée de désinstaller DroidGuard ou de désactiver l'administrateur de l'appareil. Bloqué par biométrie et application protégée.",
+    "es": "[Bloqueo antidesinstalación] Intento no autorizado de desinstalar DroidGuard o desactivar el administrador del dispositivo. Bloqueado por biometría y aplicación protegida.",
+    "ru": "[Блокировка защиты от удаления] Несанкционированная попытка удалить DroidGuard или отключить администратор устройства. Заблокировано биометрическими данными и защищено приложением."
+  },
+  "Anti-Uninstall & Device Admin Policy": {
+    "zh": "反卸载和设备管理策略",
+    "fr": "Politique anti-désinstallation et d'administration des appareils",
+    "es": "Política antidesinstalación y administración de dispositivos",
+    "ru": "Политика защиты от удаления и администрирования устройств"
+  },
+  "[Any Phone] ➔ [Reply to same number]": {
+    "zh": "[任意电话] ➔ [回复同一号码]",
+    "fr": "[N'importe quel téléphone] ➔ [Répondre au même numéro]",
+    "es": "[Cualquier teléfono] ➔ [Responder al mismo número]",
+    "ru": "[Любой телефон] ➔ [Ответить на тот же номер]"
+  },
+  "A) Reverse SMS (GPS only):": {
+    "zh": "A) 反向短信（仅限 GPS）：",
+    "fr": "A) SMS inversé (GPS uniquement) :",
+    "es": "A) SMS inverso (solo GPS):",
+    "ru": "А) Обратное SMS (только GPS):"
+  },
+  "ARMED": {
+    "zh": "武装",
+    "fr": "ARMÉ",
+    "es": "ARMADO",
+    "ru": "ВООРУЖЕН"
+  },
+  "Attempt deactivation and verify now": {
+    "zh": "立即尝试停用并验证",
+    "fr": "Essayez de désactiver et vérifiez maintenant",
+    "es": "Intenta la desactivación y verifica ahora",
+    "ru": "Попытайтесь деактивировать и подтвердите сейчас"
+  },
+  "Authenticate owner identity to dismiss Stealth Stolen Mode and restore device interface": {
+    "zh": "验证所有者身份以解除隐秘被盗模式并恢复设备界面",
+    "fr": "Authentifier l'identité du propriétaire pour ignorer le mode furtif volé et restaurer l'interface de l'appareil",
+    "es": "Autenticar la identidad del propietario para descartar el modo oculto robado y restaurar la interfaz del dispositivo",
+    "ru": "Аутентификация личности владельца для выхода из режима Stealth Stolen и восстановления интерфейса устройства"
+  },
+  "Authentication handled via internal device security (Fingerprint, Face, Pattern, or PIN)": {
+    "zh": "通过内部设备安全（指纹、面部、图案或 PIN）处理身份验证",
+    "fr": "Authentification gérée via la sécurité interne de l'appareil (empreinte digitale, visage, motif ou code PIN)",
+    "es": "Autenticación manejada a través de la seguridad interna del dispositivo (huella digital, rostro, patrón o PIN)",
+    "ru": "Аутентификация осуществляется с помощью внутренней безопасности устройства (отпечаток пальца, лицо, шаблон или PIN-код)"
+  },
+  "✓ Authentic Fingerprint Verified! Restoring device UI...": {
+    "zh": "✓ 真实指纹已验证！正在恢复设备 UI...",
+    "fr": "✓ Empreinte digitale authentique vérifiée ! Restauration de l'interface utilisateur de l'appareil...",
+    "es": "✓ ¡Huella digital auténtica verificada! Restaurando la interfaz de usuario del dispositivo...",
+    "ru": "✓ Подлинные отпечатки пальцев проверены! Восстановление пользовательского интерфейса устройства..."
+  },
+  "Auto check and switch data to best SIM": {
+    "zh": "自动检查数据并将其切换到最佳 SIM 卡",
+    "fr": "Vérification automatique et basculement des données vers la meilleure carte SIM",
+    "es": "Verificación automática y cambio de datos a la mejor SIM",
+    "ru": "Автоматическая проверка и переключение данных на лучшую SIM-карту"
+  },
+  "Auto-Detect Carriers": {
+    "zh": "自动检测运营商",
+    "fr": "Détection automatique des transporteurs",
+    "es": "Detección automática de transportistas",
+    "ru": "Автоматическое определение операторов связи"
+  },
+  "Auto-detection of Carrier Names (Mobilis, Djezzy, Ooredoo) with Dual-SIM SMS Fallback": {
+    "zh": "使用双 SIM 卡 SMS 回退自动检测运营商名称（Mobilis、Djezzy、Ooredoo）",
+    "fr": "Détection automatique des noms d'opérateurs (Mobilis, Djezzy, Ooredoo) avec repli SMS Dual-SIM",
+    "es": "Detección automática de nombres de operadores (Mobilis, Djezzy, Ooredoo) con respaldo de SMS de doble SIM",
+    "ru": "Автоматическое определение имен операторов связи (Mobilis, Djezzy, Ooredoo) с резервным SMS-сообщением для двух SIM-карт"
+  },
+  "Auto-fill": {
+    "zh": "自动填充",
+    "fr": "Remplissage automatique",
+    "es": "Autocompletar",
+    "ru": "Автозаполнение"
+  },
+  "✓ Automatic Dual-SIM Fallback: If SIM 1 fails due to lack of signal or credit, SIM 2 immediately handles dispatch.": {
+    "zh": "✓ 自动双 SIM 卡回退：如果 SIM 1 由于缺乏信号或信用而出现故障，SIM 2 会立即处理调度。",
+    "fr": "✓ Repli automatique double SIM : si la SIM 1 échoue en raison d'un manque de signal ou de crédit, la SIM 2 gère immédiatement l'envoi.",
+    "es": "✓ Respaldo automático de doble SIM: si la SIM 1 falla debido a falta de señal o crédito, la SIM 2 se encarga del envío inmediatamente.",
+    "ru": "✓ Автоматический резервный режим для двух SIM-карт: если SIM 1 выходит из строя из-за отсутствия сигнала или кредита, SIM 2 немедленно выполняет отправку."
+  },
+  "Auto-reply:": {
+    "zh": "自动回复：",
+    "fr": "Réponse automatique :",
+    "es": "Respuesta automática:",
+    "ru": "Автоответ:"
+  },
+  "Auto-reply to sender:": {
+    "zh": "自动回复发件人：",
+    "fr": "Réponse automatique à l'expéditeur :",
+    "es": "Respuesta automática al remitente:",
+    "ru": "Автоответ отправителю:"
+  },
+  "✓ Auto-reply will return directly to this number": {
+    "zh": "✓ 自动回复会直接返回此号码",
+    "fr": "✓ La réponse automatique reviendra directement à ce numéro",
+    "es": "✓ La respuesta automática volverá directamente a este número",
+    "ru": "✓ Автоответ вернется прямо на этот номер"
+  },
+  "Auto-resets to zero when owner unlocks correctly.": {
+    "zh": "当所有者正确解锁时自动重置为零。",
+    "fr": "Se réinitialise automatiquement à zéro lorsque le propriétaire déverrouille correctement.",
+    "es": "Se reinicia automáticamente a cero cuando el propietario desbloquea correctamente.",
+    "ru": "Автоматически сбрасывается на ноль, когда владелец правильно разблокирует."
+  },
+  "Back": {
+    "zh": "返回",
+    "fr": "Retour",
+    "es": "Volver",
+    "ru": "Назад"
+  },
+  "Background monitoring stopped. Commands will not respond until reactivated.": {
+    "zh": "后台监控停止。命令在重新激活之前不会响应。",
+    "fr": "La surveillance en arrière-plan s'est arrêtée. Les commandes ne répondront pas tant qu’elles ne seront pas réactivées.",
+    "es": "Se detuvo la supervisión en segundo plano. Los comandos no responderán hasta que se reactiven.",
+    "ru": "Фоновый мониторинг остановлен. Команды не будут реагировать, пока не будут повторно активированы."
+  },
+  "Biometric Auth (expo-local-authentication):": {
+    "zh": "生物识别身份验证（expo-local-authentication）：",
+    "fr": "Authentification biométrique (expo-local-authentification) :",
+    "es": "Autenticación biométrica (autenticación-expo-local):",
+    "ru": "Биометрическая аутентификация (expo-local-аутентификация):"
+  },
+  "Biometrics Verified!": {
+    "zh": "生物识别验证！",
+    "fr": "Biométrie vérifiée !",
+    "es": "¡Biometría verificada!",
+    "ru": "Биометрия проверена!"
+  },
+  "Biometric verification required to deactivate Device Administrator": {
+    "zh": "停用设备管理员需要生物识别验证",
+    "fr": "Vérification biométrique requise pour désactiver l'administrateur de périphérique",
+    "es": "Se requiere verificación biométrica para desactivar el Administrador del dispositivo",
+    "ru": "Для деактивации администратора устройства требуется биометрическая проверка"
+  },
+  "Bot Token": {
+    "zh": "机器人令牌",
+    "fr": "Jeton de robot",
+    "es": "Ficha de robot",
+    "ru": "Токен бота"
+  },
+  "Bound to DroidGuardDeviceAdminReceiver to disable Android \"Uninstall\" button.": {
+    "zh": "绑定到 DroidGuardDeviceAdminReceiver 以禁用 Android“卸载”按钮。",
+    "fr": "Lié à DroidGuardDeviceAdminReceiver pour désactiver le bouton \"Désinstaller\" d'Android.",
+    "es": "Vinculado a DroidGuardDeviceAdminReceiver para desactivar el botón \"Desinstalar\" de Android.",
+    "ru": "Привязывается к DroidGuardDeviceAdminReceiver, чтобы отключить кнопку Android «Удалить»."
+  },
+  "Broadcasting Dual SMS...": {
+    "zh": "广播双短信...",
+    "fr": "Diffusion Double SMS...",
+    "es": "Transmitiendo SMS duales...",
+    "ru": "Рассылка двойных SMS..."
+  },
+  "Broadcasts GPS coordinates instantly and simultaneously upon command trigger": {
+    "zh": "命令触发后立即同步广播 GPS 坐标",
+    "fr": "Diffuse les coordonnées GPS instantanément et simultanément lors du déclenchement de la commande",
+    "es": "Transmite coordenadas GPS de forma instantánea y simultánea al activar el comando",
+    "ru": "Мгновенно и одновременно передает координаты GPS при срабатывании команды"
+  },
+  "B) User Gmail Report:": {
+    "zh": "B) 用户 Gmail 报告：",
+    "fr": "B) Rapport utilisateur Gmail :",
+    "es": "B) Informe de usuario de Gmail:",
+    "ru": "Б) Отчет пользователя Gmail:"
+  },
+  "camera": {
+    "zh": "相机",
+    "fr": "caméra",
+    "es": "cámara",
+    "ru": "камера"
+  },
+  "Camera Capture": {
+    "zh": "相机捕捉",
+    "fr": "Capture de caméra",
+    "es": "Captura de cámara",
+    "ru": "Захват камеры"
+  },
+  "Camera Report": {
+    "zh": "相机报告",
+    "fr": "Rapport de caméra",
+    "es": "Informe de cámara",
+    "ru": "Отчет о камере"
+  },
+  "Cancel": {
+    "zh": "取消",
+    "fr": "Annuler",
+    "es": "Cancelar",
+    "ru": "Отменить"
+  },
+  "Cancel Request & Keep Old Email": {
+    "zh": "取消请求并保留旧电子邮件",
+    "fr": "Annuler la demande et conserver l'ancien e-mail",
+    "es": "Cancelar solicitud y conservar el correo electrónico anterior",
+    "ru": "Отменить запрос и сохранить старый адрес электронной почты"
+  },
+  "Cancel Theft Mode": {
+    "zh": "取消盗窃模式",
+    "fr": "Annuler le mode vol",
+    "es": "Cancelar el modo de robo",
+    "ru": "Отменить режим кражи"
+  },
+  "Cannot Uninstall (Device Admin Block)": {
+    "zh": "无法卸载（设备管理块）",
+    "fr": "Impossible de désinstaller (blocage de l'administrateur de l'appareil)",
+    "es": "No se puede desinstalar (bloque de administración del dispositivo)",
+    "ru": "Невозможно удалить (блокировка администратора устройства)"
+  },
+  "captured photo": {
+    "zh": "拍摄的照片",
+    "fr": "photo capturée",
+    "es": "foto capturada",
+    "ru": "сделанное фото"
+  },
+  "captured photos": {
+    "zh": "拍摄的照片",
+    "fr": "photos capturées",
+    "es": "fotos capturadas",
+    "ru": "снятые фотографии"
+  },
+  "✓ Change request cancelled immediately. Kept (${oldEmail}) as active and verified DroidGuard alerts email.": {
+    "zh": "✓ 更改请求立即取消。保留 (${oldEmail}) 作为活动且经过验证的 DroidGuard 警报电子邮件。",
+    "fr": "✓ Demande de modification annulée immédiatement. Conservé (${oldEmail}) en tant qu'e-mail d'alertes DroidGuard actif et vérifié.",
+    "es": "✓ Solicitud de cambio cancelada inmediatamente. Mantenido (${oldEmail}) como correo electrónico de alertas de DroidGuard activo y verificado.",
+    "ru": "✓ Запрос на изменение немедленно отменен. Сохранено (${oldEmail}) как активное и проверенное электронное письмо с оповещениями DroidGuard."
+  },
+  "Chat ID": {
+    "zh": "聊天ID",
+    "fr": "Identifiant de discussion",
+    "es": "ID de chat",
+    "ru": "Идентификатор чата"
+  },
+  "Chat ID:": {
+    "zh": "聊天ID：",
+    "fr": "Identifiant de discussion :",
+    "es": "ID de chat:",
+    "ru": "Идентификатор чата:"
+  },
+  "Choose a different sender number to test auto-reply:": {
+    "zh": "选择不同的发件人号码来测试自动回复：",
+    "fr": "Choisissez un autre numéro d'expéditeur pour tester la réponse automatique :",
+    "es": "Elija un número de remitente diferente para probar la respuesta automática:",
+    "ru": "Выберите другой номер отправителя, чтобы проверить автоответ:"
+  },
+  "Clear": {
+    "zh": "清除",
+    "fr": "Effacer",
+    "es": "Borrar",
+    "ru": "Очистить"
+  },
+  "Clear All": {
+    "zh": "全部清除",
+    "fr": "Tout effacer",
+    "es": "Borrar todo",
+    "ru": "Очистить все"
+  },
+  "Clear Log": {
+    "zh": "清除日志",
+    "fr": "Effacer le journal",
+    "es": "Borrar registro",
+    "ru": "Очистить журнал"
+  },
+  "CLICK TO ARM": {
+    "zh": "点击布防",
+    "fr": "CLIQUEZ POUR ARMER",
+    "es": "HAGA CLIC PARA ARMAR",
+    "ru": "НАЖМИТЕ, ЧТОБЫ ВЗЯТЬ НА ОХРАНУ"
+  },
+  "CLICK TO DISARM": {
+    "zh": "点击撤防",
+    "fr": "CLIQUEZ POUR DÉSARMER",
+    "es": "HAGA CLIC PARA DESARMAR",
+    "ru": "НАЖМИТЕ, ЧТОБЫ СНЯТЬ С ОХРАНЫ"
+  },
+  "Close": {
+    "zh": "关闭",
+    "fr": "Fermer",
+    "es": "Cerrar",
+    "ru": "Закрыть"
+  },
+  "Close and return to app": {
+    "zh": "关闭并返回应用程序",
+    "fr": "Fermez et revenez à l'application",
+    "es": "Cerrar y volver a la aplicación",
+    "ru": "Закрыть и вернуться в приложение"
+  },
+  "Command": {
+    "zh": "命令",
+    "fr": "Commande",
+    "es": "Comando",
+    "ru": "Команда"
+  },
+  "Command Alert Executed Successfully!": {
+    "zh": "命令警报执行成功！",
+    "fr": "Alerte de commande exécutée avec succès !",
+    "es": "¡Alerta de comando ejecutada exitosamente!",
+    "ru": "Оповещение о команде выполнено успешно!"
+  },
+  "Confirm": {
+    "zh": "确认",
+    "fr": "Confirmer",
+    "es": "Confirmar",
+    "ru": "Подтвердите"
+  },
+  "Confirm & Bind Email": {
+    "zh": "确认并绑定邮箱",
+    "fr": "Confirmer et lier l'e-mail",
+    "es": "Confirmar y vincular correo electrónico",
+    "ru": "Подтвердить и привязать адрес электронной почты"
+  },
+  "Confirmed alternate secure line (SIM 2)": {
+    "zh": "已确认的备用安全线路 (SIM 2)",
+    "fr": "Ligne sécurisée alternative confirmée (SIM 2)",
+    "es": "Línea segura alternativa confirmada (SIM 2)",
+    "ru": "Подтверждена альтернативная защищенная линия (SIM 2)"
+  },
+  "✓ Confirmed Backup Dispatch (Dual-SIM SMS)": {
+    "zh": "✓ 确认备份调度（双 SIM 卡短信）",
+    "fr": "✓ Envoi de sauvegarde confirmé (SMS double SIM)",
+    "es": "✓ Envío de respaldo confirmado (SMS de doble SIM)",
+    "ru": "✓ Подтвержденная резервная отправка (SMS на две SIM-карты)"
+  },
+  "Copy Code": {
+    "zh": "复制代码",
+    "fr": "Copier le code",
+    "es": "Copiar código",
+    "ru": "Копировать код"
+  },
+  "Create a free bot with @BotFather to get your token": {
+    "zh": "使用@BotFather 创建一个免费机器人来获取您的令牌",
+    "fr": "Créez un bot gratuit avec @BotFather pour obtenir votre token",
+    "es": "Crea un bot gratuito con @BotFather para obtener tu token",
+    "ru": "Создайте бесплатного бота с помощью @BotFather, чтобы получить свой токен"
+  },
+  "C) Telegram Bot:": {
+    "zh": "C) 电报机器人：",
+    "fr": "C) Bot télégramme :",
+    "es": "C) Bot de Telegram:",
+    "ru": "В) Telegram-бот:"
+  },
+  "Current Active Recipient:": {
+    "zh": "当前活跃收件人：",
+    "fr": "Destinataire actif actuel :",
+    "es": "Destinatario activo actual:",
+    "ru": "Текущий активный получатель:"
+  },
+  "Current Device GPS Coordinates": {
+    "zh": "当前设备 GPS 坐标",
+    "fr": "Coordonnées GPS de l'appareil actuel",
+    "es": "Coordenadas GPS del dispositivo actual",
+    "ru": "Текущие GPS-координаты устройства"
+  },
+  "Current registered email receiving OTP:": {
+    "zh": "当前注册的接收 OTP 的电子邮件：",
+    "fr": "Adresse e-mail actuellement enregistrée recevant OTP :",
+    "es": "Correo electrónico registrado actual que recibe OTP:",
+    "ru": "Текущий зарегистрированный адрес электронной почты для получения OTP:"
+  },
+  "Customize automatically allowed actions": {
+    "zh": "自定义自动允许的操作",
+    "fr": "Personnaliser les actions automatiquement autorisées",
+    "es": "Personalizar acciones permitidas automáticamente",
+    "ru": "Настройте автоматически разрешенные действия"
+  },
+  "Cycle": {
+    "zh": "循环",
+    "fr": "Cycle",
+    "es": "Ciclo",
+    "ru": "Цикл"
+  },
+  "Deactivate Protection (Biometrics Required)": {
+    "zh": "停用保护（需要生物识别）",
+    "fr": "Désactiver la protection (biométrie requise)",
+    "es": "Desactivar protección (se requieren datos biométricos)",
+    "ru": "Деактивировать защиту (требуется биометрия)"
+  },
+  "Dedicated window to configure Bot Token, Chat ID, and trigger real-time test alerts with intruder snapshots.": {
+    "zh": "用于配置机器人令牌、聊天 ID 并使用入侵者快照触发实时测试警报的专用窗口。",
+    "fr": "Fenêtre dédiée pour configurer le jeton de robot, l'identifiant de chat et déclencher des alertes de test en temps réel avec des instantanés d'intrus.",
+    "es": "Ventana dedicada para configurar Bot Token, Chat ID y activar alertas de prueba en tiempo real con instantáneas de intrusos.",
+    "ru": "Специальное окно для настройки токена бота, идентификатора чата и запуска тестовых оповещений в реальном времени со снимками злоумышленников."
+  },
+  "Dedicated window to set recipient email, verify OTP, lock with 72h anti-tamper protection, and run instant tests.": {
+    "zh": "用于设置收件人电子邮件、验证 OTP、通过 72 小时防篡改保护锁定以及运行即时测试的专用窗口。",
+    "fr": "Fenêtre dédiée pour définir l'e-mail du destinataire, vérifier l'OTP, verrouiller avec une protection anti-altération de 72 heures et exécuter des tests instantanés.",
+    "es": "Ventana dedicada para configurar el correo electrónico del destinatario, verificar OTP, bloquear con protección antimanipulación de 72 horas y ejecutar pruebas instantáneas.",
+    "ru": "Специальное окно для настройки адреса электронной почты получателя, проверки OTP, блокировки с 72-часовой защитой от несанкционированного доступа и запуска мгновенных тестов."
+  },
+  "Default Bot Token": {
+    "zh": "默认机器人令牌",
+    "fr": "Jeton de robot par défaut",
+    "es": "Token de bot predeterminado",
+    "ru": "Токен бота по умолчанию"
+  },
+  "Delete": {
+    "zh": "删除",
+    "fr": "Supprimer",
+    "es": "Eliminar",
+    "ru": "Удалить"
+  },
+  "Delivered": {
+    "zh": "已交付",
+    "fr": "Livré",
+    "es": "Entregado",
+    "ru": "Доставлено"
+  },
+  "✓ Delivered via instant auto-reply": {
+    "zh": "✓ 通过即时自动回复发送",
+    "fr": "✓ Livré via une réponse automatique instantanée",
+    "es": "✓ Entregado mediante respuesta automática instantánea",
+    "ru": "✓ Доставка через мгновенный автоответ"
+  },
+  "✓ Delivered via SIM 1 + SIM 2 Fallback": {
+    "zh": "✓ 通过 SIM 1 + SIM 2 后备交付",
+    "fr": "✓ Livré via SIM 1 + SIM 2 Fallback",
+    "es": "✓ Entregado a través de SIM 1 + SIM 2 alternativa",
+    "ru": "✓ Доставка через резервную SIM 1 + SIM 2"
+  },
+  "Delivery Status: Confirmed (Delivered)": {
+    "zh": "交货状态：已确认（已交付）",
+    "fr": "Statut de livraison : Confirmé (Livré)",
+    "es": "Estado de entrega: Confirmado (Entregado)",
+    "ru": "Статус доставки: Подтверждено (Доставлено)"
+  },
+  "Detected Carrier Name:": {
+    "zh": "检测到的运营商名称：",
+    "fr": "Nom du transporteur détecté :",
+    "es": "Nombre del operador detectado:",
+    "ru": "Обнаруженное имя оператора связи:"
+  },
+  "🔒 Device Admin active, operation aborted and user redirected to protect device.": {
+    "zh": "🔒 设备管理已激活，操作已中止，用户已重定向以保护设备。",
+    "fr": "🔒 Administrateur de l'appareil actif, opération interrompue et utilisateur redirigé pour protéger l'appareil.",
+    "es": "🔒 Administrador de dispositivo activo, operación cancelada y usuario redirigido para proteger el dispositivo.",
+    "ru": "🔒 Администратор устройства активен, операция прервана, и пользователь перенаправлен для защиты устройства."
+  },
+  "Device Admin Policy & Anti-Uninstall activated successfully!": {
+    "zh": "设备管理策略和反卸载已成功激活！",
+    "fr": "Politique d'administration de l'appareil et anti-désinstallation activés avec succès !",
+    "es": "¡La política de administración del dispositivo y la protección contra la desinstalación se activaron correctamente!",
+    "ru": "Политика администрирования устройства и защита от удаления успешно активированы!"
+  },
+  "Device Admin Unit (DevicePolicyManager):": {
+    "zh": "设备管理单元（DevicePolicyManager）：",
+    "fr": "Unité d'administration de l'appareil (DevicePolicyManager) :",
+    "es": "Unidad de administración de dispositivos (DevicePolicyManager):",
+    "ru": "Модуль администрирования устройства (DevicePolicyManager):"
+  },
+  "Device fingerprint verified successfully!": {
+    "zh": "设备指纹验证成功！",
+    "fr": "L'empreinte digitale de l'appareil a été vérifiée avec succès !",
+    "es": "¡La huella digital del dispositivo se verificó exitosamente!",
+    "ru": "Отпечаток устройства успешно подтвержден!"
+  },
+  "Device PIN": {
+    "zh": "设备 PIN",
+    "fr": "Code PIN de l'appareil",
+    "es": "PIN del dispositivo",
+    "ru": "PIN-код устройства"
+  },
+  "Device successfully restored and unlocked via owner verified fingerprint": {
+    "zh": "通过所有者验证的指纹成功恢复和解锁设备",
+    "fr": "Appareil restauré et déverrouillé avec succès via l'empreinte digitale vérifiée par le propriétaire",
+    "es": "Dispositivo restaurado y desbloqueado exitosamente mediante huella digital verificada por el propietario",
+    "ru": "Устройство успешно восстановлено и разблокировано с помощью подтвержденного владельцем отпечатка пальца"
+  },
+  "Direct Dispatch Channels:": {
+    "zh": "直接派送渠道：",
+    "fr": "Canaux de distribution directe :",
+    "es": "Canales de envío directo:",
+    "ru": "Каналы прямой отправки:"
+  },
+  "Direct dispatch to:": {
+    "zh": "直接发送至：",
+    "fr": "Expédition directe à :",
+    "es": "Envío directo a:",
+    "ru": "Прямая отправка:"
+  },
+  "Direct Google Maps link": {
+    "zh": "直接 Google 地图链接",
+    "fr": "Lien direct vers Google Maps",
+    "es": "Enlace directo a Google Maps",
+    "ru": "Прямая ссылка на Карты Google"
+  },
+  "✓ Direct GPS link only": {
+    "zh": "✓ 仅直接 GPS 链接",
+    "fr": "✓ Liaison GPS directe uniquement",
+    "es": "✓ Solo enlace GPS directo",
+    "ru": "✓ Только прямая связь с GPS"
+  },
+  "Dismiss": {
+    "zh": "解雇",
+    "fr": "Rejeter",
+    "es": "Descartar",
+    "ru": "Уволить"
+  },
+  "Dispatching...": {
+    "zh": "正在调度...",
+    "fr": "Expédition...",
+    "es": "Despachando...",
+    "ru": "Диспетчеризация..."
+  },
+  "Download Photo": {
+    "zh": "下载照片",
+    "fr": "Télécharger la photo",
+    "es": "Descargar foto",
+    "ru": "Скачать фото"
+  },
+  "Do you want to uninstall DroidGuard?": {
+    "zh": "您想卸载 DroidGuard 吗？",
+    "fr": "Voulez-vous désinstaller DroidGuard ?",
+    "es": "¿Quieres desinstalar DroidGuard?",
+    "ru": "Вы хотите удалить DroidGuard?"
+  },
+  "Draw device lock pattern (Connect at least 4 dots):": {
+    "zh": "绘制设备锁定图案（连接至少 4 个点）：",
+    "fr": "Dessinez un motif de verrouillage de l'appareil (connectez au moins 4 points) :",
+    "es": "Dibuje el patrón de bloqueo del dispositivo (conecte al menos 4 puntos):",
+    "ru": "Нарисуйте графический ключ блокировки устройства (соедините не менее 4 точек):"
+  },
+  "⚠️ DroidGuard cannot be uninstalled because it is an active Device Administrator.": {
+    "zh": "⚠️ DroidGuard 无法卸载，因为它是活动的设备管理员。",
+    "fr": "⚠️ DroidGuard ne peut pas être désinstallé car il s'agit d'un administrateur de périphérique actif.",
+    "es": "⚠️ DroidGuard no se puede desinstalar porque es un administrador de dispositivo activo.",
+    "ru": "⚠️ DroidGuard невозможно удалить, поскольку он является активным администратором устройства."
+  },
+  "DroidGuard Security Report": {
+    "zh": "DroidGuard 安全报告",
+    "fr": "Rapport de sécurité DroidGuard",
+    "es": "Informe de seguridad de DroidGuard",
+    "ru": "Отчет о безопасности DroidGuard"
+  },
+  "[DroidGuard Security Test] Dual GPS location dispatch via SIM 1 and SIM 2: ${mapsUrl}": {
+    "zh": "[DroidGuard 安全测试] 通过 SIM 1 和 SIM 2 进行双 GPS 位置调度：${mapsUrl}",
+    "fr": "[Test de sécurité DroidGuard] Envoi de double localisation GPS via SIM 1 et SIM 2 : ${mapsUrl}",
+    "es": "[Prueba de seguridad de DroidGuard] Envío de ubicación GPS dual a través de SIM 1 y SIM 2: ${mapsUrl}",
+    "ru": "[Тест безопасности DroidGuard] Отправка местоположения по двум GPS через SIM 1 и SIM 2: ${mapsUrl}"
+  },
+  "[DroidGuard Security Test]\\nLive GPS Location Link:\\nhttps://maps.google.com/?q=36.7538,3.0588\\nSuccessfully dispatched to verified emergency number.": {
+    "zh": "[DroidGuard 安全测试]\\n实时 GPS 位置链接：\\nhttps://maps.google.com/?q=36.7538,3.0588\\n已成功发送到经过验证的紧急号码。",
+    "fr": "[Test de sécurité DroidGuard]\\nLien de localisation GPS en direct :\\nhttps://maps.google.com/?q=36.7538,3.0588\\nEnvoyé avec succès vers un numéro d'urgence vérifié.",
+    "es": "[Prueba de seguridad de DroidGuard]\\nEnlace de ubicación GPS en vivo:\\nhttps://maps.google.com/?q=36.7538,3.0588\\nEnviado correctamente al número de emergencia verificado.",
+    "ru": "[Тест безопасности DroidGuard]\\nСсылка на местоположение в реальном времени по GPS:\\nhttps://maps.google.com/?q=36.7538,3.0588\\nУспешно отправлено на проверенный номер службы экстренной помощи."
+  },
+  "★ Dual Path:": {
+    "zh": "★ 双路径：",
+    "fr": "★ Double chemin :",
+    "es": "★ Ruta dual:",
+    "ru": "★ Двойной путь:"
+  },
+  "Dual-SIM & Carrier Network Management": {
+    "zh": "双 SIM 卡和运营商网络管理",
+    "fr": "Gestion du réseau double SIM et opérateur",
+    "es": "Gestión de red de operador y doble SIM",
+    "ru": "Управление двумя SIM-картами и операторской сетью"
+  },
+  "Dual-SIM: Redundant SMS": {
+    "zh": "双 SIM 卡：冗余短信",
+    "fr": "Double SIM : SMS redondants",
+    "es": "Doble SIM: SMS redundantes",
+    "ru": "Две SIM-карты: резервные SMS"
+  },
+  "[Dual-SIM SMS 1] Dispatched via SIM 1 (${res.sim1Details.carrier})": {
+    "zh": "[双 SIM 卡短信 1] 通过 SIM 1 发送 (${res.sim1Details.rier})",
+    "fr": "[SMS double SIM 1] Envoyé via la SIM 1 (${res.sim1Details.carrier})",
+    "es": "[SMS 1 de doble SIM] Enviado a través de SIM 1 (${res.sim1Details.carrier})",
+    "ru": "[SMS на две SIM-карты 1] Отправляется через SIM-карту 1 (${res.sim1Details.carrier})"
+  },
+  "[Dual-SIM SMS 2 Fallback] Dispatched via SIM 2 (${res.sim2Details.carrier})": {
+    "zh": "[双 SIM 卡短信 2 后备] 通过 SIM 2 发送 (${res.sim2Details.rier})",
+    "fr": "[Retour SMS 2 double SIM] Distribué via SIM 2 (${res.sim2Details.carrier})",
+    "es": "[Reserva de SMS 2 de doble SIM] Enviado a través de SIM 2 (${res.sim2Details.carrier})",
+    "ru": "[Резервный SMS 2 для двух SIM-карт] Отправляется через SIM 2 (${res.sim2Details.carrier})"
+  },
+  "✓ Dual SMS Broadcast Completed Successfully!": {
+    "zh": "✓ 双短信广播成功完成！",
+    "fr": "✓ Double diffusion SMS terminée avec succès !",
+    "es": "✓ ¡La transmisión de SMS dual se completó con éxito!",
+    "ru": "✓ Двойная SMS-рассылка успешно завершена!"
+  },
+  "During this 72-hour period, the OLD email remains active for all DroidGuard alerts and intruder photos, protecting against unauthorized theft redirects.": {
+    "zh": "在此 72 小时内，所有 DroidGuard 警报和入侵者照片的旧电子邮件均保持活动状态，从而防止未经授权的盗窃重定向。",
+    "fr": "Pendant cette période de 72 heures, l'ANCIEN e-mail reste actif pour toutes les alertes DroidGuard et photos d'intrus, protégeant ainsi contre les redirections de vol non autorisées.",
+    "es": "Durante este período de 72 horas, el correo electrónico ANTIGUO permanece activo para todas las alertas de DroidGuard y fotografías de intrusos, lo que protege contra redirecciones de robo no autorizado.",
+    "ru": "В течение этого 72-часового периода СТАРЫЙ адрес электронной почты остается активным для всех предупреждений DroidGuard и фотографий злоумышленников, защищая от несанкционированных перенаправлений кражи."
+  },
+  "Dynamic": {
+    "zh": "动态",
+    "fr": "Dynamique",
+    "es": "Dinámico",
+    "ru": "Динамический"
+  },
+  "⚠️ Email Change Request Pending (72-Hour Security Cooldown)": {
+    "zh": "⚠️ 电子邮件更改请求待处理（72 小时安全冷却期）",
+    "fr": "⚠️ Demande de modification d'e-mail en attente (temps de recharge de sécurité de 72 heures)",
+    "es": "⚠️ Solicitud de cambio de correo electrónico pendiente (enfriamiento de seguridad de 72 horas)",
+    "ru": "⚠️ Ожидается запрос на изменение электронной почты (72-часовой период восстановления безопасности)"
+  },
+  "✓ Email verified & bound successfully!": {
+    "zh": "✓ 邮箱验证绑定成功！",
+    "fr": "✓ E-mail vérifié et lié avec succès !",
+    "es": "✓ ¡Correo electrónico verificado y vinculado exitosamente!",
+    "ru": "✓ Электронная почта подтверждена и успешно привязана!"
+  },
+  "Emergency Number Active": {
+    "zh": "紧急号码已激活",
+    "fr": "Numéro d'urgence actif",
+    "es": "Número de emergencia activo",
+    "ru": "Номер службы экстренной помощи активен"
+  },
+  "Emergency report and coordinates sent directly to the same number": {
+    "zh": "紧急报告和坐标直接发送到同一个号码",
+    "fr": "Rapport d'urgence et coordonnées envoyés directement au même numéro",
+    "es": "Informe de emergencia y coordenadas enviadas directamente al mismo número",
+    "ru": "Отчет о чрезвычайной ситуации и координаты отправлены прямо на тот же номер"
+  },
+  "Emergency report sent automatically via SMS": {
+    "zh": "通过短信自动发送紧急报告",
+    "fr": "Rapport d'urgence envoyé automatiquement par SMS",
+    "es": "Informe de emergencia enviado automáticamente por SMS",
+    "ru": "Отчет о чрезвычайной ситуации отправляется автоматически по SMS"
+  },
+  "Emergency Security Report - Anti-Theft App": {
+    "zh": "紧急安全报告 - 防盗应用程序",
+    "fr": "Rapport de sécurité d'urgence - Application antivol",
+    "es": "Informe de seguridad de emergencia: aplicación antirrobo",
+    "ru": "Отчет о чрезвычайной ситуации – приложение Anti-Theft"
+  },
+  "Emergency SMS": {
+    "zh": "紧急短信",
+    "fr": "SMS d'urgence",
+    "es": "SMS de emergencia",
+    "ru": "Экстренное СМС"
+  },
+  "[Emergency SMS Test] Test message dispatched to verified emergency number:": {
+    "zh": "[紧急短信测试] 测试消息发送至已验证的紧急号码：",
+    "fr": "[Test SMS d'urgence] Message test envoyé au numéro d'urgence vérifié :",
+    "es": "[Prueba de SMS de emergencia] Mensaje de prueba enviado al número de emergencia verificado:",
+    "ru": "[Тест экстренного SMS] Тестовое сообщение отправлено на проверенный номер службы экстренной помощи:"
+  },
+  "Emergency User Gmail (Stealth Reports)": {
+    "zh": "紧急用户 Gmail（秘密报告）",
+    "fr": "Utilisateur d'urgence Gmail (rapports furtifs)",
+    "es": "Usuario de emergencia de Gmail (informes ocultos)",
+    "ru": "Экстренный пользователь Gmail (скрытые отчеты)"
+  },
+  "en": {
+    "zh": "zh",
+    "fr": "fr",
+    "es": "es",
+    "ru": "ru"
+  },
+  "Enter 6-Digit OTP Code:": {
+    "zh": "输入 6 位 OTP 代码：",
+    "fr": "Entrez le code OTP à 6 chiffres :",
+    "es": "Ingrese el código OTP de 6 dígitos:",
+    "ru": "Введите 6-значный OTP-код:"
+  },
+  "Enter Email Address for Verification:": {
+    "zh": "输入电子邮件地址进行验证：",
+    "fr": "Entrez l'adresse e-mail pour la vérification :",
+    "es": "Ingrese la dirección de correo electrónico para la verificación:",
+    "ru": "Введите адрес электронной почты для проверки:"
+  },
+  "Enter phone lock code (Owner Code:": {
+    "zh": "输入手机锁代码（所有者代码：",
+    "fr": "Saisissez le code de verrouillage du téléphone (code propriétaire :",
+    "es": "Ingrese el código de bloqueo del teléfono (Código de propietario:",
+    "ru": "Введите код блокировки телефона (Код владельца:"
+  },
+  "Enter phone lock PIN (Default PIN:": {
+    "zh": "输入手机锁 PIN 码（默认 PIN 码：",
+    "fr": "Saisissez le code PIN de verrouillage du téléphone (PIN par défaut :",
+    "es": "Ingrese el PIN de bloqueo del teléfono (PIN predeterminado:",
+    "ru": "Введите PIN-код блокировки телефона (ПИН-код по умолчанию:"
+  },
+  "Enter Telegram Chat ID": {
+    "zh": "输入 Telegram 聊天 ID",
+    "fr": "Saisissez l'ID de chat Telegram",
+    "es": "Ingrese la ID del chat de Telegram",
+    "ru": "Введите идентификатор чата Telegram"
+  },
+  "Error sending test email": {
+    "zh": "发送测试电子邮件时出错",
+    "fr": "Erreur lors de l'envoi de l'e-mail de test",
+    "es": "Error al enviar el correo electrónico de prueba",
+    "ru": "Ошибка при отправке тестового письма)"
+  },
+  "(Excellent Coverage)": {
+    "zh": "（优秀的覆盖范围）",
+    "fr": "(Excellente couverture)",
+    "es": "(Excelente cobertura)",
+    "ru": "(Отличное покрытие)"
+  },
+  "⚡ Execute Secret Command Test (#TRACK)": {
+    "zh": "⚡ 执行秘密命令测试（#TRACK）",
+    "fr": "⚡ Exécuter le test de commande secrète (#TRACK)",
+    "es": "⚡ Ejecutar prueba de comando secreto (#TRACK)",
+    "ru": "⚡ Выполнить тест секретной команды (#TRACK)"
+  },
+  "Executing Command Alert...": {
+    "zh": "执行命令警报...",
+    "fr": "Exécution de l'alerte de commande...",
+    "es": "Ejecutando alerta de comando...",
+    "ru": "Предупреждение о выполнении команды..."
+  },
+  "Face ID": {
+    "zh": "面容 ID",
+    "fr": "Identification faciale",
+    "es": "Identificación facial",
+    "ru": "Идентификатор лица"
+  },
+  "Face recognized successfully!": {
+    "zh": "人脸识别成功！",
+    "fr": "Visage reconnu avec succès !",
+    "es": "¡Rostro reconocido exitosamente!",
+    "ru": "Лицо успешно распознано!"
+  },
+  "Facial features do not match device owner": {
+    "zh": "面部特征与设备所有者不匹配",
+    "fr": "Les caractéristiques du visage ne correspondent pas au propriétaire de l'appareil",
+    "es": "Los rasgos faciales no coinciden con el propietario del dispositivo",
+    "ru": "Черты лица не соответствуют владельцу устройства"
+  },
+  "(Failed attempt ${res.newCount} of 3). On the 3rd attempt, intruder photo will be captured and emergency reports sent.": {
+    "zh": "（尝试 ${res.newCount} 失败，共 3 次）。第三次尝试时，将捕获入侵者照片并发送紧急报告。",
+    "fr": "(Échec de la tentative ${res.newCount} sur 3). À la troisième tentative, une photo de l'intrus sera prise et des rapports d'urgence seront envoyés.",
+    "es": "(Intento fallido ${res.newCount} de 3). En el tercer intento, se capturará una fotografía del intruso y se enviarán informes de emergencia.",
+    "ru": "(Неудачная попытка ${res.newCount} из 3). С третьей попытки будет сделана фотография злоумышленника и отправлены отчеты о чрезвычайной ситуации."
+  },
+  "Failed to send email": {
+    "zh": "发送邮件失败",
+    "fr": "Échec de l'envoi de l'e-mail",
+    "es": "No se pudo enviar el correo electrónico",
+    "ru": "Не удалось отправить электронное письмо"
+  },
+  "Fake Off • Silent": {
+    "zh": "假装关闭• 沉默",
+    "fr": "Faux Off • Silencieux",
+    "es": "Fingir • Silencio",
+    "ru": "Фальшивое отключение • Без звука"
+  },
+  "Fake Power-Off Trap": {
+    "zh": "假断电陷阱",
+    "fr": "Faux piège de mise hors tension",
+    "es": "Trampa de apagado falso",
+    "ru": "Ложная ловушка отключения питания"
+  },
+  "Fast-forward 72h (Test)": {
+    "zh": "快进 72 小时（测试）",
+    "fr": "Avance rapide 72h (Test)",
+    "es": "Avance rápido 72h (Prueba)",
+    "ru": "Перемотка вперед на 72 часа (тест)"
+  },
+  "Fingerprint": {
+    "zh": "指纹",
+    "fr": "Empreinte digitale",
+    "es": "Huella digital",
+    "ru": "Отпечаток пальца"
+  },
+  "Fingerprint does not match device owner": {
+    "zh": "指纹与设备所有者不匹配",
+    "fr": "L'empreinte digitale ne correspond pas au propriétaire de l'appareil",
+    "es": "La huella digital no coincide con el propietario del dispositivo",
+    "ru": "Отпечаток пальца не соответствует владельцу устройства"
+  },
+  "Front intruder photo attached": {
+    "zh": "附上前入侵者照片",
+    "fr": "Photo de l'intrus avant ci-jointe",
+    "es": "Se adjunta foto frontal del intruso",
+    "ru": "Фотография злоумышленника спереди прилагается"
+  },
+  "✓ Full report sent to Gmail": {
+    "zh": "✓ 完整报告发送至 Gmail",
+    "fr": "✓ Rapport complet envoyé à Gmail",
+    "es": "✓ Informe completo enviado a Gmail",
+    "ru": "✓ Полный отчет отправлен на Gmail"
+  },
+  "Generate random number for test": {
+    "zh": "生成测试随机数",
+    "fr": "Générer un nombre aléatoire pour le test",
+    "es": "Generar número aleatorio para prueba",
+    "ru": "Сгенерировать случайное число для теста"
+  },
+  "Geographical Location:": {
+    "zh": "地理位置：",
+    "fr": "Localisation géographique :",
+    "es": "Ubicación geográfica:",
+    "ru": "Географическое положение:"
+  },
+  "Gmail Security Reports Settings": {
+    "zh": "Gmail 安全报告设置",
+    "fr": "Paramètres des rapports de sécurité Gmail",
+    "es": "Configuración de informes de seguridad de Gmail",
+    "ru": "Настройки отчетов безопасности Gmail"
+  },
+  "[Gmail Test Dispatch] Test emergency report with GPS and photo delivered to ${activeEmail}": {
+    "zh": "[Gmail 测试调度] 测试紧急报告，将 GPS 和照片发送至 ${activeEmail}",
+    "fr": "[Gmail Test Dispatch] Testez le rapport d'urgence avec GPS et photo envoyé à ${activeEmail}",
+    "es": "[Envío de prueba de Gmail] Informe de emergencia de prueba con GPS y foto entregados a ${activeEmail}",
+    "ru": "[Тестовая отправка Gmail] Тестовый отчет о чрезвычайной ситуации с GPS и фотографией доставлен на адрес ${activeEmail}"
+  },
+  "Google Maps": {
+    "zh": "谷歌地图",
+    "fr": "Google Cartes",
+    "es": "mapas de google",
+    "ru": "Карты Google"
+  },
+  "✓ Google Maps GPS Link": {
+    "zh": "✓ 谷歌地图 GPS 链接",
+    "fr": "✓ Lien GPS Google Maps",
+    "es": "✓ Enlace GPS de Google Maps",
+    "ru": "✓ GPS-ссылка на Google Карты"
+  },
+  "Google Maps Link:": {
+    "zh": "谷歌地图链接：",
+    "fr": "Lien Google Maps :",
+    "es": "Enlace de Google Maps:",
+    "ru": "Ссылка на Карты Google:"
+  },
+  "Hide Telemetry HUD (Pure Black)": {
+    "zh": "隐藏遥测HUD（纯黑）",
+    "fr": "Masquer le HUD de télémétrie (noir pur)",
+    "es": "Ocultar HUD de telemetría (negro puro)",
+    "ru": "Скрыть интерфейс телеметрии (чистый черный)"
+  },
+  "Hide Token": {
+    "zh": "隐藏令牌",
+    "fr": "Masquer le jeton",
+    "es": "Ocultar token",
+    "ru": "Скрыть токен"
+  },
+  "Immediate Protection & Activation Keys": {
+    "zh": "立即保护和激活密钥",
+    "fr": "Clés de protection et d'activation immédiates",
+    "es": "Protección inmediata y claves de activación",
+    "ru": "Немедленная защита и ключи активации"
+  },
+  "Inactive": {
+    "zh": "不活动",
+    "fr": "Inactif",
+    "es": "Inactivo",
+    "ru": "Неактивный"
+  },
+  "Incorrect PIN": {
+    "zh": "PIN 码错误",
+    "fr": "Code PIN incorrect",
+    "es": "PIN incorrecto",
+    "ru": "Неправильный PIN-код"
+  },
+  "Incorrect PIN entered": {
+    "zh": "输入的 PIN 码不正确",
+    "fr": "Code PIN saisi incorrect",
+    "es": "PIN incorrecto ingresado",
+    "ru": "Введен неправильный PIN-код"
+  },
+  "Incorrect screen lock pattern": {
+    "zh": "屏幕锁定图案不正确",
+    "fr": "Modèle de verrouillage d'écran incorrect",
+    "es": "Patrón de bloqueo de pantalla incorrecto",
+    "ru": "Неправильный шаблон блокировки экрана"
+  },
+  "Incorrect screen lock PIN": {
+    "zh": "屏幕锁定 PIN 码不正确",
+    "fr": "Code PIN de verrouillage d'écran incorrect",
+    "es": "PIN de bloqueo de pantalla incorrecto",
+    "ru": "Неправильный PIN-код блокировки экрана"
+  },
+  "In-display Fingerprint Sensor (Touch to unlock):": {
+    "zh": "显示屏指纹传感器（触摸解锁）：",
+    "fr": "Capteur d'empreintes digitales intégré (toucher pour déverrouiller) :",
+    "es": "Sensor de huellas dactilares en pantalla (toque para desbloquear):",
+    "ru": "Датчик отпечатков пальцев на дисплее (коснитесь, чтобы разблокировать):"
+  },
+  "Instantly replies to the phone that sent the secret SMS trigger command.": {
+    "zh": "立即回复发送秘密短信触发命令的手机。",
+    "fr": "Répond instantanément au téléphone qui a envoyé la commande secrète de déclenchement SMS.",
+    "es": "Responde instantáneamente al teléfono que envió el comando secreto de activación por SMS.",
+    "ru": "Мгновенно отвечает на телефон, который отправил секретную SMS-команду."
+  },
+  "Instantly upload front camera photos": {
+    "zh": "即时上传前置摄像头照片",
+    "fr": "Téléchargez instantanément des photos de la caméra frontale",
+    "es": "Sube instantáneamente fotos de la cámara frontal",
+    "ru": "Мгновенно загружайте фотографии с фронтальной камеры"
+  },
+  "⚡ [Instant Simulation]: 72h cooldown completed successfully! New verified email is: ${finalEmail}": {
+    "zh": "⚡ 【即时模拟】：72小时冷却成功完成！新的经过验证的电子邮件是：${finalEmail}",
+    "fr": "⚡ [Simulation instantanée] : 72 heures de recharge terminées avec succès ! La nouvelle adresse e-mail vérifiée est : ${finalEmail}",
+    "es": "⚡ [Simulación instantánea]: ¡72 h de tiempo de reutilización completado con éxito! El nuevo correo electrónico verificado es: ${finalEmail}",
+    "ru": "⚡ [Мгновенная симуляция]: 72-часовое время восстановления успешно завершено! Новый подтвержденный адрес электронной почты: ${finalEmail}"
+  },
+  "Internet Plan:": {
+    "zh": "互联网计划：",
+    "fr": "Forfait Internet :",
+    "es": "Plan de Internet:",
+    "ru": "Интернет-план:"
+  },
+  "Intl Phone": {
+    "zh": "国际电话",
+    "fr": "Téléphone international",
+    "es": "Teléfono internacional",
+    "ru": "Международный телефон"
+  },
+  "Intruder Camera Report": {
+    "zh": "入侵摄像头报告",
+    "fr": "Rapport de caméra anti-intrusion",
+    "es": "Informe de cámara intrusa",
+    "ru": "Отчет о камере злоумышленника"
+  },
+  "Intruder Camera Report - DroidGuard": {
+    "zh": "入侵者摄像头报告 - DroidGuard",
+    "fr": "Rapport de caméra anti-intrusion - DroidGuard",
+    "es": "Informe de cámara intrusa - DroidGuard",
+    "ru": "Отчет о камере злоумышленника - DroidGuard"
+  },
+  "Intruder fingerprint not matched": {
+    "zh": "入侵者指纹不匹配",
+    "fr": "L'empreinte digitale de l'intrus ne correspond pas",
+    "es": "La huella digital del intruso no coincide",
+    "ru": "Отпечаток пальца злоумышленника не совпадает"
+  },
+  "Intruder photo and location coordinates uploaded directly to Telegram account": {
+    "zh": "入侵者照片和位置坐标直接上传到 Telegram 帐户",
+    "fr": "Photo de l'intrus et coordonnées de localisation téléchargées directement sur le compte Telegram",
+    "es": "Foto del intruso y coordenadas de ubicación cargadas directamente a la cuenta de Telegram",
+    "ru": "Фотография злоумышленника и координаты его местоположения загружены прямо в аккаунт Telegram"
+  },
+  "Intruder photo captured silently": {
+    "zh": "悄悄捕捉入侵者照片",
+    "fr": "Photo d'un intrus capturée silencieusement",
+    "es": "Foto de intruso capturada en silencio",
+    "ru": "Фотография злоумышленника, сделанная молча"
+  },
+  "Intruder photo captured silently!": {
+    "zh": "无声捕捉入侵者照片！",
+    "fr": "Photo d'intrus capturée en silence !",
+    "es": "¡Foto de intruso capturada en silencio!",
+    "ru": "Фотография злоумышленника сделана молча!"
+  },
+  "🚨 [Intruder photo captured silently in background!] 3 failed attempts exhausted. Camera snapshot and location coordinates sent directly to Telegram, Gmail, and Dual-SMS emergency contacts.": {
+    "zh": "🚨 [在背景中无声捕捉入侵者照片！] 3 次失败尝试已用尽。相机快照和位置坐标直接发送给 Telegram、Gmail 和双短信紧急联系人。",
+    "fr": "🚨 [Photo d'intrus capturée silencieusement en arrière-plan !] 3 tentatives ratées épuisées. Instantané de la caméra et coordonnées de localisation envoyés directement aux contacts d'urgence Telegram, Gmail et Dual-SMS.",
+    "es": "🚨 [¡Foto del intruso capturada silenciosamente de fondo!] 3 intentos fallidos agotados. Instantánea de la cámara y coordenadas de ubicación enviadas directamente a contactos de emergencia de Telegram, Gmail y Dual-SMS.",
+    "ru": "🚨 [Фото злоумышленника, сделанное беззвучно на заднем плане!] 3 неудачные попытки исчерпаны. Снимок камеры и координаты местоположения отправляются непосредственно контактам для экстренных случаев в Telegram, Gmail и Dual-SMS."
+  },
+  "Intruder Photo Details": {
+    "zh": "入侵者照片详细信息",
+    "fr": "Détails de la photo de l'intrus",
+    "es": "Detalles de la foto del intruso",
+    "ru": "Подробности фотографии злоумышленника"
+  },
+  "Intruder photo successfully captured with location coordinates:": {
+    "zh": "成功捕获入侵者照片并带有位置坐标：",
+    "fr": "Photo d'intrus capturée avec succès avec les coordonnées de localisation :",
+    "es": "Foto del intruso capturada con éxito con coordenadas de ubicación:",
+    "ru": "Фотография злоумышленника успешно снята с координатами местоположения:"
+  },
+  "✓ Intruder photo uploaded": {
+    "zh": "✓ 入侵者照片已上传",
+    "fr": "✓ Photo d'intrus téléchargée",
+    "es": "✓ Foto del intruso subida",
+    "ru": "✓ Фотография злоумышленника загружена"
+  },
+  "Intruders Gallery": {
+    "zh": "入侵者画廊",
+    "fr": "Galerie des intrus",
+    "es": "Galería de Intrusos",
+    "ru": "Галерея злоумышленников"
+  },
+  "Invalid OTP! Cannot initiate change without old email approval.": {
+    "zh": "一次性密码无效！未经旧电子邮件批准，无法启动更改。",
+    "fr": "OTP invalide ! Impossible de lancer un changement sans l'approbation de l'ancien e-mail.",
+    "es": "¡OTP no válida! No se puede iniciar el cambio sin la aprobación del correo electrónico anterior.",
+    "ru": "Неверный OTP! Невозможно инициировать изменение без одобрения по старой электронной почте."
+  },
+  "Invalid OTP code! Please check the code.": {
+    "zh": "OTP 代码无效！请检查代码。",
+    "fr": "Code OTP invalide ! Veuillez vérifier le code.",
+    "es": "¡Código OTP no válido! Por favor verifique el código.",
+    "ru": "Неверный OTP-код! Пожалуйста, проверьте код."
+  },
+  "Launch Stealth Mode": {
+    "zh": "启动隐身模式",
+    "fr": "Lancer le mode furtif",
+    "es": "Iniciar el modo sigiloso",
+    "ru": "Запустить скрытый режим"
+  },
+  "Listener active waiting for #TRACK command": {
+    "zh": "侦听器处于活动状态，正在等待 #TRACK 命令",
+    "fr": "Écouteur actif en attente de la commande #TRACK",
+    "es": "Oyente activo esperando el comando #TRACK",
+    "ru": "Прослушиватель активен и ожидает команды #TRACK"
+  },
+  "✓ Live GPS coordinates": {
+    "zh": "✓ 实时 GPS 坐标",
+    "fr": "✓ Coordonnées GPS en direct",
+    "es": "✓ Coordenadas GPS en vivo",
+    "ru": "✓ Текущие GPS-координаты"
+  },
+  "✓ Live photo captured via front camera": {
+    "zh": "✓ 通过前置摄像头拍摄的实时照片",
+    "fr": "✓ Photo en direct capturée via la caméra frontale",
+    "es": "✓ Foto en vivo capturada con la cámara frontal",
+    "ru": "✓ Живое фото, снятое с помощью фронтальной камеры"
+  },
+  "Location:": {
+    "zh": "地点：",
+    "fr": "Localisation :",
+    "es": "Ubicación:",
+    "ru": "Местоположение:"
+  },
+  "Location coordinates and map link sent to the trigger number:": {
+    "zh": "位置坐标和地图链接发送至触发号码：",
+    "fr": "Coordonnées de localisation et lien vers la carte envoyés au numéro de déclenchement :",
+    "es": "Coordenadas de ubicación y enlace del mapa enviados al número de activación:",
+    "ru": "Координаты местоположения и ссылка на карту отправлены на номер триггера:"
+  },
+  "Locked": {
+    "zh": "锁定",
+    "fr": "Verrouillé",
+    "es": "Bloqueado",
+    "ru": "Заблокировано"
+  },
+  "Log of automated emergency reports (SMS & Telegram)": {
+    "zh": "自动紧急报告日志（短信和电报）",
+    "fr": "Journal des rapports d'urgence automatisés (SMS et télégramme)",
+    "es": "Registro de informes de emergencia automatizados (SMS y Telegram)",
+    "ru": "Журнал автоматических аварийных сообщений (SMS и Telegram)"
+  },
+  "Look at the camera to verify via Face Unlock (Owner Face)": {
+    "zh": "通过人脸解锁（人脸）查看摄像头进行验证",
+    "fr": "Regardez la caméra pour vérifier via Face Unlock (Propriétaire Face)",
+    "es": "Mire la cámara para verificar mediante Desbloqueo facial (Cara del propietario)",
+    "ru": "Посмотрите на камеру, чтобы проверить с помощью функции разблокировки лица (лицо владельца)"
+  },
+  "ltr": {
+    "zh": "左转",
+    "fr": "litres",
+    "es": "litros",
+    "ru": "литр"
+  },
+  "Make sure you have pressed Start (/start) in your bot chat on Telegram first": {
+    "zh": "确保您首先在 Telegram 上的机器人聊天中按下了开始 (/start)",
+    "fr": "Assurez-vous d'abord d'avoir appuyé sur Démarrer (/start) dans votre chat de robot sur Telegram",
+    "es": "Asegúrate de haber presionado Inicio (/start) en tu chat de bot en Telegram primero",
+    "ru": "Сначала убедитесь, что вы нажали «Старт» (/start) в чате бота в Telegram"
+  },
+  "Manage primary emergency contact & synchronous dual-SMS dispatch with automatic SIM fallback": {
+    "zh": "通过自动 SIM 卡回退管理主要紧急联系人和同步双短信调度",
+    "fr": "Gérez le contact d'urgence principal et l'envoi synchrone de doubles SMS avec le repli automatique de la carte SIM",
+    "es": "Administre el contacto de emergencia principal y el envío sincrónico de SMS dual con respaldo automático de SIM",
+    "ru": "Управляйте основным контактом в экстренных ситуациях и синхронной отправкой двух SMS-сообщений с автоматическим возвратом SIM-карты"
+  },
+  "Map": {
+    "zh": "地图",
+    "fr": "Carte",
+    "es": "Mapa",
+    "ru": "Карта"
+  },
+  "Matching device approved face features...": {
+    "zh": "匹配设备批准的面部特征...",
+    "fr": "Caractéristiques du visage approuvées par l'appareil correspondant...",
+    "es": "Características faciales aprobadas por el dispositivo coincidente...",
+    "ru": "Соответствующие черты лица, одобренные устройством..."
+  },
+  "Message verification failed (Security Rejection)": {
+    "zh": "消息验证失败（安全拒绝）",
+    "fr": "Échec de la vérification du message (rejet de sécurité)",
+    "es": "Error en la verificación del mensaje (rechazo de seguridad)",
+    "ru": "Проверка сообщения не удалась (отказ безопасности)"
+  },
+  "Mobile Data OFF (Will auto-enable on theft)": {
+    "zh": "移动数据关闭（被盗时将自动启用）",
+    "fr": "Données mobiles désactivées (s'activeront automatiquement en cas de vol)",
+    "es": "Datos móviles desactivados (se habilitarán automáticamente en caso de robo)",
+    "ru": "Мобильные данные отключены (автоматически включается при краже)"
+  },
+  "Mobile Data ON": {
+    "zh": "移动数据开启",
+    "fr": "Données mobiles activées",
+    "es": "Datos móviles activados",
+    "ru": "Мобильные данные включены"
+  },
+  "Mobile data turned OFF! When a theft command arrives, DroidGuard will auto-enable it on the best SIM.": {
+    "zh": "移动数据已关闭！当盗窃命令到达时，DroidGuard 将在最佳 SIM 卡上自动启用它。",
+    "fr": "Données mobiles désactivées ! Lorsqu'une commande de vol arrive, DroidGuard l'activera automatiquement sur la meilleure carte SIM.",
+    "es": "¡Los datos móviles están APAGADOS! Cuando llega un comando de robo, DroidGuard lo habilitará automáticamente en la mejor tarjeta SIM.",
+    "ru": "Мобильные данные отключены! Когда поступит команда о краже, DroidGuard автоматически включит ее на лучшей SIM-карте."
+  },
+  "Mobile data turned ON.": {
+    "zh": "移动数据已开启。",
+    "fr": "Données mobiles activées.",
+    "es": "Datos móviles activados.",
+    "ru": "Мобильные данные включены."
+  },
+  "Network Type:": {
+    "zh": "网络类型：",
+    "fr": "Type de réseau :",
+    "es": "Tipo de red:",
+    "ru": "Тип сети:"
+  },
+  "New email is identical to current active email!": {
+    "zh": "新电子邮件与当前有效电子邮件相同！",
+    "fr": "Le nouvel e-mail est identique à l’e-mail actif actuel !",
+    "es": "¡El nuevo correo electrónico es idéntico al correo electrónico activo actual!",
+    "ru": "Новый адрес электронной почты идентичен текущему активному адресу электронной почты!"
+  },
+  "Next dispatch:": {
+    "zh": "下次调度：",
+    "fr": "Prochaine expédition :",
+    "es": "Próximo envío:",
+    "ru": "Следующая отправка:"
+  },
+  "No specific number": {
+    "zh": "没有具体数字",
+    "fr": "Pas de numéro précis",
+    "es": "Sin número específico",
+    "ru": "Нет конкретного номера"
+  },
+  "Not configured": {
+    "zh": "未配置",
+    "fr": "Non configuré",
+    "es": "No configurado",
+    "ru": "Не настроено"
+  },
+  "• Not sent": {
+    "zh": "• 未发送",
+    "fr": "• Non envoyé",
+    "es": "• No enviado",
+    "ru": "• Не отправлено"
+  },
+  "Not set": {
+    "zh": "未设置",
+    "fr": "Non défini",
+    "es": "No establecido",
+    "ru": "Не установлено"
+  },
+  "Number:": {
+    "zh": "数量：",
+    "fr": "Numéro :",
+    "es": "Número:",
+    "ru": "Номер:"
+  },
+  "OK (Uninstall)": {
+    "zh": "确定（卸载）",
+    "fr": "OK (Désinstaller)",
+    "es": "Aceptar (Desinstalar)",
+    "ru": "ОК (Удалить)"
+  },
+  "Operates completely silently with no SMS cost": {
+    "zh": "完全安静地运行，无需短信费用",
+    "fr": "Fonctionne de manière totalement silencieuse, sans frais SMS",
+    "es": "Opera de forma totalmente silenciosa y sin coste de SMS",
+    "ru": "Работает совершенно бесшумно, без затрат на SMS"
+  },
+  "⛔ Operation rejected! Uninstallation blocked, app protected, and user redirected.": {
+    "zh": "⛔ 操作被拒绝！卸载被阻止，应用程序被保护，用户被重定向。",
+    "fr": "⛔ Opération refusée ! Désinstallation bloquée, application protégée et utilisateur redirigé.",
+    "es": "⛔ ¡Operación rechazada! Desinstalación bloqueada, aplicación protegida y usuario redirigido.",
+    "ru": "⛔ Операция отклонена! Удаление заблокировано, приложение защищено, а пользователь перенаправлен."
+  },
+  "Operator Code (MCC/MNC):": {
+    "zh": "运营商代码（MCC/MNC）：",
+    "fr": "Code opérateur (MCC/MNC) :",
+    "es": "Código de operador (MCC/MNC):",
+    "ru": "Код оператора (MCC/MNC):"
+  },
+  "OTP sent to ${emailToVerify}": {
+    "zh": "OTP 已发送至 ${emailToVerify}",
+    "fr": "OTP envoyé à ${emailToVerify}",
+    "es": "OTP enviada a ${emailToVerify}",
+    "ru": "OTP отправлен на адрес ${emailToVerify}"
+  },
+  "Owner biometric verified. Device Admin deactivated temporarily.": {
+    "zh": "所有者生物识别已验证。设备管理器已暂时停用。",
+    "fr": "Biométrie du propriétaire vérifiée. L'administrateur de l'appareil est temporairement désactivé.",
+    "es": "Propietario biométrico verificado. Administrador de dispositivos desactivado temporalmente.",
+    "ru": "Владелец биометрически подтвержден. Администратор устройства временно деактивирован."
+  },
+  "✓ Owner identity verified! In a real environment, only the true owner can proceed.": {
+    "zh": "✓ 所有者身份已验证！在真实的环境中，只有真正的主人才能继续。",
+    "fr": "✓ Identité du propriétaire vérifiée ! Dans un environnement réel, seul le véritable propriétaire peut procéder.",
+    "es": "✓ ¡Identidad del propietario verificada! En un entorno real, sólo el verdadero propietario puede proceder.",
+    "ru": "✓ Личность владельца подтверждена! В реальной среде продолжить работу может только истинный владелец."
+  },
+  "Pathway 1: Reverse GPS SMS": {
+    "zh": "途径 1：反向 GPS 短信",
+    "fr": "Voie 1 : SMS GPS inversés",
+    "es": "Ruta 1: SMS GPS inverso",
+    "ru": "Путь 1: Обратное GPS-SMS"
+  },
+  "Pathway 2: Gmail Report": {
+    "zh": "途径 2：Gmail 报告",
+    "fr": "Voie 2 : Rapport Gmail",
+    "es": "Ruta 2: Informe de Gmail",
+    "ru": "Путь 2. Отчет Gmail"
+  },
+  "Pattern": {
+    "zh": "模式",
+    "fr": "Modèle",
+    "es": "Patrón",
+    "ru": "Узор"
+  },
+  "Pending New Email:": {
+    "zh": "待处理的新电子邮件：",
+    "fr": "En attente d'un nouvel e-mail :",
+    "es": "Nuevo correo electrónico pendiente:",
+    "ru": "Ожидается новое электронное письмо:"
+  },
+  "Periodic Auto-Dispatch Timer (Every 2 Minutes)": {
+    "zh": "定期自动调度计时器（每 2 分钟）",
+    "fr": "Minuterie de répartition automatique périodique (toutes les 2 minutes)",
+    "es": "Temporizador de envío automático periódico (cada 2 minutos)",
+    "ru": "Таймер периодической автоматической отправки (каждые 2 минуты)"
+  },
+  "Phone 1": {
+    "zh": "电话 1",
+    "fr": "Téléphone 1",
+    "es": "Teléfono 1",
+    "ru": "Телефон 1"
+  },
+  "Phone 2": {
+    "zh": "电话 2",
+    "fr": "Téléphone 2",
+    "es": "Teléfono 2",
+    "ru": "Телефон 2"
+  },
+  "Phone 3": {
+    "zh": "电话 3",
+    "fr": "Téléphone 3",
+    "es": "Teléfono 3",
+    "ru": "Телефон 3"
+  },
+  "Phone Number:": {
+    "zh": "电话号码：",
+    "fr": "Numéro de téléphone :",
+    "es": "Número de teléfono:",
+    "ru": "Номер телефона:"
+  },
+  "Photo of the person holding the phone captured": {
+    "zh": "拍摄的拿着手机的人的照片",
+    "fr": "Photo de la personne tenant le téléphone capturée",
+    "es": "Foto de la persona que sostiene el teléfono capturada",
+    "ru": "Фотография человека, держащего телефон, снята"
+  },
+  "Photo of the person holding the phone captured at:": {
+    "zh": "手持手机的人的照片拍摄于：",
+    "fr": "Photo de la personne tenant le téléphone prise à :",
+    "es": "Foto de la persona que sostiene el teléfono capturada en:",
+    "ru": "Фотография человека, держащего телефон, сделана по адресу:"
+  },
+  "Please enter a valid email address!": {
+    "zh": "请输入有效的电子邮件地址！",
+    "fr": "S'il vous plaît, mettez une adresse email valide!",
+    "es": "¡Por favor, introduce una dirección de correo electrónico válida!",
+    "ru": "Пожалуйста, введите действительный адрес электронной почты!"
+  },
+  "❌ Please enter a valid international phone number": {
+    "zh": "❌请输入有效的国际电话号码",
+    "fr": "❌ Veuillez saisir un numéro de téléphone international valide",
+    "es": "❌ Ingrese un número de teléfono internacional válido",
+    "ru": "❌ Введите действительный международный номер телефона"
+  },
+  "Please enter a valid new email address!": {
+    "zh": "请输入有效的新电子邮件地址！",
+    "fr": "Veuillez saisir une nouvelle adresse e-mail valide !",
+    "es": "¡Ingrese una nueva dirección de correo electrónico válida!",
+    "ru": "Пожалуйста, введите действительный новый адрес электронной почты!"
+  },
+  "Please enter Bot Token and Chat ID before testing": {
+    "zh": "测试前请输入 Bot Token 和 Chat ID",
+    "fr": "Veuillez saisir le jeton de bot et l'identifiant de chat avant de tester",
+    "es": "Ingrese el token del bot y el ID del chat antes de realizar la prueba",
+    "ru": "Перед тестированием введите токен бота и идентификатор чата"
+  },
+  "Please enter the OTP!": {
+    "zh": "请输入一次性密码！",
+    "fr": "Veuillez entrer l'OTP !",
+    "es": "¡Por favor ingrese la OTP!",
+    "ru": "Пожалуйста, введите OTP!"
+  },
+  "Please enter the OTP sent to old email!": {
+    "zh": "请输入发送到旧电子邮件的 OTP！",
+    "fr": "Veuillez saisir l'OTP envoyé à l'ancien e-mail !",
+    "es": "¡Ingrese la OTP enviada al correo electrónico anterior!",
+    "ru": "Пожалуйста, введите OTP, отправленный на старый адрес электронной почты!"
+  },
+  "Powering off...": {
+    "zh": "正在关闭电源...",
+    "fr": "Mise hors tension...",
+    "es": "Apagando...",
+    "ru": "Выключение..."
+  },
+  "Prevent uninstallation from Android settings with mandatory biometric check": {
+    "zh": "通过强制生物识别检查防止从 Android 设置中卸载",
+    "fr": "Empêcher la désinstallation des paramètres Android avec une vérification biométrique obligatoire",
+    "es": "Evite la desinstalación desde la configuración de Android con verificación biométrica obligatoria",
+    "ru": "Запрет удаления из настроек Android с обязательной биометрической проверкой"
+  },
+  "Primary contact receiving instant GPS coordinates & map link upon theft or command": {
+    "zh": "主要联系人在被盗或收到命令后接收即时 GPS 坐标和地图链接",
+    "fr": "Contact principal recevant les coordonnées GPS instantanées et le lien cartographique en cas de vol ou de commande",
+    "es": "Contacto principal que recibe coordenadas GPS instantáneas y enlace de mapa en caso de robo o comando",
+    "ru": "Основной контакт, получающий мгновенные GPS-координаты и ссылку на карту при краже или команде"
+  },
+  "Primary Data SIM": {
+    "zh": "主要数据SIM",
+    "fr": "SIM de données primaires",
+    "es": "SIM de datos primarios",
+    "ru": "SIM-карта с первичными данными"
+  },
+  "✓ Primary Emergency phone verified & saved to secure storage!": {
+    "zh": "✓ 主要紧急电话已验证并保存到安全存储！",
+    "fr": "✓ Téléphone d'urgence principal vérifié et enregistré dans un stockage sécurisé !",
+    "es": "✓ ¡Teléfono de emergencia principal verificado y guardado en un almacenamiento seguro!",
+    "ru": "✓ Основной телефон службы экстренной помощи проверен и сохранен в надежном хранилище!"
+  },
+  "✓ Primary GPS coordinates SMS sent": {
+    "zh": "✓ 主 GPS 坐标 SMS 已发送",
+    "fr": "✓ Coordonnées GPS principales SMS envoyés",
+    "es": "✓ Coordenadas GPS primarias SMS enviados",
+    "ru": "✓ Отправлено SMS с основными GPS-координатами"
+  },
+  "Protection inactive, uninstallation allowed!": {
+    "zh": "保护未激活，允许卸载！",
+    "fr": "Protection inactive, désinstallation autorisée !",
+    "es": "¡Protección inactiva, desinstalación permitida!",
+    "ru": "Защита неактивна, удаление разрешено!"
+  },
+  "Quick Carrier Switch:": {
+    "zh": "快速运营商切换：",
+    "fr": "Changement de transporteur rapide :",
+    "es": "Cambio rápido de operador:",
+    "ru": "Быстрое переключение несущей:"
+  },
+  "Quick Codes:": {
+    "zh": "快速代码：",
+    "fr": "Codes rapides :",
+    "es": "Códigos rápidos:",
+    "ru": "Быстрые коды:"
+  },
+  "Quick preview OTP:": {
+    "zh": "快速预览 OTP：",
+    "fr": "Aperçu rapide OTP :",
+    "es": "OTP de vista previa rápida:",
+    "ru": "Быстрый просмотр OTP:"
+  },
+  "Random Number": {
+    "zh": "随机数",
+    "fr": "Nombre aléatoire",
+    "es": "Número aleatorio",
+    "ru": "Случайное число"
+  },
+  "Ready for direct dispatch": {
+    "zh": "准备直接发货",
+    "fr": "Prêt pour l'expédition directe",
+    "es": "Listo para envío directo",
+    "ru": "Готов к прямой отправке"
+  },
+  "Receive real-time theft alerts, GPS links, and front-cam intruder snapshots via Telegram": {
+    "zh": "通过 Telegram 接收实时盗窃警报、GPS 链接和前置摄像头入侵者快照",
+    "fr": "Recevez des alertes de vol en temps réel, des liens GPS et des instantanés d'intrus par caméra frontale via Telegram",
+    "es": "Reciba alertas de robo en tiempo real, enlaces GPS e instantáneas de intrusos con cámara frontal a través de Telegram",
+    "ru": "Получайте оповещения о кражах в режиме реального времени, GPS-ссылки и снимки злоумышленников, снятые на переднюю камеру, через Telegram"
+  },
+  "Receives direct Google Maps GPS tracking link via SMS.": {
+    "zh": "通过短信接收直接 Google 地图 GPS 跟踪链接。",
+    "fr": "Reçoit un lien de suivi GPS Google Maps direct par SMS.",
+    "es": "Recibe enlace directo de seguimiento GPS de Google Maps vía SMS.",
+    "ru": "Получает прямую ссылку на GPS-отслеживание Google Maps через SMS."
+  },
+  "Receives live GPS link & stealth photos on #TRACK command": {
+    "zh": "通过 #TRACK 命令接收实时 GPS 链接和隐形照片",
+    "fr": "Reçoit une liaison GPS en direct et des photos furtives sur la commande #TRACK",
+    "es": "Recibe enlace GPS en vivo y fotos ocultas con el comando #TRACK",
+    "ru": "Получает живую ссылку GPS и скрытые фотографии по команде #TRACK"
+  },
+  "Recipient:": {
+    "zh": "收件人：",
+    "fr": "Destinataire :",
+    "es": "Destinatario:",
+    "ru": "Получатель:"
+  },
+  "Recorded ${attempts} incorrect entry attempts. Intruder photo captured and GPS location sent on the 3rd attempt.": {
+    "zh": "记录了 ${attempts} 次错误输入尝试。第三次尝试时捕获入侵者照片并发送 GPS 位置。",
+    "fr": "${attempts} tentatives d'entrée incorrectes enregistrées. Photo d'intrus capturée et localisation GPS envoyée à la 3ème tentative.",
+    "es": "Se registraron ${attempts} intentos de entrada incorrectos. Fotografía del intruso capturada y ubicación GPS enviada en el tercer intento.",
+    "ru": "Зарегистрировано ${attempts} неверных попыток входа. Фотография злоумышленника сделана, а местоположение GPS отправлено с третьей попытки."
+  },
+  "Redraw Pattern": {
+    "zh": "重绘图案",
+    "fr": "Redessiner le motif",
+    "es": "Redibujar patrón",
+    "ru": "Перерисовать шаблон"
+  },
+  "Rejection Reason:": {
+    "zh": "拒绝原因：",
+    "fr": "Raison du rejet :",
+    "es": "Motivo del rechazo:",
+    "ru": "Причина отклонения:"
+  },
+  "Reply Path:": {
+    "zh": "回复路径：",
+    "fr": "Chemin de réponse :",
+    "es": "Ruta de respuesta:",
+    "ru": "Путь ответа:"
+  },
+  "Request deactivation of Device Admin for uninstall attempt": {
+    "zh": "请求停用设备管理以进行卸载尝试",
+    "fr": "Demander la désactivation de l'administrateur de l'appareil pour une tentative de désinstallation",
+    "es": "Solicitar la desactivación del administrador del dispositivo para un intento de desinstalación",
+    "ru": "Запросить деактивацию администратора устройства при попытке удаления"
+  },
+  "Request Email Change": {
+    "zh": "请求更改电子邮件",
+    "fr": "Demander un changement d'e-mail",
+    "es": "Solicitar cambio de correo electrónico",
+    "ru": "Запросить изменение адреса электронной почты"
+  },
+  "Requires Fingerprint, Face ID, or system PIN for any deactivation attempt.": {
+    "zh": "任何停用尝试都需要指纹、面容 ID 或系统 PIN 码。",
+    "fr": "Nécessite une empreinte digitale, un Face ID ou un code PIN système pour toute tentative de désactivation.",
+    "es": "Requiere huella digital, Face ID o PIN del sistema para cualquier intento de desactivación.",
+    "ru": "Для любой попытки деактивации требуется отпечаток пальца, Face ID или системный PIN-код."
+  },
+  "Resend Code": {
+    "zh": "重新发送代码",
+    "fr": "Renvoyer le code",
+    "es": "Reenviar código",
+    "ru": "Повторно отправить код"
+  },
+  "Reset counter": {
+    "zh": "重置计数器",
+    "fr": "Réinitialiser le compteur",
+    "es": "Reiniciar contador",
+    "ru": "Сбросить счетчик"
+  },
+  "Return to fingerprint authentication": {
+    "zh": "返回指纹认证",
+    "fr": "Revenir à l'authentification par empreinte digitale",
+    "es": "Volver a la autenticación de huellas dactilares",
+    "ru": "Вернуться к аутентификации по отпечатку пальца"
+  },
+  "⚡ Run Dispatch Cycle Now (Test)": {
+    "zh": "⚡ 立即运行调度周期（测试）",
+    "fr": "⚡ Exécuter le cycle de répartition maintenant (Test)",
+    "es": "⚡ Ejecute el ciclo de envío ahora (prueba)",
+    "ru": "⚡ Запустите цикл отправки сейчас (тест)"
+  },
+  "Save Number": {
+    "zh": "保存号码",
+    "fr": "Enregistrer le numéro",
+    "es": "Guardar número",
+    "ru": "Сохранить номер"
+  },
+  "Scanning biometric credentials...": {
+    "zh": "正在扫描生物识别凭证...",
+    "fr": "Analyse des informations d'identification biométriques...",
+    "es": "Escaneando credenciales biométricas...",
+    "ru": "Сканирование биометрических учетных данных..."
+  },
+  "Scanning Carriers...": {
+    "zh": "扫描运营商...",
+    "fr": "Numérisation des supports...",
+    "es": "Escaneando transportistas...",
+    "ru": "Сканирование носителей..."
+  },
+  "Scanning fingerprint...": {
+    "zh": "正在扫描指纹...",
+    "fr": "Numérisation des empreintes digitales...",
+    "es": "Escaneando huella digital...",
+    "ru": "Сканирование отпечатков пальцев..."
+  },
+  "Scan Owner Face": {
+    "zh": "扫描主人脸部",
+    "fr": "Scanner le visage du propriétaire",
+    "es": "Escanear la cara del propietario",
+    "ru": "Сканировать лицо владельца"
+  },
+  "• Screen appears powered off (click top button to view live telemetry) •": {
+    "zh": "• 屏幕显示为关闭状态（单击顶部按钮查看实时遥测） •",
+    "fr": "• L'écran semble éteint (cliquez sur le bouton du haut pour afficher la télémétrie en direct) •",
+    "es": "• La pantalla aparece apagada (haga clic en el botón superior para ver la telemetría en vivo) •",
+    "ru": "• Экран отключен (нажмите верхнюю кнопку, чтобы просмотреть телеметрию в реальном времени) •"
+  },
+  "Screen looks completely powered off while auto-dispatching every 2 minutes": {
+    "zh": "屏幕看起来完全关闭，但每 2 分钟自动调度一次",
+    "fr": "L'écran semble complètement éteint lors de la répartition automatique toutes les 2 minutes",
+    "es": "La pantalla parece completamente apagada mientras se envía automáticamente cada 2 minutos",
+    "ru": "Экран выглядит полностью выключенным, хотя автоотправление происходит каждые 2 минуты"
+  },
+  "Security Fallback (SMS)": {
+    "zh": "安全回退（短信）",
+    "fr": "Repli de sécurité (SMS)",
+    "es": "Respaldo de seguridad (SMS)",
+    "ru": "Резервный вариант безопасности (SMS)"
+  },
+  "SECURITY LOCKDOWN": {
+    "zh": "安全锁定",
+    "fr": "VERROUILLAGE DE SÉCURITÉ",
+    "es": "BLOQUEO DE SEGURIDAD",
+    "ru": "БЕЗОПАСНОСТЬ БЛОКИРОВКА"
+  },
+  "Security Protocol: Request Change of Verified Email": {
+    "zh": "安全协议：请求更改已验证的电子邮件",
+    "fr": "Protocole de sécurité : demander la modification de l'adresse e-mail vérifiée",
+    "es": "Protocolo de seguridad: Solicitar cambio de correo electrónico verificado",
+    "ru": "Протокол безопасности: запросить изменение проверенного адреса электронной почты"
+  },
+  "Select another carrier": {
+    "zh": "选择其他运营商",
+    "fr": "Sélectionnez un autre transporteur",
+    "es": "Seleccione otro transportista",
+    "ru": "Выбрать другого оператора связи"
+  },
+  "Send Approval OTP to Current Email": {
+    "zh": "将批准 OTP 发送到当前电子邮件",
+    "fr": "Envoyer l'OTP d'approbation à l'e-mail actuel",
+    "es": "Enviar OTP de aprobación al correo electrónico actual",
+    "ru": "Отправить OTP для подтверждения на текущий адрес электронной почты"
+  },
+  "Sender:": {
+    "zh": "发件人：",
+    "fr": "Expéditeur :",
+    "es": "Remitente:",
+    "ru": "Отправитель:"
+  },
+  "Sending Approval OTP...": {
+    "zh": "发送批准 OTP...",
+    "fr": "Envoi de l'approbation OTP...",
+    "es": "Enviando aprobación OTP...",
+    "ru": "Отправка подтверждения OTP..."
+  },
+  "Sending Test...": {
+    "zh": "发送测试...",
+    "fr": "Envoi du test...",
+    "es": "Enviando prueba...",
+    "ru": "Отправка теста..."
+  },
+  "Sending Verification Code...": {
+    "zh": "正在发送验证码...",
+    "fr": "Envoi du code de vérification...",
+    "es": "Enviando código de verificación...",
+    "ru": "Sending Verification Code..."
+  },
+  "Send instant test SMS to this number": {
+    "zh": "发送即时测试短信到此号码",
+    "fr": "Envoyer un SMS de test instantané à ce numéro",
+    "es": "Envía SMS de prueba instantáneos a este número",
+    "ru": "Отправьте мгновенное тестовое SMS на этот номер"
+  },
+  "Send interactive Live Location": {
+    "zh": "发送交互式实时位置",
+    "fr": "Envoyer une localisation interactive en direct",
+    "es": "Enviar ubicación interactiva en vivo",
+    "ru": "Отправить интерактивное местоположение в реальном времени"
+  },
+  "🤖 Sends the same photo & GPS pin to Telegram if configured.": {
+    "zh": "🤖 如果配置的话，将相同的照片和 GPS pin 发送到 Telegram。",
+    "fr": "🤖 Envoie la même photo et le même code PIN GPS à Telegram si configuré.",
+    "es": "🤖 Envía la misma foto y pin de GPS a Telegram si está configurado.",
+    "ru": "🤖 Отправляет ту же фотографию и GPS-код в Telegram, если это настроено."
+  },
+  "Send Test Email Report": {
+    "zh": "发送测试电子邮件报告",
+    "fr": "Envoyer le rapport de test par e-mail",
+    "es": "Enviar informe de prueba por correo electrónico",
+    "ru": "Отправить тестовый отчет по электронной почте"
+  },
+  "Sent approval OTP:": {
+    "zh": "已发送批准一次性密码：",
+    "fr": "Approbation envoyée OTP :",
+    "es": "OTP de aprobación enviada:",
+    "ru": "Отправлено подтверждение OTP:"
+  },
+  "Sent to:": {
+    "zh": "发送至：",
+    "fr": "Envoyé à :",
+    "es": "Enviado a:",
+    "ru": "Отправлено:"
+  },
+  "Sent to Telegram": {
+    "zh": "发送至电报",
+    "fr": "Envoyé à Telegram",
+    "es": "Enviado a Telegram",
+    "ru": "Отправлено в Telegram"
+  },
+  "Set secret codes to unlock remote commands": {
+    "zh": "设置密码以解锁远程命令",
+    "fr": "Définir des codes secrets pour déverrouiller les commandes à distance",
+    "es": "Establecer códigos secretos para desbloquear comandos remotos",
+    "ru": "Установите секретные коды для разблокировки удаленных команд"
+  },
+  "Share via Telegram": {
+    "zh": "通过电报分享",
+    "fr": "Partager via Telegram",
+    "es": "Compartir vía Telegram",
+    "ru": "Поделиться через Telegram"
+  },
+  "Show Token": {
+    "zh": "显示令牌",
+    "fr": "Afficher le jeton",
+    "es": "Mostrar ficha",
+    "ru": "Показать токен"
+  },
+  "Signal Strength:": {
+    "zh": "信号强度：",
+    "fr": "Force du signal :",
+    "es": "Intensidad de la señal:",
+    "ru": "Уровень сигнала:"
+  },
+  "Silent photo of the person holding the phone captured!": {
+    "zh": "抓拍到拿着手机的人的无声照片！",
+    "fr": "Photo silencieuse de la personne tenant le téléphone capturée !",
+    "es": "¡Capturan foto silenciosa de la persona que sostiene el teléfono!",
+    "ru": "Снято безмолвное фото человека, держащего телефон!"
+  },
+  "SIM ${slot} carrier updated to: ${preset.name} (${preset.networkType})": {
+    "zh": "SIM ${slot} 运营商已更新为：${preset.name} (${preset.networkType})",
+    "fr": "Opérateur SIM ${slot} mis à jour vers : ${preset.name} (${preset.networkType})",
+    "es": "Operador SIM ${slot} actualizado a: ${preset.name} (${preset.networkType})",
+    "ru": "Оператор SIM ${slot} обновлен до: ${preset.name} (${preset.networkType})"
+  },
+  "SIM 1 Slot": {
+    "zh": "SIM 1 插槽",
+    "fr": "Emplacement SIM 1",
+    "es": "Ranura SIM 1",
+    "ru": "Слот для SIM-карты 1"
+  },
+  "SIM 2 Slot": {
+    "zh": "SIM 2 插槽",
+    "fr": "Emplacement SIM 2",
+    "es": "Ranura SIM 2",
+    "ru": "Слот для SIM-карты 2"
+  },
+  "Simulate Data Off (Test Off)": {
+    "zh": "模拟数据关闭（测试关闭）",
+    "fr": "Simuler les données désactivées (Test désactivé)",
+    "es": "Simular datos desactivados (prueba desactivada)",
+    "ru": "Имитация данных выключена (тест выключен)"
+  },
+  "Simulated Command Sender Number:": {
+    "zh": "模拟命令发送者编号：",
+    "fr": "Numéro d'expéditeur de commande simulé :",
+    "es": "Número de remitente de comando simulado:",
+    "ru": "Номер отправителя имитируемой команды:"
+  },
+  "Simulate incorrect PIN entry (Intruder detection check)": {
+    "zh": "模拟错误的 PIN 输入（入侵者检测检查）",
+    "fr": "Simuler une saisie incorrecte d'un code PIN (vérification de détection d'intrusion)",
+    "es": "Simular la entrada de PIN incorrecta (verificación de detección de intrusos)",
+    "ru": "Имитировать неправильный ввод ПИН-кода (Проверка обнаружения злоумышленников)"
+  },
+  "Simulate incorrect PIN entry (Intruder Detection Test)": {
+    "zh": "模拟错误的 PIN 输入（入侵者检测测试）",
+    "fr": "Simuler une saisie incorrecte d'un code PIN (Test de détection d'intrusion)",
+    "es": "Simular la entrada de PIN incorrecta (Prueba de detección de intrusos)",
+    "ru": "Имитация неправильного ввода PIN-кода (тест на обнаружение злоумышленников)"
+  },
+  "Simulate Intruder Face": {
+    "zh": "模拟入侵者脸部",
+    "fr": "Simuler le visage d'un intrus",
+    "es": "Simular cara de intruso",
+    "ru": "Имитировать лицо злоумышленника"
+  },
+  "Simulate phone shutdown by thief and start stealth periodic service every 2 mins": {
+    "zh": "模拟手机被小偷关机，每2分钟启动隐形定期服务",
+    "fr": "Simulez l'arrêt du téléphone par un voleur et démarrez un service périodique furtif toutes les 2 minutes",
+    "es": "Simule el apagado del teléfono por parte de un ladrón e inicie el servicio periódico sigiloso cada 2 minutos",
+    "ru": "Имитировать отключение телефона вором и запускать скрытое периодическое обслуживание каждые 2 минуты"
+  },
+  "Simulate thief power-off attempt (Fake Power-Off Trap)": {
+    "zh": "模拟小偷断电尝试（假断电陷阱）",
+    "fr": "Simuler une tentative de mise hors tension d'un voleur (faux piège de mise hors tension)",
+    "es": "Simular intento de apagado del ladrón (trampa de apagado falso)",
+    "ru": "Имитировать попытку выключения вора (ложная ловушка отключения питания)"
+  },
+  "Simulate #TRACK & Dispatch to Both": {
+    "zh": "模拟 #TRACK 并调度到两者",
+    "fr": "Simulez #TRACK et distribuez aux deux",
+    "es": "Simule #TRACK y envíe a ambos",
+    "ru": "Имитация #TRACK и отправка обоим"
+  },
+  "⚡ Simulate Uninstall Attempt from Android Settings": {
+    "zh": "⚡ 从 Android 设置模拟卸载尝试",
+    "fr": "⚡ Simuler une tentative de désinstallation à partir des paramètres Android",
+    "es": "⚡ Simular intento de desinstalación desde la configuración de Android",
+    "ru": "⚡ Имитировать попытку удаления из настроек Android"
+  },
+  "Simulate unmatched intruder fingerprint (Alarm Test)": {
+    "zh": "模拟不匹配的入侵者指纹（警报测试）",
+    "fr": "Simuler une empreinte digitale d'intrus inégalée (test d'alarme)",
+    "es": "Simular huella digital de intruso no coincidente (Prueba de alarma)",
+    "ru": "Имитация непревзойденного отпечатка пальца злоумышленника (тест тревоги)"
+  },
+  "Simulate unmatched intruder fingerprint (Test 3-attempts check)": {
+    "zh": "模拟不匹配的入侵者指纹（测试 3-尝试检查）",
+    "fr": "Simuler une empreinte digitale d'intrus inégalée (Test de vérification en 3 tentatives)",
+    "es": "Simular huella digital de intruso no coincidente (Prueba de 3 intentos de verificación)",
+    "ru": "Имитировать непревзойденный отпечаток пальца злоумышленника (тестовая проверка с 3 попытками)"
+  },
+  "Simulation of thief or intruder pressing uninstall button in phone settings.": {
+    "zh": "模拟小偷或入侵者在手机设置中按下卸载按钮。",
+    "fr": "Simulation d'un voleur ou d'un intrus appuyant sur le bouton de désinstallation dans les paramètres du téléphone.",
+    "es": "Simulación de ladrón o intruso presionando el botón de desinstalación en la configuración del teléfono.",
+    "ru": "Имитация вора или злоумышленника, нажимающего кнопку удаления в настройках телефона."
+  },
+  "[Smart Data Check] ${res.reason}": {
+    "zh": "[智能数据检查] ${res.reason}",
+    "fr": "[Vérification intelligente des données] ${res.reason}",
+    "es": "[Comprobación de datos inteligente] ${res.reason}",
+    "ru": "[Интеллектуальная проверка данных] ${res.reason}"
+  },
+  "SMS & Emergency Dispatch": {
+    "zh": "短信及紧急调度",
+    "fr": "SMS et expédition d'urgence",
+    "es": "SMS y envío de emergencia",
+    "ru": "SMS и экстренная отправка"
+  },
+  "SMS Status:": {
+    "zh": "短信状态：",
+    "fr": "Statut des SMS :",
+    "es": "Estado de SMS:",
+    "ru": "Статус СМС:"
+  },
+  "Standby": {
+    "zh": "待机",
+    "fr": "En veille",
+    "es": "En espera",
+    "ru": "Режим ожидания"
+  },
+  "STANDBY": {
+    "zh": "待机",
+    "fr": "VEILLE",
+    "es": "EN ESPERA",
+    "ru": "ОЖИДАНИЕ"
+  },
+  "Start 72h Cooldown": {
+    "zh": "开始 72 小时冷却",
+    "fr": "Début 72h Temps de recharge",
+    "es": "Iniciar 72h de tiempo de reutilización",
+    "ru": "Начало 72-часового восстановления"
+  },
+  "Start Protection Now": {
+    "zh": "立即开始保护",
+    "fr": "Démarrez la protection maintenant",
+    "es": "Iniciar protección ahora",
+    "ru": "Запустите защиту прямо сейчас"
+  },
+  "Static & Verified": {
+    "zh": "静态和验证",
+    "fr": "Statique et vérifié",
+    "es": "Estático y verificado",
+    "ru": "Статические и проверенные"
+  },
+  "Stealth Alert Badge": {
+    "zh": "隐形警报徽章",
+    "fr": "Insigne d'alerte furtive",
+    "es": "Insignia de alerta sigilosa",
+    "ru": "Значок скрытной тревоги"
+  },
+  "Stealth Command-Based Alert Daemon (Zero noisy automatic alarms)": {
+    "zh": "基于命令的隐形警报守护程序（零噪音自动警报）",
+    "fr": "Démon d'alerte basé sur des commandes furtives (alarmes automatiques sans bruit)"
+  },
+  "Stealth Mode: Periodic Dispatch": {
+    "zh": "隐形模式：定期调度",
+    "fr": "Mode furtif : répartition périodique"
+  },
+  "Stealth Security Badge: Detected ${attempts} unauthorized entry attempts": {
+    "zh": "隐形安全徽章：检测到 ${attempts} 次未经授权的进入尝试",
+    "fr": "Badge de sécurité furtif : ${attempts} tentatives d'entrée non autorisées détectées"
+  },
+  "Stealth Stolen Mode Active": {
+    "zh": "隐形被盗模式激活",
+    "fr": "Mode furtif volé actif"
+  },
+  "Stealth Stolen Mode unlocked successfully via fingerprint. Completed ${totalCycles} periodic dispatch cycles to email, caller number, and Telegram.": {
+    "zh": "通过指纹成功解锁隐形被盗模式。已完成 ${totalCycles} 个电子邮件、来电号码和 Telegram 的定期调度周期。",
+    "fr": "Mode furtif volé déverrouillé avec succès via l'empreinte digitale. A terminé ${totalCycles} cycles d'envoi périodiques vers l'e-mail, le numéro de l'appelant et Telegram."
+  },
+  "Stop Protection": {
+    "zh": "停止保护",
+    "fr": "Arrêter la protection"
+  },
+  "Surveillance daemon paused": {
+    "zh": "监控守护进程已暂停",
+    "fr": "Démon de surveillance suspendu"
+  },
+  "Synchronous Dispatch Pathway:": {
+    "zh": "同步调度路径：",
+    "fr": "Voie de répartition synchrone :"
+  },
+  "Synchronous Dual SMS Dispatch Engine": {
+    "zh": "同步双短信调度引擎",
+    "fr": "Moteur de répartition double SMS synchrone"
+  },
+  "System Ping": {
+    "zh": "系统 Ping",
+    "fr": "Ping système"
+  },
+  "Target 1: Primary Emergency Phone": {
+    "zh": "目标 1：主要紧急电话",
+    "fr": "Cible 1 : Téléphone d'urgence principal"
+  },
+  "Target 2: Trigger Command Sender": {
+    "zh": "目标2：触发命令发送者",
+    "fr": "Cible 2 : Expéditeur de commande de déclenchement"
+  },
+  "Telegram": {
+    "zh": "电报",
+    "fr": "Télégramme"
+  },
+  "Telegram: Alert": {
+    "zh": "电报：警报",
+    "fr": "Télégramme : Alerte"
+  },
+  "Telegram Bot Alert Channel": {
+    "zh": "Telegram 机器人警报频道",
+    "fr": "Canal d'alerte de robot Telegram"
+  },
+  "Telegram Bot Instant Notifications": {
+    "zh": "Telegram 机器人即时通知",
+    "fr": "Notifications instantanées du robot Telegram"
+  },
+  "Telegram Chat ID (Optional):": {
+    "zh": "Telegram 聊天 ID（可选）：",
+    "fr": "Identifiant de chat Telegram (facultatif) :"
+  },
+  "Telegram: GPS Location": {
+    "zh": "电报：GPS 位置",
+    "fr": "Télégramme : Localisation GPS"
+  },
+  "Telegram Photo": {
+    "zh": "电报照片",
+    "fr": "Photo de télégramme"
+  },
+  "Telegram: Photo": {
+    "zh": "电报：照片",
+    "fr": "Télégramme : Photo"
+  },
+  "Test": {},
+  "Test Connection": {},
+  "Test Dual-SIM SMS Dispatch": {},
+  "✓ Test email report successfully sent to ${activeEmail} including GPS coordinates and camera photo.": {},
+  "Test failed": {},
+  "Testing...": {},
+  "Test Secret Camera Capture": {},
+  "✓ Test SMS message dispatched successfully via active SIM!": {},
+  "theft": {},
+  "Theft alarms and captured snapshots will automatically dispatch to your Telegram": {},
+  "Theft Mode": {},
+  "• The old email continues receiving all stealth alerts and photos on #TRACK.": {},
+  "Time:": {},
+  "Toggle Telegram Alerts": {},
+  "Token and Chat ID verified successfully! Ready for live alerts.": {},
+  "🛡️ To prevent theft tampering, immediate change is forbidden. You must approve using an OTP sent to your old email, followed by a mandatory 72-hour security cooldown.": {},
+  "Touch fingerprint sensor to authenticate via phone security (Owner Fingerprint)": {},
+  "Touch fingerprint sensor to unlock": {},
+  "Touch sensor below to unlock": {},
+  "To uninstall, you must deactivate Device Admin first, which requires mandatory biometrics (Fingerprint, Face, or PIN).": {},
+  "Trigger Command:": {},
+  "Trigger Number:": {},
+  "Turn Data ON": {},
+  "Unsaved": {},
+  "Unverified": {},
+  "Upon receiving a \\": {},
+  "Upon receiving any emergency command, automated reply messages and Telegram notifications will be logged here": {},
+  "Use Fingerprint, Face ID, or Screen Lock": {},
+  "Uses built-in Android OS security • No app-specific code required": {},
+  "Verified & Bound": {},
+  "Verified & Bound Email Address:": {},
+  "(Verified Emergency Number)": {},
+  "Verified Emergency Phone Number": {},
+  "Verify Device Owner Identity (Android System)": {},
+  "Verifying fingerprint via Android system...": {},
+  "(Very Good Coverage)": {},
+  "via front camera": {},
+  "View Telemetry HUD": {},
+  "What happens after approval?": {},
+  "WhatsApp": {},
+  "WhatsApp: Live Emergency Report": {},
+  "• You can cancel the request at any time.": {},
+  "Your personal User ID or Channel ID to receive alerts": {}
+}

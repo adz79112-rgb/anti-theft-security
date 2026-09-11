@@ -1,0 +1,22 @@
+{
+	"appId": "com.antitheft.droidguard",
+	"appName": "Anti-Theft Security",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https",
+		"cleartext": true
+	},
+	"plugins": {
+		"Camera": {
+			"permissions": [
+				"camera",
+				"photos"
+			]
+		},
+		"Geolocation": {
+			"permissions": [
+				"location"
+			]
+		}
+	}
+}

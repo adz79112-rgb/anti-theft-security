@@ -1,0 +1,6 @@
+{
+  "name": "Anti-Theft Mobile Security",
+  "description": "Comprehensive Android Anti-Theft Mobile Security application with remote SMS code triggers, device lock screen, panic alarm, GPS tracking, and front camera intruder capture.",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
