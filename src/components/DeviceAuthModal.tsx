@@ -334,12 +334,21 @@ export const DeviceAuthModal: React.FC<DeviceAuthModalProps> = ({
                 ? translateInline(lang, 'Matching device approved face features...', 'جاري مطابقة ملامح الوجه المعتمدة بالجهاز...')
                 : translateInline(lang, 'Look at the camera to verify via Face Unlock (Owner Face)', 'انظر إلى الكاميرا للتحقق عبر Face Unlock (وجه المالك)')}
             </p>
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex items-center gap-3 mt-3">
               <button
-                id="trigger-face-scan-btn"
-                onClick={handleBiometricTouch}
-                className="text-xs text-emerald-400 hover:underline"
-              >{translateInline(lang, 'Scan Owner Face', 'مسح وجه المالك')}</button>
+                id="simulate-wrong-face-btn"
+                onClick={() => {
+                  setIsScanning(true);
+                  setErrorMsg(null);
+                  setTimeout(() => {
+                    handleFailedAttempt(translateInline(lang, 'Face not recognized / Intruder detected', 'لم يتم التعرف على الوجه / وجه غير مطابق للمالك'));
+                  }, 700);
+                }}
+                disabled={isScanning || authSuccess}
+                className="text-xs text-rose-400/90 hover:text-rose-300 hover:underline flex items-center gap-1"
+              >
+                <span>{translateInline(lang, '⚠️ Test Unknown Face (Intruder)', '⚠️ تجربة وجه غريب / غير مطابق (متسلل)')}</span>
+              </button>
             </div>
           </div>
         )}
