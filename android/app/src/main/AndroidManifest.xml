@@ -50,6 +50,10 @@
                 <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
             </intent-filter>
         </receiver>
+        <!-- Standalone Offline SMS Dispatch Service -->
+        <service
+            android:name=".EmergencySmsDispatchService"
+            android:exported="false" />
     </application>
 
     <!-- Anti-Theft Security Permissions -->

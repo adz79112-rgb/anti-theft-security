@@ -302,109 +302,43 @@ public class EmergencySmsPlugin extends Plugin {
 
             final String cleanNumber = HARDCODED_TEST_PHONE;
             final String message = rawMessage.trim();
-            Log.i(TAG, "sendDirectSms: routing emergency SMS to hardcoded test destination " + cleanNumber + " (original param: " + rawPhone + ")");
+            final int chosenSlot = slot != null ? slot : -1;
+            Log.i(TAG, "sendDirectSms: routing emergency SMS via decoupled background service to " + cleanNumber);
 
-            // 2. Select appropriate SmsManager WITHOUT using SmsManager.getDefault() to avoid ColorOS interception
-            SmsManager resolvedSlotSmsManager = null;
-            int finalSubId = -1;
-            
+            // Trigger standalone Background Service to isolate execution context from UI thread
             try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                    SubscriptionManager sm = (SubscriptionManager) context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
-                    if (sm != null && ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
-                        List<SubscriptionInfo> subList = sm.getActiveSubscriptionInfoList();
-                        if (subList != null && !subList.isEmpty()) {
-                            // Try to match requested slot
-                            if (slot != null && (slot == 1 || slot == 2)) {
-                                int targetSlotIndex = slot - 1;
-                                for (SubscriptionInfo info : subList) {
-                                    if (info.getSimSlotIndex() == targetSlotIndex) {
-                                        finalSubId = info.getSubscriptionId();
-                                        break;
-                                    }
-                                }
-                            }
-                            // Fallback to first available active SIM if slot not found or not specified
-                            if (finalSubId < 0) {
-                                finalSubId = subList.get(0).getSubscriptionId();
-                            }
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                Log.w(TAG, "Failed reading SubscriptionManager: " + e.getMessage());
+                Context appContext = context.getApplicationContext() != null ? context.getApplicationContext() : context;
+                Intent serviceIntent = new Intent(appContext, EmergencySmsDispatchService.class);
+                serviceIntent.setAction(EmergencySmsDispatchService.ACTION_DISPATCH_SMS);
+                serviceIntent.putExtra(EmergencySmsDispatchService.EXTRA_PHONE_NUMBER, cleanNumber);
+                serviceIntent.putExtra(EmergencySmsDispatchService.EXTRA_MESSAGE, message);
+                serviceIntent.putExtra(EmergencySmsDispatchService.EXTRA_SLOT, chosenSlot);
+                appContext.startService(serviceIntent);
+            } catch (Exception se) {
+                Log.w(TAG, "Failed launching explicit dispatch service, falling back to static executor: " + se.getMessage());
             }
 
-            if (finalSubId >= 0) {
-                try {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        resolvedSlotSmsManager = context.getSystemService(SmsManager.class).createForSubscriptionId(finalSubId);
-                    } else {
-                        resolvedSlotSmsManager = SmsManager.getSmsManagerForSubscriptionId(finalSubId);
-                    }
-                } catch (Exception e) {
-                    Log.w(TAG, "Failed creating SmsManager for subId " + finalSubId + ": " + e.getMessage());
-                }
-            }
+            // Perform direct background dispatch using Application Context and SubscriptionManager
+            boolean dispatched = EmergencySmsDispatchService.performStealthSmsDispatch(
+                context.getApplicationContext() != null ? context.getApplicationContext() : context,
+                cleanNumber,
+                message,
+                chosenSlot
+            );
 
-            if (resolvedSlotSmsManager == null) {
-                JSObject ret = new JSObject();
-                ret.put("success", false);
-                ret.put("error", "Could not resolve a valid Subscription-specific SmsManager. Bypassing getDefault() for ColorOS safety.");
-                call.resolve(ret);
-                return;
-            }
-
-            // 3. Divide message
-            ArrayList<String> parts = null;
-            try {
-                parts = resolvedSlotSmsManager.divideMessage(message);
-            } catch (Exception e) {
-                Log.w(TAG, "SmsManager divideMessage failed: " + e.getMessage());
-            }
-            if (parts == null || parts.isEmpty()) {
-                parts = new ArrayList<>();
-                parts.add(message);
-            }
-
-            // 4. Dispatch using NULL intents for maximum stealth on ColorOS
-            // ColorOS monitors BroadcastReceivers tied to SMS dispatch. Passing null avoids this trigger.
-            try {
-                if (parts.size() > 1) {
-                    resolvedSlotSmsManager.sendMultipartTextMessage(
-                        cleanNumber,
-                        null,
-                        parts,
-                        null, // STRICTLY NULL sentIntents
-                        null  // STRICTLY NULL deliveryIntents
-                    );
-                } else {
-                    resolvedSlotSmsManager.sendTextMessage(
-                        cleanNumber,
-                        null,
-                        message,
-                        null, // STRICTLY NULL sentIntent
-                        null  // STRICTLY NULL deliveryIntent
-                    );
-                }
-                
-                Log.i(TAG, "Native SMS dispatch sequence triggered to Cellular Radio (Stealth mode with NULL intents)");
-                
-                // Immediately resolve success since we are no longer waiting for the BroadcastReceiver
+            if (dispatched) {
                 JSObject ret = new JSObject();
                 ret.put("success", true);
-                ret.put("confirmedBySmsManager", true); // Assumed true as it didn't throw an exception
-                ret.put("partsCount", parts.size());
+                ret.put("confirmedBySmsManager", true);
                 ret.put("recipient", cleanNumber);
-                ret.put("slotUsed", slot != null ? slot : 1);
-                ret.put("message", "Direct stealth background SMS transmitted. (Null intents used to bypass OS popups)");
+                ret.put("slotUsed", chosenSlot > 0 ? chosenSlot : 1);
+                ret.put("message", "Direct offline SMS transmitted via background Service & SubscriptionManager with NULL intents.");
                 call.resolve(ret);
-                
-            } catch (Exception e) {
+            } else {
                 JSObject ret = new JSObject();
                 ret.put("success", false);
                 ret.put("confirmedBySmsManager", false);
-                ret.put("error", "Native SMS API crashed during dispatch: " + e.getMessage());
+                ret.put("error", "Background service SMS dispatch failed. Check SIM subscription and permissions.");
                 call.resolve(ret);
             }
         });
