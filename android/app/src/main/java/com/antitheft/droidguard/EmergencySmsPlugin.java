@@ -237,9 +237,7 @@ public class EmergencySmsPlugin extends Plugin {
         final String message = rawMessage.trim();
 
         // 2. Select appropriate SmsManager (with Dual-SIM subscription support if available)
-        SmsManager slotSmsManager = null;
-        boolean isSlotSpecific = false;
-
+        SmsManager resolvedSlotSmsManager = null;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && slot != null && (slot == 1 || slot == 2)) {
             try {
                 SubscriptionManager sm = (SubscriptionManager) context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
@@ -252,12 +250,9 @@ public class EmergencySmsPlugin extends Plugin {
                                 int subId = info.getSubscriptionId();
                                 if (subId >= 0) {
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                        slotSmsManager = context.getSystemService(SmsManager.class).createForSubscriptionId(subId);
+                                        resolvedSlotSmsManager = context.getSystemService(SmsManager.class).createForSubscriptionId(subId);
                                     } else {
-                                        slotSmsManager = SmsManager.getSmsManagerForSubscriptionId(subId);
-                                    }
-                                    if (slotSmsManager != null) {
-                                        isSlotSpecific = true;
+                                        resolvedSlotSmsManager = SmsManager.getSmsManagerForSubscriptionId(subId);
                                     }
                                 }
                                 break;
@@ -269,6 +264,9 @@ public class EmergencySmsPlugin extends Plugin {
                 Log.w(TAG, "Failed resolving slot-specific SmsManager: " + e.getMessage());
             }
         }
+
+        final SmsManager slotSmsManager = resolvedSlotSmsManager;
+        final boolean isSlotSpecific = (slotSmsManager != null);
 
         // 3. Divide message using available SmsManager
         ArrayList<String> parts = null;
