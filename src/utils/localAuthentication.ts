@@ -144,9 +144,9 @@ export async function authenticateAsync(options?: LocalAuthOptions): Promise<Loc
   // 1. Native Android Platform Execution
   if (Capacitor.isNativePlatform()) {
     try {
-      // Timeout promise to guarantee the JS UI never hangs indefinitely
+      // Timeout promise to guarantee the JS UI never hangs indefinitely (30s)
       const timeoutPromise = new Promise<NativeBiometricResponse>((_, reject) => {
-        setTimeout(() => reject(new Error('Native authentication prompt timed out')), 60000);
+        setTimeout(() => reject(new Error('Native authentication prompt timed out')), 30000);
       });
 
       const authPromise = NativeBiometricPlugin.authenticate({
@@ -167,24 +167,32 @@ export async function authenticateAsync(options?: LocalAuthOptions): Promise<Loc
         error: res?.error || 'Authentication rejected',
       };
     } catch (err: unknown) {
-      const errMsg = (err as Error)?.message || 'Authentication error';
-      console.warn('NativeBiometricPlugin execution error:', errMsg);
+      const errMsg = (err as Error)?.message || 'Authentication error or lockout';
+      console.warn('NativeBiometricPlugin rejected / error:', errMsg);
 
-      // Secondary fallback to BiometricAuth plugin
-      try {
-        await BiometricAuth.authenticate({
-          reason,
-          cancelTitle,
-          allowDeviceCredential,
-          iosFallbackTitle: options?.fallbackLabel || 'استخدام رمز المرور',
-        });
-        return { success: true };
-      } catch (fallbackErr: unknown) {
-        return {
-          success: false,
-          error: (fallbackErr as Error)?.message || errMsg,
-        };
+      // Only attempt BiometricAuth fallback if NativeBiometricPlugin is literally not implemented
+      if (errMsg.includes('not implemented') || errMsg.includes('UNIMPLEMENTED')) {
+        try {
+          await BiometricAuth.authenticate({
+            reason,
+            cancelTitle,
+            allowDeviceCredential,
+            iosFallbackTitle: options?.fallbackLabel || 'استخدام رمز المرور',
+          });
+          return { success: true };
+        } catch (fallbackErr: unknown) {
+          return {
+            success: false,
+            error: (fallbackErr as Error)?.message || errMsg,
+          };
+        }
       }
+
+      // Lockout, user cancellation, or OS error: immediately return failure so UI resets
+      return {
+        success: false,
+        error: errMsg,
+      };
     }
   }
 

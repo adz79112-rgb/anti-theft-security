@@ -65,7 +65,20 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
           customEmergencyPhone: triggerSender,
         });
 
-        if (failRes.isThirdAttempt) {
+        const isLockout = res.error && (
+          res.error.toLowerCase().includes('lockout') ||
+          res.error.toLowerCase().includes('too many')
+        );
+
+        if (isLockout) {
+          setAuthFeedback(
+            translateInline(
+              lang,
+              `⚠️ Biometric locked: ${res.error}. Use device PIN/Pattern.`,
+              `⚠️ تم قفل مستشعر البصمة: ${res.error}. استخدم رمز PIN أو النمط.`
+            )
+          );
+        } else if (failRes.isThirdAttempt) {
           setAuthFeedback(
             translateInline(
               lang,
@@ -77,14 +90,21 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
           setAuthFeedback(
             translateInline(
               lang,
-              `Authentication failed (${failRes.newCount} of 3 attempts).`,
-              `فشلت المصادقة (${failRes.newCount} من 3 محاولات).`
+              `Authentication failed (${failRes.newCount} of 3 attempts). ${res.error ? '(' + res.error + ')' : ''}`,
+              `فشلت المصادقة (${failRes.newCount} من 3 محاولات). ${res.error ? '(' + res.error + ')' : ''}`
             )
           );
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Native biometric error:', err);
+      setAuthFeedback(
+        translateInline(
+          lang,
+          `Authentication stopped: ${err?.message || 'Please try again with PIN'}`,
+          `توقفت المصادقة: ${err?.message || 'يرجى المحاولة مجدداً باستخدام رمز PIN'}`
+        )
+      );
     } finally {
       setIsAuthenticating(false);
     }

@@ -139,7 +139,20 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
           onSaveCapture,
         });
 
-        if (failRes.isThirdAttempt) {
+        const isLockout = authRes.error && (
+          authRes.error.toLowerCase().includes('lockout') ||
+          authRes.error.toLowerCase().includes('too many')
+        );
+
+        if (isLockout) {
+          setAuthError(
+            translateInline(
+              lang,
+              `⚠️ Biometric sensor locked: ${authRes.error}. Please use your device PIN/Pattern.`,
+              `⚠️ تم قفل مستشعر البصمة: ${authRes.error}. يرجى استخدام رمز PIN أو نمط الهاتف.`
+            )
+          );
+        } else if (failRes.isThirdAttempt) {
           setAuthError(
             translateInline(
               lang,
@@ -151,14 +164,21 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
           setAuthError(
             translateInline(
               lang,
-              `Authentication failed (${failRes.newCount} of 3 attempts).`,
-              `فشلت المصادقة (${failRes.newCount} من 3 محاولات).`
+              `Authentication failed (${failRes.newCount} of 3 attempts). ${authRes.error ? '(' + authRes.error + ')' : ''}`,
+              `فشلت المصادقة (${failRes.newCount} من 3 محاولات). ${authRes.error ? '(' + authRes.error + ')' : ''}`
             )
           );
         }
       }
     } catch (err: any) {
       console.warn('Native biometric error in LockdownScreen:', err);
+      setAuthError(
+        translateInline(
+          lang,
+          `Authentication stopped: ${err?.message || 'Please try again or use PIN'}`,
+          `توقفت المصادقة: ${err?.message || 'يرجى المحاولة مجدداً أو استخدام رمز PIN'}`
+        )
+      );
     } finally {
       setIsScanningFingerprint(false);
     }

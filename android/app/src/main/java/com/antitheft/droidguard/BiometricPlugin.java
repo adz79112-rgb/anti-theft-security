@@ -60,10 +60,7 @@ public class BiometricPlugin extends Plugin {
     public void authenticate(final PluginCall call) {
         final FragmentActivity activity = getActivity();
         if (activity == null || activity.isFinishing()) {
-            JSObject ret = new JSObject();
-            ret.put("success", false);
-            ret.put("error", "Activity is not available");
-            call.resolve(ret);
+            call.reject("Activity is not available", "ACTIVITY_UNAVAILABLE");
             return;
         }
 
@@ -85,12 +82,12 @@ public class BiometricPlugin extends Plugin {
                         public void onAuthenticationError(int errorCode, @NonNull CharSequence errString) {
                             super.onAuthenticationError(errorCode, errString);
                             if (isFinished.compareAndSet(false, true)) {
-                                Log.w(TAG, "Biometric error: " + errorCode + " - " + errString);
-                                JSObject ret = new JSObject();
-                                ret.put("success", false);
-                                ret.put("errorCode", errorCode);
-                                ret.put("error", errString.toString());
-                                call.resolve(ret);
+                                String errorMsg = (errString != null && errString.length() > 0)
+                                        ? errString.toString()
+                                        : "Biometric authentication error (" + errorCode + ")";
+                                Log.w(TAG, "Biometric onAuthenticationError: " + errorCode + " - " + errorMsg);
+                                // ALWAYS reject the Capacitor call so JavaScript bridge never hangs on lockouts or cancellations
+                                call.reject(errorMsg, String.valueOf(errorCode));
                             }
                         }
 
@@ -144,31 +141,25 @@ public class BiometricPlugin extends Plugin {
                     BiometricPrompt.PromptInfo promptInfo = builder.build();
                     activePrompt.authenticate(promptInfo);
 
-                    // Safety guard: If prompt is dismissed or idle after 90 seconds without callback, resolve safely
+                    // Safety guard: If prompt is dismissed or idle after 60 seconds without callback, reject safely
                     mainHandler.postDelayed(new Runnable() {
                         @Override
                         public void run() {
                             if (isFinished.compareAndSet(false, true)) {
-                                Log.w(TAG, "Biometric prompt timed out after 90s");
+                                Log.w(TAG, "Biometric prompt timed out after 60s");
                                 if (activePrompt != null) {
                                     try {
                                         activePrompt.cancelAuthentication();
                                     } catch (Exception ignored) {}
                                 }
-                                JSObject ret = new JSObject();
-                                ret.put("success", false);
-                                ret.put("error", "Authentication prompt timed out");
-                                call.resolve(ret);
+                                call.reject("Authentication prompt timed out", "TIMEOUT");
                             }
                         }
-                    }, 90000);
+                    }, 60000);
 
                 } catch (Exception e) {
                     Log.e(TAG, "Failed to launch BiometricPrompt", e);
-                    JSObject ret = new JSObject();
-                    ret.put("success", false);
-                    ret.put("error", e.getMessage() != null ? e.getMessage() : "Failed to launch BiometricPrompt");
-                    call.resolve(ret);
+                    call.reject(e.getMessage() != null ? e.getMessage() : "Failed to launch BiometricPrompt", "LAUNCH_FAILED");
                 }
             }
         });
