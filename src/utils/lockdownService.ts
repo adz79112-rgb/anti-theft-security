@@ -89,7 +89,7 @@ export async function executeStealthDispatchCycle(
   // a) Primary verified emergency contact phone
   // b) The command sender (if present)
   const emergencyPhone = customEmergencyPhone || (await getEmergencyContactPhone());
-  const smsBody = `[إنذار سرقة DroidGuard - دورة خفية #${cycleNumber}]\nالموقع المباشر للجهاز:\n${mapsUrl}\nإحداثيات: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`;
+  const smsBody = `[إنذار سرقة DroidGuard - دورة خفية #${cycleNumber}]\nالموقع المباشر للجهاز:\n${mapsUrl}\nإحداثيات: ${location.source === 'unavailable' ? 'غير متوفر' : location.latitude.toFixed(5) + ', ' + location.longitude.toFixed(5)}`;
 
   const recipientsToAlert: string[] = [];
   if (emergencyPhone) recipientsToAlert.push(emergencyPhone);
@@ -204,7 +204,7 @@ export async function executeStealthDispatchCycle(
       }
 
       // Send Location pin
-      await sendTelegramLocation(botToken, chatId, location.latitude, location.longitude);
+      if (location.source !== 'unavailable') { await sendTelegramLocation(botToken, chatId, location.latitude, location.longitude); }
       telegramSent = true;
 
       if (callbacks?.onLogDispatch) {

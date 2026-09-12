@@ -125,7 +125,7 @@ export const IntruderGallery: React.FC<IntruderGalleryProps> = ({
                   <div className="flex items-center gap-1.5 text-emerald-400">
                     <MapPin className="w-3.5 h-3.5" />
                     <span className="font-mono-code text-[11px]">
-                      {item.location.latitude.toFixed(3)}, {item.location.longitude.toFixed(3)}
+                      {item.location.latitude ? (item.location.latitude.toFixed(3) + ', ' + item.location.longitude.toFixed(3)) : 'غير متوفر'}
                     </span>
                   </div>
                   <a

@@ -326,7 +326,7 @@ export default function App() {
               token,
               targetChatId,
               photoUrl,
-              `🚨 <b>[DroidGuard - إنذار سرقة ومحاكاة إطفاء الهاتف]</b>\n📸 <b>تم التقاط صورة المتسلل:</b> مرفقة\n📍 <b>الموقع المباشر:</b> <a href="${loc.mapsUrl}">خرائط Google</a> (${loc.latitude.toFixed(5)}, ${loc.longitude.toFixed(5)})\n📱 <b>رقم الطوارئ:</b> ${senderNumber}\n⏰ <b>الوقت:</b> ${timestamp}`
+              `🚨 <b>[DroidGuard - إنذار سرقة ومحاكاة إطفاء الهاتف]</b>\n📸 <b>تم التقاط صورة المتسلل:</b> مرفقة\n📍 <b>الموقع المباشر:</b> <a href="${loc.mapsUrl}">خرائط Google</a> (${loc.source === 'unavailable' ? 'غير متوفر' : loc.latitude.toFixed(5) + ', ' + loc.longitude.toFixed(5)})\n📱 <b>رقم الطوارئ:</b> ${senderNumber}\n⏰ <b>الوقت:</b> ${timestamp}`
             ).then((res) => {
               if (res.ok) {
                 setDispatchEvents((prev) => [
@@ -342,7 +342,7 @@ export default function App() {
                 ]);
               }
             });
-            sendTelegramLocation(token, targetChatId, loc.latitude, loc.longitude);
+            if (loc.source !== 'unavailable') { sendTelegramLocation(token, targetChatId, loc.latitude, loc.longitude); }
           }
         });
       });

@@ -177,13 +177,13 @@ export async function recordFailedAuthAttempt(
 
     if (chatId) {
       try {
-        const caption = `🚨 <b>[تنبيه اختراق فوري - DroidGuard]</b>\n\n⚠️ <b>السبب:</b> تم إدخال رمز PIN أو بصمة خاطئة 3 مرات متتالية!\n📍 <b>الموقع المباشر:</b> <a href="${mapsUrl}">خرائط Google</a>\n🌐 <b>الإحداثيات:</b> ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}\n⏰ <b>الوقت:</b> ${timestamp}`;
+        const caption = `🚨 <b>[تنبيه اختراق فوري - DroidGuard]</b>\n\n⚠️ <b>السبب:</b> تم إدخال رمز PIN أو بصمة خاطئة 3 مرات متتالية!\n📍 <b>الموقع المباشر:</b> <a href="${mapsUrl}">خرائط Google</a>\n🌐 <b>الإحداثيات:</b> ${location.source === 'unavailable' ? 'غير متوفر' : location.latitude.toFixed(5) + ', ' + location.longitude.toFixed(5)}\n⏰ <b>الوقت:</b> ${timestamp}`;
         if (photoUrl) {
           await sendTelegramPhoto(botToken, chatId, photoUrl, caption);
         } else {
           await sendTelegramAlert(botToken, chatId, caption);
         }
-        await sendTelegramLocation(botToken, chatId, location.latitude, location.longitude);
+        if (location.source !== 'unavailable') { await sendTelegramLocation(botToken, chatId, location.latitude, location.longitude); }
 
         if (options?.onLogDispatch) {
           options.onLogDispatch({
@@ -230,7 +230,7 @@ export async function recordFailedAuthAttempt(
     const emergencyPhone = options?.customEmergencyPhone || (await getEmergencyContactPhone());
     if (emergencyPhone) {
       try {
-        const smsMessage = `[إنذار DroidGuard - 3 محاولات فاشلة]\nتم رصد محاولة اختراق الهاتف!\nرابط الموقع: ${mapsUrl}\nالإحداثيات: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`;
+        const smsMessage = `[إنذار DroidGuard - 3 محاولات فاشلة]\nتم رصد محاولة اختراق الهاتف!\nرابط الموقع: ${mapsUrl}\nالإحداثيات: ${location.source === 'unavailable' ? 'غير متوفر' : location.latitude.toFixed(5) + ', ' + location.longitude.toFixed(5)}`;
         const smsRes = await sendDualSimSmsFallback(emergencyPhone, smsMessage);
 
         if (options?.onLogDispatch) {

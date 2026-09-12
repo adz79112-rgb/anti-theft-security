@@ -1,16 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { translateInline } from '../utils/translateInline';
-import { ShieldCheck, Fingerprint, Scan, KeyRound, Lock, ArrowLeft, AlertTriangle, Camera, Globe } from 'lucide-react';
+import { ShieldCheck, Lock, AlertTriangle, Camera, Globe } from 'lucide-react';
 import { getTranslation } from '../utils/translations';
 import { Language, DispatchEvent, IntruderCapture } from '../types';
 import { LANGUAGES_REGISTRY } from '../utils/languagesRegistry';
 import { LanguageSelectorModal } from './LanguageSelectorModal';
-import { triggerNativeWebAuthn } from '../utils/auth';
+import { authenticateAsync } from '../utils/localAuthentication';
 import {
   recordFailedAuthAttempt,
   resetFailedAttempts,
-  verifyDevicePin,
-  getDeviceOwnerPin,
   getFailedAttempts,
 } from '../utils/authFailCounter';
 
@@ -33,13 +31,9 @@ export const AppEntryGate: React.FC<AppEntryGateProps> = ({
   const t = getTranslation(lang);
   const currentLangMeta = LANGUAGES_REGISTRY.find((l) => l.code === lang) || LANGUAGES_REGISTRY[0];
 
-  const [authMode, setAuthMode] = useState<'biometric' | 'pin'>('biometric');
-  const [pinDigits, setPinDigits] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanFeedback, setScanFeedback] = useState<string | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [errorFeedback, setErrorFeedback] = useState<string | null>(null);
   const [intruderAlertMsg, setIntruderAlertMsg] = useState<string | null>(null);
-  const [ownerPin, setOwnerPin] = useState('1234');
   const [failedAttempts, setFailedAttempts] = useState(0);
 
 
@@ -52,12 +46,14 @@ export const AppEntryGate: React.FC<AppEntryGateProps> = ({
   }, [onAuthenticated]);
 
   useEffect(() => {
-    getDeviceOwnerPin().then(setOwnerPin);
     getFailedAttempts().then(setFailedAttempts);
-  }, [handleSuccess]);
+    // Auto-trigger auth on mount
+    triggerNativeAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleFailed = async (reason: string) => {
-    setIsScanning(false);
+    setIsAuthenticating(false);
     const res = await recordFailedAuthAttempt({
       onLogDispatch,
       onSaveCapture,
@@ -72,58 +68,43 @@ export const AppEntryGate: React.FC<AppEntryGateProps> = ({
       setErrorFeedback(null);
     } else {
       setErrorFeedback(
-        `${reason} ${translateInline(lang, '(Failed attempt ${res.newCount} of 3). On the 3rd attempt, intruder photo will be captured and emergency reports sent.', '(محاولة فاشلة ${res.newCount} من 3). عند المحاولة الثالثة سيتم التقاط صورة الدخيل وإرسال تقارير الطوارئ.')}`
+        `${reason} ${translateInline(lang, `(Failed attempt ${res.newCount} of 3). On the 3rd attempt, intruder photo will be captured and emergency reports sent.`, `(محاولة فاشلة ${res.newCount} من 3). عند المحاولة الثالثة سيتم التقاط صورة الدخيل وإرسال تقارير الطوارئ.`)}`
       );
     }
   };
 
-  const handleBiometricAuth = () => {
-    setIsScanning(true);
-    setScanFeedback(translateInline(lang, 'Scanning biometric credentials...', 'جاري التحقق من البصمة البيومترية...'));
+  const triggerNativeAuth = async () => {
+    if (isAuthenticating) return;
+    setIsAuthenticating(true);
+    setErrorFeedback(null);
     
-    setTimeout(() => {
-      setIsScanning(false);
-      setScanFeedback(translateInline(lang, 'Biometrics Verified!', 'تم تأكيد الهوية بنجاح!'));
-      setTimeout(() => {
-        handleSuccess();
-      }, 500);
-    }, 900);
-  };
+    try {
+      const authRes = await authenticateAsync({
+        promptMessage: t.gateScanFingerprint || translateInline(lang, 'Verify your identity to unlock', 'أثبت هويتك لفتح التطبيق'),
+        cancelLabel: translateInline(lang, 'Cancel', 'إلغاء'),
+        fallbackLabel: translateInline(lang, 'Use PIN/Pattern', 'استخدام رمز PIN أو النمط'),
+        disableDeviceFallback: false,
+      });
 
-  const handleSimulateIntruderBio = () => {
-    setIsScanning(true);
-    setScanFeedback(translateInline(lang, 'Scanning fingerprint...', 'جاري فحص البصمة...'));
-    setTimeout(() => {
-      handleFailed(translateInline(lang, 'Intruder fingerprint not matched', 'بصمة متسلل غير مطابقة'));
-    }, 600);
-  };
-
-  const handlePinInput = async (num: string) => {
-    if (pinDigits.length < 4) {
-      const next = pinDigits + num;
-      setPinDigits(next);
-      if (next.length === 4) {
-        const isMatch = await verifyDevicePin(next);
-        if (isMatch) {
-          setTimeout(() => {
-            handleSuccess();
-          }, 300);
-        } else {
-          setPinDigits('');
-          await handleFailed(translateInline(lang, 'Incorrect PIN', 'رمز PIN غير صحيح'));
-        }
+      if (authRes.success) {
+        await handleSuccess();
+      } else {
+        await handleFailed(
+          authRes.error || translateInline(lang, 'Authentication failed', 'فشلت المصادقة')
+        );
       }
+    } catch (err: any) {
+      await handleFailed(translateInline(lang, 'Hardware error: ', 'خطأ في النظام: ') + (err?.message || 'Unknown error'));
+    } finally {
+      setIsAuthenticating(false);
     }
-  };
-
-  const handlePinBackspace = () => {
-    setPinDigits((prev) => prev.slice(0, -1));
   };
 
   return (
     <div
       id="app-entry-gate"
       className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col items-center justify-center p-6 relative overflow-hidden select-none"
+      dir={lang === 'ar' ? 'rtl' : 'ltr'}
     >
       {/* Background Cyber Grid effect */}
       <div className="absolute inset-0 bg-[radial-gradient(#1e293b_1px,transparent_1px)] [background-size:20px_20px] opacity-25" />
@@ -161,111 +142,37 @@ export const AppEntryGate: React.FC<AppEntryGateProps> = ({
           {t.gateSubtitle}
         </p>
 
-        {authMode === 'biometric' ? (
-          <div className="flex flex-col items-center">
-            {/* Biometric Touch target */}
-            <button
-              id="entry-biometric-btn"
-              onClick={handleBiometricAuth}
-              disabled={isScanning}
-              className={`relative w-28 h-28 rounded-3xl flex items-center justify-center transition-all duration-300 ${
-                isScanning
-                  ? 'bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 shadow-xl shadow-emerald-500/30 scale-105'
-                  : 'bg-slate-800/80 border-2 border-slate-700/80 hover:border-emerald-500/50 text-slate-300 hover:text-emerald-400 hover:scale-105 active:scale-95 shadow-lg'
-              }`}
-            >
-              {isScanning ? (
-                <Scan className="w-14 h-14 animate-pulse text-emerald-400" />
-              ) : (
-                <Fingerprint className="w-14 h-14" />
-              )}
-              {isScanning && (
-                <div className="absolute inset-0 rounded-3xl border-2 border-emerald-400 animate-ping opacity-30" />
-              )}
-            </button>
+        <div className="flex flex-col items-center">
+          <button
+            id="entry-biometric-btn"
+            onClick={triggerNativeAuth}
+            disabled={isAuthenticating}
+            className={`relative w-28 h-28 rounded-3xl flex items-center justify-center transition-all duration-300 ${
+              isAuthenticating
+                ? 'bg-emerald-500/20 border-2 border-emerald-400 text-emerald-300 shadow-xl shadow-emerald-500/30 scale-105'
+                : 'bg-slate-800/80 border-2 border-slate-700/80 hover:border-emerald-500/50 text-slate-300 hover:text-emerald-400 hover:scale-105 active:scale-95 shadow-lg'
+            }`}
+          >
+            {isAuthenticating ? (
+              <Lock className="w-14 h-14 animate-pulse text-emerald-400" />
+            ) : (
+              <Lock className="w-14 h-14" />
+            )}
+            {isAuthenticating && (
+              <div className="absolute inset-0 rounded-3xl border-2 border-emerald-400 animate-ping opacity-30" />
+            )}
+          </button>
 
-            <p className="mt-5 text-sm font-semibold text-slate-200">
-              {scanFeedback || t.gateScanFingerprint}
-            </p>
-            <p className="text-xs text-slate-500 mt-1">
-              (expo-local-authentication: Fingerprint / Face ID)
-            </p>
-
-            {/* Fallback button to PIN */}
-            <div className="mt-6 pt-4 border-t border-slate-800/80 w-full">
-              <button
-                id="entry-switch-to-pin-btn"
-                onClick={() => setAuthMode('pin')}
-                className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 px-4 py-2 rounded-xl transition border border-emerald-500/20"
-              >
-                <KeyRound className="w-4 h-4" />
-                <span>{t.gateUsePin}</span>
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-col items-center">
-            {/* PIN indicators & Hint */}
-            <p className="text-xs text-slate-400 mb-2">
-              {translateInline(lang, 'Enter phone lock PIN (Default PIN: ', 'أدخل رمز قفل الهاتف (الرمز الافتراضي: ')}<span className="font-mono-code font-bold text-emerald-400">{ownerPin}</span>{translateInline(lang, '):', '):')}
-            </p>
-            <div className="flex justify-center gap-3 mb-5">
-              {[0, 1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className={`w-4 h-4 rounded-full transition-all ${
-                    pinDigits.length > i
-                      ? 'bg-emerald-400 shadow-md shadow-emerald-400/50 scale-110'
-                      : 'border-2 border-slate-600 bg-slate-800/60'
-                  }`}
-                />
-              ))}
-            </div>
-
-            {/* Numeric Keypad */}
-            <div className="grid grid-cols-3 gap-3 w-64 max-w-full font-mono-code mb-3">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((digit) => (
-                <button
-                  key={digit}
-                  id={`entry-keypad-${digit}`}
-                  onClick={() => handlePinInput(digit)}
-                  className="h-12 rounded-2xl bg-slate-800/90 hover:bg-slate-700 active:bg-emerald-500/30 text-slate-100 font-bold text-lg transition border border-slate-700/60 shadow-sm"
-                >
-                  {digit}
-                </button>
-              ))}
-              <div />
-              <button
-                id="entry-keypad-0"
-                onClick={() => handlePinInput('0')}
-                className="h-12 rounded-2xl bg-slate-800/90 hover:bg-slate-700 active:bg-emerald-500/30 text-slate-100 font-bold text-lg transition border border-slate-700/60 shadow-sm"
-              >
-                0
-              </button>
-              <button
-                id="entry-keypad-del"
-                onClick={handlePinBackspace}
-                className="h-12 rounded-2xl bg-slate-800/50 hover:bg-slate-700 text-slate-400 hover:text-slate-100 text-xs font-semibold transition border border-slate-700/60 flex items-center justify-center"
-              >
-                {translateInline(lang, 'Clear', 'مسح')}
-              </button>
-            </div>
-
-            {/* Back to Biometrics */}
-            <button
-              id="entry-switch-to-bio-btn"
-              onClick={() => { setAuthMode('biometric'); setPinDigits(''); }}
-              className="text-xs text-slate-400 hover:text-slate-200 mt-2 flex items-center gap-1 transition"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>{translateInline(lang, 'Return to fingerprint authentication', 'العودة للمصادقة بالبصمة')}</span>
-            </button>
-          </div>
-        )}
+          <p className="mt-5 text-sm font-semibold text-slate-200">
+            {isAuthenticating 
+              ? translateInline(lang, 'Awaiting OS Authentication...', 'بانتظار مصادقة النظام...')
+              : translateInline(lang, 'Tap to unlock with device security', 'اضغط لفتح القفل بأمان الجهاز')}
+          </p>
+        </div>
 
         {/* Intruder Alert Banner */}
         {intruderAlertMsg && (
-          <div className="mt-4 p-3.5 bg-rose-950/80 border border-rose-500/60 rounded-2xl text-rose-200 text-xs text-center space-y-2 shadow-xl shadow-rose-950/60 animate-bounce">
+          <div className="mt-6 p-3.5 bg-rose-950/80 border border-rose-500/60 rounded-2xl text-rose-200 text-xs text-center space-y-2 shadow-xl shadow-rose-950/60 animate-bounce">
             <div className="flex items-center justify-center gap-2 text-rose-300 font-bold text-sm">
               <Camera className="w-4 h-4 text-rose-400" />
               <span>{translateInline(lang, 'Intruder photo captured silently!', 'تم التقاط صورة المتسلل صامتاً!')}</span>
@@ -280,14 +187,15 @@ export const AppEntryGate: React.FC<AppEntryGateProps> = ({
         )}
 
         {errorFeedback && (
-          <div className="mt-4 p-2.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs text-center">
+          <div className="mt-6 p-2.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs text-center flex flex-col gap-2 items-center">
+            <AlertTriangle className="w-5 h-5" />
             {errorFeedback}
           </div>
         )}
 
         <div className="mt-8 flex items-center justify-center gap-2 text-xs text-slate-500">
           <Lock className="w-3.5 h-3.5 text-slate-400" />
-          <span>Android Local Authentication Protected</span>
+          <span>Native Android Authentication Protected</span>
         </div>
       </div>
 

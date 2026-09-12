@@ -87,7 +87,7 @@ export async function executeDualAlert(
   // Dispatches live GPS link to both:
   // 1. Sender of the command (if present)
   // 2. Verified primary emergency phone
-  const smsBody = `[تنبيه أمان DroidGuard - موقع GPS المباشر]\nالموقع المباشر:\n${directGpsLink}\nالإحداثيات: ${location.latitude.toFixed(5)}, ${location.longitude.toFixed(5)}`;
+  const smsBody = `[تنبيه أمان DroidGuard - موقع GPS المباشر]\nالموقع المباشر:\n${directGpsLink}\nالإحداثيات: ${location.source === 'unavailable' ? 'غير متوفر' : location.latitude.toFixed(5) + ', ' + location.longitude.toFixed(5)}`;
 
   // Target recipients list
   const smsTargets: string[] = [];
