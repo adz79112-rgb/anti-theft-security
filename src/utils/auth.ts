@@ -1,6 +1,8 @@
 // Android Device Credential & Biometric Authenticator
 // Corresponds to expo-local-authentication with disableDeviceFallback: false
 
+import { authenticateAsync } from './localAuthentication';
+
 export interface AuthResult {
   success: boolean;
   error?: string;
@@ -15,16 +17,6 @@ export async function checkBiometricHardware(): Promise<{
   isEnrolled: boolean;
   supportedTypes: string[];
 }> {
-  let hasHardware = false;
-  if (window.PublicKeyCredential) {
-    try {
-      hasHardware = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-    } catch {
-      hasHardware = true;
-    }
-  } else {
-    hasHardware = true;
-  }
   return {
     hasHardware: true,
     isEnrolled: true,
@@ -33,11 +25,12 @@ export async function checkBiometricHardware(): Promise<{
 }
 
 /**
- * Trigger native WebAuthn if available, otherwise triggers OS dialog fallback
+ * Trigger native Android Biometric Authentication dialog (Fingerprint/Face/PIN)
  */
 export async function triggerNativeWebAuthn(): Promise<boolean> {
-  // In the web preview environment on mobile devices, calling the WebAuthn API
-  // can cause the iframe or the browser rendering to hang. 
-  // We've disabled this here and the app will rely on the PIN mechanism in preview.
-  return false;
+  const res = await authenticateAsync({
+    promptMessage: 'تأكيد بصمة الإصبع أو الوجه للمصادقة',
+    cancelLabel: 'إلغاء',
+  });
+  return res.success;
 }

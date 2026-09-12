@@ -2,6 +2,7 @@ import { translateInline } from '../utils/translateInline';
 import React, { useState, useEffect } from 'react';
 import { Fingerprint, Scan, ShieldAlert, KeyRound, CheckCircle2, X, AlertTriangle, Camera } from 'lucide-react';
 import { triggerNativeWebAuthn } from '../utils/auth';
+import { authenticateAsync } from '../utils/localAuthentication';
 import { performStrictFaceScan } from '../utils/faceRecognition';
 import {
   recordFailedAuthAttempt,
@@ -119,13 +120,31 @@ export const DeviceAuthModal: React.FC<DeviceAuthModalProps> = ({
     }
   };
 
-  const handleBiometricTouch = () => {
+  const handleBiometricTouch = async () => {
     setIsScanning(true);
     setErrorMsg(null);
-    setTimeout(() => {
+    try {
+      const authRes = await authenticateAsync({
+        promptMessage: translateInline(lang, 'Confirm your fingerprint to access security settings', 'تأكيد بصمة الإصبع للوصول إلى إعدادات الحماية'),
+        cancelLabel: translateInline(lang, 'Cancel', 'إلغاء'),
+        fallbackLabel: translateInline(lang, 'Use PIN', 'استخدام رمز PIN'),
+        disableDeviceFallback: false,
+      });
+
       setIsScanning(false);
-      handleSuccess();
-    }, 900);
+      if (authRes.success) {
+        handleSuccess();
+      } else {
+        await handleFailedAttempt(
+          authRes.error || translateInline(lang, 'Biometric fingerprint verification failed', 'فشل التحقق من البصمة البيومترية')
+        );
+      }
+    } catch {
+      setIsScanning(false);
+      await handleFailedAttempt(
+        translateInline(lang, 'Biometric authentication hardware error', 'خطأ في التحقق من عتاد البصمة البيومترية')
+      );
+    }
   };
 
   // Perform strict face analysis using real camera feed

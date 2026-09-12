@@ -4,6 +4,8 @@
  * Supports Fingerprint, Facial Recognition, and Android Device PIN/Pattern
  */
 
+import { BiometricAuth, BiometryType } from '@aparajita/capacitor-biometric-auth';
+
 export enum AuthenticationType {
   FINGERPRINT = 1,
   FACIAL_RECOGNITION = 2,
@@ -31,93 +33,130 @@ export interface LocalAuthOptions {
 }
 
 /**
- * Check if the device has biometric hardware available
- * Corresponds to LocalAuthentication.hasHardwareAsync()
+ * Check if native hardware biometric is available (Capacitor or WebAuthn)
  */
 export async function hasHardwareAsync(): Promise<boolean> {
-  if (typeof window !== 'undefined' && window.PublicKeyCredential) {
-    try {
-      return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-    } catch {
-      return true;
+  try {
+    const info = await BiometricAuth.checkBiometry();
+    return info.isAvailable;
+  } catch {
+    if (typeof window !== 'undefined' && window.PublicKeyCredential) {
+      try {
+        return await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+      } catch {
+        return false;
+      }
     }
+    return false;
   }
-  return true;
 }
 
 /**
  * Check if biometric records (fingerprint/face) are enrolled on this device
- * Corresponds to LocalAuthentication.isEnrolledAsync()
  */
 export async function isEnrolledAsync(): Promise<boolean> {
-  return true;
+  try {
+    const info = await BiometricAuth.checkBiometry();
+    return info.isAvailable && info.biometryType !== BiometryType.none;
+  } catch {
+    return false;
+  }
 }
 
 /**
  * Get supported authentication types
- * Corresponds to LocalAuthentication.supportedAuthenticationTypesAsync()
  */
 export async function supportedAuthenticationTypesAsync(): Promise<AuthenticationType[]> {
-  return [
-    AuthenticationType.FINGERPRINT,
-    AuthenticationType.FACIAL_RECOGNITION,
-  ];
+  try {
+    const info = await BiometricAuth.checkBiometry();
+    if (info.biometryType === BiometryType.faceAuthentication || info.biometryType === BiometryType.faceId) {
+      return [AuthenticationType.FACIAL_RECOGNITION];
+    }
+    if (info.biometryType === BiometryType.fingerprintAuthentication || info.biometryType === BiometryType.touchId) {
+      return [AuthenticationType.FINGERPRINT];
+    }
+    if (info.biometryType === BiometryType.irisAuthentication) {
+      return [AuthenticationType.IRIS];
+    }
+    return [AuthenticationType.FINGERPRINT, AuthenticationType.FACIAL_RECOGNITION];
+  } catch {
+    return [AuthenticationType.FINGERPRINT];
+  }
 }
 
 /**
  * Get device security level
- * Corresponds to LocalAuthentication.getEnrolledLevelAsync()
  */
 export async function getEnrolledLevelAsync(): Promise<SecurityLevel> {
-  return SecurityLevel.BIOMETRIC;
+  const hasBio = await isEnrolledAsync();
+  return hasBio ? SecurityLevel.BIOMETRIC : SecurityLevel.SECRET;
 }
 
 /**
- * Prompt biometric authentication (Fingerprint, Face, or Device PIN)
- * Corresponds to LocalAuthentication.authenticateAsync(options)
- * Attempts native WebAuthn platform authenticator first, then returns result.
+ * Prompt REAL Native Android Biometric Authentication dialog (Fingerprint, Face, Device Credential)
+ * Strictly verifies against Android BiometricPrompt hardware.
  */
 export async function authenticateAsync(options?: LocalAuthOptions): Promise<LocalAuthResult> {
-  // Attempt native WebAuthn platform authenticator if available (e.g. Windows Hello, Touch ID, Android BiometricPrompt)
-  if (typeof window !== 'undefined' && window.PublicKeyCredential && navigator.credentials) {
-    try {
-      const challenge = new Uint8Array(32);
-      window.crypto.getRandomValues(challenge);
-      const credential = await navigator.credentials.get({
-        publicKey: {
-          challenge,
-          timeout: 60000,
-          userVerification: 'preferred',
-          allowCredentials: [],
-        },
-      });
-      if (credential) {
-        return { success: true };
-      }
-    } catch (err: unknown) {
-      // User cancelled or browser prompt was closed
-      console.log('WebAuthn attempt completed:', (err as Error)?.message);
-    }
-  }
+  const reason = options?.promptMessage || 'المس مستشعر البصمة أو وجهك للتحقق من هوية المالك';
+  const cancelTitle = options?.cancelLabel || 'إلغاء';
 
-  // If native browser prompt is not supported or not completed,
-  // return success: false with reason so the application UI presents the interactive Android Biometric Prompt
-  return {
-    success: false,
-    error: 'requires_ui_prompt',
-  };
+  // 1. Try Native Capacitor Biometric Auth (Triggers Android BiometricPrompt Dialog)
+  try {
+    await BiometricAuth.authenticate({
+      reason,
+      cancelTitle,
+      allowDeviceCredential: !options?.disableDeviceFallback,
+      iosFallbackTitle: options?.fallbackLabel || 'استخدام رمز المرور',
+    });
+    return { success: true };
+  } catch (err: unknown) {
+    const errorMessage = (err as Error)?.message || 'فشلت المصادقة البيومترية';
+    console.warn('Native BiometricAuth returned:', errorMessage);
+
+    // If native plugin is not implemented (e.g. running in pure web browser preview), fallback to WebAuthn
+    if (
+      errorMessage.includes('not implemented') ||
+      errorMessage.includes('UNIMPLEMENTED') ||
+      errorMessage.includes('plugin is not implemented')
+    ) {
+      if (typeof window !== 'undefined' && window.PublicKeyCredential && navigator.credentials) {
+        try {
+          const challenge = new Uint8Array(32);
+          window.crypto.getRandomValues(challenge);
+          const credential = await navigator.credentials.get({
+            publicKey: {
+              challenge,
+              timeout: 60000,
+              userVerification: 'required',
+              allowCredentials: [],
+            },
+          });
+          if (credential) {
+            return { success: true };
+          }
+        } catch (webAuthnErr: unknown) {
+          return {
+            success: false,
+            error: (webAuthnErr as Error)?.message || 'فشلت مصادقة بصمة المتصفح',
+          };
+        }
+      }
+    }
+
+    return {
+      success: false,
+      error: errorMessage,
+    };
+  }
 }
 
 /**
  * Cancel any ongoing authentication
  */
 export async function cancelAuthenticate(): Promise<void> {
-  // No-op for web
+  // BiometricAuth handles dismissals natively
 }
 
-/**
- * Complete Expo-compatible LocalAuthentication namespace object
- */
 export const LocalAuthentication = {
   AuthenticationType,
   SecurityLevel,
