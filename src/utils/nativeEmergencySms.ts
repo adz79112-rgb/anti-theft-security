@@ -114,6 +114,24 @@ export async function requestStartupSecurityPermissions(): Promise<SmsPermission
 }
 
 /**
+ * Sanitizes phone numbers by removing all whitespace, dashes, parentheses, brackets, dots, etc.
+ * Preserves leading '+' for international standard notation.
+ * e.g., '+213 661 12 34 56' -> '+213661123456'
+ *       '(202) 555-0123' -> '2025550123'
+ */
+export function sanitizePhoneNumber(phoneNumber: string): string {
+  if (!phoneNumber) return '';
+  // Strip all whitespace, dashes, parentheses, brackets, dots
+  let sanitized = phoneNumber.replace(/[\s\-\(\)\[\]\.]/g, '').trim();
+  if (sanitized.startsWith('+')) {
+    sanitized = '+' + sanitized.slice(1).replace(/\D/g, '');
+  } else {
+    sanitized = sanitized.replace(/\D/g, '');
+  }
+  return sanitized;
+}
+
+/**
  * Sends an emergency SMS directly and silently in the background via Android SmsManager.
  * Does NOT open the device's default SMS app.
  * Only returns success if confirmed by native SmsManager.
@@ -123,7 +141,7 @@ export async function sendSilentBackgroundSms(
   message: string,
   slot?: 1 | 2
 ): Promise<SmsSendResult> {
-  const cleanPhone = (phoneNumber || '').trim();
+  const cleanPhone = sanitizePhoneNumber(phoneNumber);
   const cleanMessage = (message || '').trim();
 
   if (!cleanPhone) {
@@ -131,7 +149,7 @@ export async function sendSilentBackgroundSms(
       success: false,
       confirmedBySmsManager: false,
       recipient: cleanPhone,
-      error: 'Emergency recipient phone number is missing or empty.',
+      error: 'Emergency recipient phone number is missing, invalid or empty after sanitization.',
     };
   }
 

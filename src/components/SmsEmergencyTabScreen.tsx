@@ -25,6 +25,7 @@ import {
 import {
   checkSmsPermissionStatus,
   requestDirectSmsPermission,
+  sanitizePhoneNumber,
 } from '../utils/nativeEmergencySms';
 import { Capacitor } from '@capacitor/core';
 import { DualSimNetworkCard } from './DualSimNetworkCard';
@@ -128,11 +129,12 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
       }
     }
 
-    await saveEmergencyContactPhone(emergencyPhone.trim());
+    const sanitized = sanitizePhoneNumber(emergencyPhone);
+    await saveEmergencyContactPhone(sanitized);
     setIsSaved(true);
     onChangeConfig({
       ...config,
-      emergencyContactPhone: emergencyPhone.trim(),
+      emergencyContactPhone: sanitized,
     });
 
     if (Capacitor.isNativePlatform()) {

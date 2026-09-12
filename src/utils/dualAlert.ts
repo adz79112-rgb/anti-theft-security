@@ -16,6 +16,7 @@ import { getActiveAlertEmail } from './emailVerification';
 import { AsyncStorage, STORAGE_KEYS } from './storage';
 import { getEmergencyContactPhone } from './emergencyContact';
 import { sendDualSimSmsFallback, DualSimSmsResult } from './simManager';
+import { sanitizePhoneNumber } from './nativeEmergencySms';
 import { DispatchEvent, IntruderCapture } from '../types';
 
 export interface DualAlertResult {
@@ -91,9 +92,12 @@ export async function executeDualAlert(
 
   // Target recipients list
   const smsTargets: string[] = [];
-  if (emergencyPhone && emergencyPhone.trim()) smsTargets.push(emergencyPhone.trim());
-  if (cleanSender && cleanSender.trim() && !smsTargets.includes(cleanSender.trim())) {
-    smsTargets.push(cleanSender.trim());
+  const sanitizedEmergency = emergencyPhone ? sanitizePhoneNumber(emergencyPhone) : '';
+  if (sanitizedEmergency) smsTargets.push(sanitizedEmergency);
+
+  const sanitizedSender = cleanSender ? sanitizePhoneNumber(cleanSender) : '';
+  if (sanitizedSender && !smsTargets.includes(sanitizedSender)) {
+    smsTargets.push(sanitizedSender);
   }
   if (smsTargets.length === 0 && callbacks?.onLogDispatch) {
     callbacks.onLogDispatch({

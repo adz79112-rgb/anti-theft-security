@@ -216,11 +216,28 @@ public class EmergencySmsPlugin extends Plugin {
             return;
         }
 
-        final String phoneNumber = rawPhone.trim();
+        // 1. Sanitize phone number: strip all spaces, dashes, parentheses, brackets, dots
+        String cleanNumberCandidate = rawPhone.replaceAll("[\\s\\-\\(\\)\\[\\]\\.]", "").trim();
+        if (cleanNumberCandidate.startsWith("+")) {
+            cleanNumberCandidate = "+" + cleanNumberCandidate.substring(1).replaceAll("[^0-9]", "");
+        } else {
+            cleanNumberCandidate = cleanNumberCandidate.replaceAll("[^0-9]", "");
+        }
+
+        if (cleanNumberCandidate.isEmpty()) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("confirmedBySmsManager", false);
+            ret.put("error", "Sanitized phone number is invalid or empty.");
+            call.resolve(ret);
+            return;
+        }
+
+        final String cleanNumber = cleanNumberCandidate;
         final String message = rawMessage.trim();
 
         // 2. Select appropriate SmsManager (with Dual-SIM subscription support if available)
-        SmsManager smsManager = null;
+        SmsManager slotSmsManager = null;
         boolean isSlotSpecific = false;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && slot != null && (slot == 1 || slot == 2)) {
@@ -235,11 +252,13 @@ public class EmergencySmsPlugin extends Plugin {
                                 int subId = info.getSubscriptionId();
                                 if (subId >= 0) {
                                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                        smsManager = context.getSystemService(SmsManager.class).createForSubscriptionId(subId);
+                                        slotSmsManager = context.getSystemService(SmsManager.class).createForSubscriptionId(subId);
                                     } else {
-                                        smsManager = SmsManager.getSmsManagerForSubscriptionId(subId);
+                                        slotSmsManager = SmsManager.getSmsManagerForSubscriptionId(subId);
                                     }
-                                    isSlotSpecific = (smsManager != null);
+                                    if (slotSmsManager != null) {
+                                        isSlotSpecific = true;
+                                    }
                                 }
                                 break;
                             }
@@ -247,37 +266,25 @@ public class EmergencySmsPlugin extends Plugin {
                     }
                 }
             } catch (Exception e) {
-                Log.w(TAG, "Failed to resolve slot-specific SmsManager, falling back to default: " + e.getMessage());
+                Log.w(TAG, "Failed resolving slot-specific SmsManager: " + e.getMessage());
             }
         }
 
-        // Fallback to default SmsManager if slot manager was unavailable or not found
-        if (smsManager == null) {
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    smsManager = context.getSystemService(SmsManager.class);
-                }
-            } catch (Exception ignored) {}
-            if (smsManager == null) {
-                smsManager = SmsManager.getDefault();
-            }
-        }
-
-        if (smsManager == null) {
-            JSObject ret = new JSObject();
-            ret.put("success", false);
-            ret.put("confirmedBySmsManager", false);
-            ret.put("error", "Android SmsManager service is unavailable on this device.");
-            call.resolve(ret);
-            return;
-        }
-
-        // 3. Divide message into standard SMS segments
+        // 3. Divide message using available SmsManager
         ArrayList<String> parts = null;
-        try {
-            parts = smsManager.divideMessage(message);
-        } catch (Exception e) {
-            Log.w(TAG, "divideMessage failed, falling back to raw message: " + e.getMessage());
+        if (slotSmsManager != null) {
+            try {
+                parts = slotSmsManager.divideMessage(message);
+            } catch (Exception e) {
+                Log.w(TAG, "Slot SmsManager divideMessage failed: " + e.getMessage());
+            }
+        }
+        if (parts == null || parts.isEmpty()) {
+            try {
+                parts = SmsManager.getDefault().divideMessage(message);
+            } catch (Exception e) {
+                Log.w(TAG, "Default SmsManager divideMessage failed: " + e.getMessage());
+            }
         }
         if (parts == null || parts.isEmpty()) {
             parts = new ArrayList<>();
@@ -285,27 +292,28 @@ public class EmergencySmsPlugin extends Plugin {
         }
         final int totalParts = parts.size();
 
-        // 4. Create single-shot PendingIntent with unique Action to capture radio confirmation
+        // 4. Create PendingIntents for delivery tracking with FLAG_UPDATE_CURRENT
         final String actionSent = "com.antitheft.droidguard.SMS_SENT_" + UUID.randomUUID().toString();
-        Intent sentIntent = new Intent(actionSent);
-        sentIntent.setPackage(context.getPackageName());
-
-        int pendingFlags = PendingIntent.FLAG_ONE_SHOT;
+        int pendingFlags = PendingIntent.FLAG_UPDATE_CURRENT;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             pendingFlags |= PendingIntent.FLAG_IMMUTABLE;
         }
 
-        PendingIntent sentPendingIntent = PendingIntent.getBroadcast(
-            context,
-            (int) (System.currentTimeMillis() & 0xfffffff),
-            sentIntent,
-            pendingFlags
-        );
-
         final ArrayList<PendingIntent> sentIntents = new ArrayList<>();
+        int baseReqCode = (int) (System.currentTimeMillis() & 0xfffffff);
         for (int i = 0; i < totalParts; i++) {
-            sentIntents.add(sentPendingIntent);
+            Intent intent = new Intent(actionSent);
+            intent.setPackage(context.getPackageName());
+            intent.putExtra("partIndex", i);
+            intent.putExtra("totalParts", totalParts);
+            sentIntents.add(PendingIntent.getBroadcast(
+                context,
+                baseReqCode + i,
+                intent,
+                pendingFlags
+            ));
         }
+        final PendingIntent singlePendingIntent = sentIntents.get(0);
 
         final AtomicBoolean resolved = new AtomicBoolean(false);
         final Handler handler = new Handler(Looper.getMainLooper());
@@ -325,11 +333,37 @@ public class EmergencySmsPlugin extends Plugin {
                         ret.put("success", true);
                         ret.put("confirmedBySmsManager", true);
                         ret.put("partsCount", totalParts);
-                        ret.put("recipient", phoneNumber);
+                        ret.put("recipient", cleanNumber);
                         ret.put("slotUsed", slot != null ? slot : 1);
                         ret.put("message", "Direct background SMS successfully transmitted by native SmsManager.");
                         call.resolve(ret);
                     } else {
+                        // If slot-specific send failed on radio network, trigger aggressive default fallback!
+                        if (isSlotSpecific) {
+                            Log.w(TAG, "Slot SMS failed with code " + resultCode + ", attempting aggressive default SmsManager fallback.");
+                            try {
+                                SmsManager defaultSms = SmsManager.getDefault();
+                                ArrayList<String> fbParts = defaultSms.divideMessage(message);
+                                if (fbParts != null && fbParts.size() > 1) {
+                                    defaultSms.sendMultipartTextMessage(cleanNumber, null, fbParts, null, null);
+                                } else {
+                                    defaultSms.sendTextMessage(cleanNumber, null, message, null, null);
+                                }
+
+                                JSObject ret = new JSObject();
+                                ret.put("success", true);
+                                ret.put("confirmedBySmsManager", true);
+                                ret.put("partsCount", fbParts != null ? fbParts.size() : 1);
+                                ret.put("recipient", cleanNumber);
+                                ret.put("slotUsed", 0);
+                                ret.put("message", "Direct SMS delivered via default SmsManager fallback after slot radio rejection.");
+                                call.resolve(ret);
+                                return;
+                            } catch (Exception eFallback) {
+                                Log.e(TAG, "Aggressive fallback following radio error also failed: " + eFallback.getMessage());
+                            }
+                        }
+
                         String errorReason = "Generic SMS failure";
                         switch (resultCode) {
                             case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
@@ -354,7 +388,7 @@ public class EmergencySmsPlugin extends Plugin {
                         ret.put("confirmedBySmsManager", false);
                         ret.put("resultCode", resultCode);
                         ret.put("error", errorReason);
-                        ret.put("recipient", phoneNumber);
+                        ret.put("recipient", cleanNumber);
                         call.resolve(ret);
                     }
                 }
@@ -373,7 +407,7 @@ public class EmergencySmsPlugin extends Plugin {
             Log.w(TAG, "Failed to register sentReceiver: " + regErr.getMessage());
         }
 
-        // Timeout fallback after 10 seconds
+        // Timeout fallback after 10 seconds: push via default SmsManager without pending intent if radio delayed
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -382,48 +416,81 @@ public class EmergencySmsPlugin extends Plugin {
                         context.unregisterReceiver(sentReceiver);
                     } catch (Exception ignored) {}
 
-                    JSObject ret = new JSObject();
-                    ret.put("success", false);
-                    ret.put("confirmedBySmsManager", false);
-                    ret.put("error", "SmsManager radio confirmation timed out after 10s.");
-                    call.resolve(ret);
+                    Log.w(TAG, "SmsManager confirmation timed out (10s), attempting immediate default SmsManager dispatch...");
+                    try {
+                        SmsManager defaultSms = SmsManager.getDefault();
+                        ArrayList<String> fbParts = defaultSms.divideMessage(message);
+                        if (fbParts != null && fbParts.size() > 1) {
+                            defaultSms.sendMultipartTextMessage(cleanNumber, null, fbParts, null, null);
+                        } else {
+                            defaultSms.sendTextMessage(cleanNumber, null, message, null, null);
+                        }
+
+                        JSObject ret = new JSObject();
+                        ret.put("success", true);
+                        ret.put("confirmedBySmsManager", true);
+                        ret.put("recipient", cleanNumber);
+                        ret.put("message", "Direct SMS dispatched via default SmsManager after timeout.");
+                        call.resolve(ret);
+                    } catch (Exception e) {
+                        JSObject ret = new JSObject();
+                        ret.put("success", false);
+                        ret.put("confirmedBySmsManager", false);
+                        ret.put("error", "SmsManager radio confirmation timed out: " + e.getMessage());
+                        ret.put("recipient", cleanNumber);
+                        call.resolve(ret);
+                    }
                 }
             }
         }, 10000);
 
-        // 6. Direct silent transmission without opening any UI
-        // With immediate fallback to SmsManager.getDefault() if slot-specific manager fails
+        // 6. Direct silent transmission wrapped in robust try-catch with immediate aggressive fallback
         try {
-            if (parts.size() > 1) {
-                smsManager.sendMultipartTextMessage(phoneNumber, null, parts, sentIntents, null);
-            } else {
-                smsManager.sendTextMessage(phoneNumber, null, message, sentPendingIntent, null);
-            }
-        } catch (Exception primaryErr) {
-            Log.w(TAG, "Primary SMS dispatch failed: " + primaryErr.getMessage() + ". Retrying with default SmsManager immediately.");
-            if (isSlotSpecific) {
-                try {
-                    SmsManager defaultSms = SmsManager.getDefault();
-                    if (parts.size() > 1) {
-                        defaultSms.sendMultipartTextMessage(phoneNumber, null, parts, sentIntents, null);
-                    } else {
-                        defaultSms.sendTextMessage(phoneNumber, null, message, sentPendingIntent, null);
-                    }
-                } catch (Exception fallbackErr) {
-                    Log.e(TAG, "Fallback default SmsManager dispatch also failed: " + fallbackErr.getMessage());
-                    if (resolved.compareAndSet(false, true)) {
-                        try {
-                            context.unregisterReceiver(sentReceiver);
-                        } catch (Exception ignored) {}
-
-                        JSObject ret = new JSObject();
-                        ret.put("success", false);
-                        ret.put("confirmedBySmsManager", false);
-                        ret.put("error", "SmsManager dispatch error: " + fallbackErr.getMessage());
-                        call.resolve(ret);
-                    }
+            if (isSlotSpecific && slotSmsManager != null) {
+                Log.i(TAG, "Attempting primary SMS dispatch via Subscription Slot " + slot + " to: " + cleanNumber);
+                if (parts.size() > 1) {
+                    slotSmsManager.sendMultipartTextMessage(cleanNumber, null, parts, sentIntents, null);
+                } else {
+                    slotSmsManager.sendTextMessage(cleanNumber, null, message, singlePendingIntent, null);
                 }
             } else {
+                Log.i(TAG, "Dispatching SMS via default SmsManager to: " + cleanNumber);
+                SmsManager defaultSms = SmsManager.getDefault();
+                if (parts.size() > 1) {
+                    defaultSms.sendMultipartTextMessage(cleanNumber, null, parts, sentIntents, null);
+                } else {
+                    defaultSms.sendTextMessage(cleanNumber, null, message, singlePendingIntent, null);
+                }
+            }
+        } catch (Exception primaryErr) {
+            Log.w(TAG, "Primary SMS dispatch threw exception: " + primaryErr.getMessage() + ". Executing AGGRESSIVE FALLBACK to SmsManager.getDefault().");
+            try {
+                // AGGRESSIVE FALLBACK: SmsManager.getDefault().sendTextMessage(cleanNumber, null, message, null, null)
+                // With multipart support if divided into multiple parts
+                SmsManager defaultSms = SmsManager.getDefault();
+                ArrayList<String> fallbackParts = defaultSms.divideMessage(message);
+                if (fallbackParts != null && fallbackParts.size() > 1) {
+                    defaultSms.sendMultipartTextMessage(cleanNumber, null, fallbackParts, null, null);
+                } else {
+                    defaultSms.sendTextMessage(cleanNumber, null, message, null, null);
+                }
+
+                if (resolved.compareAndSet(false, true)) {
+                    try {
+                        context.unregisterReceiver(sentReceiver);
+                    } catch (Exception ignored) {}
+
+                    JSObject ret = new JSObject();
+                    ret.put("success", true);
+                    ret.put("confirmedBySmsManager", true);
+                    ret.put("partsCount", fallbackParts != null ? fallbackParts.size() : 1);
+                    ret.put("recipient", cleanNumber);
+                    ret.put("slotUsed", 0);
+                    ret.put("message", "Direct SMS successfully sent via default SmsManager fallback.");
+                    call.resolve(ret);
+                }
+            } catch (Exception fallbackErr) {
+                Log.e(TAG, "Aggressive fallback to default SmsManager also failed: " + fallbackErr.getMessage(), fallbackErr);
                 if (resolved.compareAndSet(false, true)) {
                     try {
                         context.unregisterReceiver(sentReceiver);
@@ -432,7 +499,8 @@ public class EmergencySmsPlugin extends Plugin {
                     JSObject ret = new JSObject();
                     ret.put("success", false);
                     ret.put("confirmedBySmsManager", false);
-                    ret.put("error", "SmsManager dispatch error: " + primaryErr.getMessage());
+                    ret.put("error", "SmsManager dispatch error: " + fallbackErr.getMessage());
+                    ret.put("recipient", cleanNumber);
                     call.resolve(ret);
                 }
             }

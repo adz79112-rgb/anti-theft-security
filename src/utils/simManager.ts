@@ -10,7 +10,7 @@
 
 import { AsyncStorage, STORAGE_KEYS } from './storage';
 import { getRealHardwareSimCards } from './nativeSimCard';
-import { sendSilentBackgroundSms } from './nativeEmergencySms';
+import { sendSilentBackgroundSms, sanitizePhoneNumber } from './nativeEmergencySms';
 import { Capacitor } from '@capacitor/core';
 
 export interface SIMCard {
@@ -324,12 +324,13 @@ export async function sendDualSimSmsFallback(
   recipient: string,
   message: string
 ): Promise<DualSimSmsResult> {
+  const cleanRecipient = sanitizePhoneNumber(recipient);
   const state = await getNetworkAndSimState();
   const [sim1, sim2] = state.simCards;
 
   // Real native background SMS dispatch via Android SmsManager
   // 1. Attempt SIM 1
-  const res1 = await sendSilentBackgroundSms(recipient, message, 1);
+  const res1 = await sendSilentBackgroundSms(cleanRecipient, message, 1);
   let sim1Delivered = Boolean(res1.success && res1.confirmedBySmsManager);
 
   // 2. Attempt SIM 2 (Redundant Fallback)
@@ -339,7 +340,7 @@ export async function sendDualSimSmsFallback(
   // Only attempt SIM 2 if it is inserted or active, or if SIM 1 failed
   const isSim2Available = !sim2.carrier.includes('No SIM') && !sim2.carrier.includes('لا توجد شريحة');
   if (isSim2Available || !sim1Delivered) {
-    res2 = await sendSilentBackgroundSms(recipient, message, 2);
+    res2 = await sendSilentBackgroundSms(cleanRecipient, message, 2);
     sim2Delivered = Boolean(res2.success && res2.confirmedBySmsManager);
   }
 
@@ -347,7 +348,7 @@ export async function sendDualSimSmsFallback(
   let defaultDelivered = false;
   let resDefault: any = null;
   if (Capacitor.isNativePlatform() && !sim1Delivered && !sim2Delivered) {
-    resDefault = await sendSilentBackgroundSms(recipient, message);
+    resDefault = await sendSilentBackgroundSms(cleanRecipient, message);
     if (resDefault.success && resDefault.confirmedBySmsManager) {
       defaultDelivered = true;
       sim1Delivered = true; // Mark as delivered via primary device channel
@@ -373,7 +374,7 @@ export async function sendDualSimSmsFallback(
   return {
     sim1Delivered: sim1Delivered || defaultDelivered,
     sim2Delivered,
-    recipient,
+    recipient: cleanRecipient,
     message,
     sim1Details: sim1,
     sim2Details: sim2,

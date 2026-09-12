@@ -38,7 +38,7 @@ export async function getEmergencyContactPhone(fallback?: string): Promise<strin
  */
 export async function saveEmergencyContactPhone(phone: string): Promise<void> {
   try {
-    const clean = phone.trim();
+    const clean = phone.replace(/[\s\-\(\)\[\]\.]/g, '').trim();
     await AsyncStorage.setItem(STORAGE_KEYS.EMERGENCY_CONTACT_PHONE, clean);
   } catch (err) {
     console.warn('Failed to save emergency phone to storage:', err);
