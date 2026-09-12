@@ -9,6 +9,8 @@
  */
 
 import { AsyncStorage, STORAGE_KEYS } from './storage';
+import { getRealHardwareSimCards } from './nativeSimCard';
+import { Capacitor } from '@capacitor/core';
 
 export interface SIMCard {
   slot: 1 | 2;
@@ -20,7 +22,7 @@ export interface SIMCard {
   isDataActive: boolean;
   status: 'active' | 'standby' | 'low_balance';
   networkType?: '5G' | '4G LTE' | '4G+' | '3G';
-  operatorCode?: string; // e.g. "603 01" for Mobilis, "603 02" for Djezzy, "603 03" for Ooredoo
+  operatorCode?: string;
   detectedAt?: string;
 }
 
@@ -34,53 +36,35 @@ export interface NetworkManagementState {
   lastSwitchTimestamp?: string;
   lastCarrierScanTimestamp?: string;
   carrierScanLog?: string;
+  isHardwareDetected?: boolean;
 }
-
-export interface CarrierPreset {
-  name: string;
-  code: string;
-  country: string;
-  networkType: '5G' | '4G LTE' | '4G+' | '3G';
-  accentColor: string;
-}
-
-export const KNOWN_CARRIER_PRESETS: CarrierPreset[] = [
-  { name: 'Mobilis 4G LTE', code: '603 01', country: 'Algeria (DZ)', networkType: '4G LTE', accentColor: 'emerald' },
-  { name: 'Djezzy 4G', code: '603 02', country: 'Algeria (DZ)', networkType: '4G LTE', accentColor: 'rose' },
-  { name: 'Ooredoo 4G Supernet', code: '603 03', country: 'Algeria (DZ)', networkType: '4G LTE', accentColor: 'red' },
-  { name: 'STC 5G', code: '420 01', country: 'Saudi Arabia (SA)', networkType: '5G', accentColor: 'purple' },
-  { name: 'Mobily 5G', code: '420 03', country: 'Saudi Arabia (SA)', networkType: '5G', accentColor: 'blue' },
-  { name: 'Zain 5G', code: '420 04', country: 'Saudi Arabia (SA)', networkType: '5G', accentColor: 'teal' },
-  { name: 'Orange 4G+', code: '208 01', country: 'International', networkType: '4G+', accentColor: 'amber' },
-  { name: 'Vodafone 4G+', code: '234 15', country: 'International', networkType: '4G+', accentColor: 'rose' },
-];
 
 const DEFAULT_SIM_CARDS: [SIMCard, SIMCard] = [
   {
     slot: 1,
-    carrier: 'Mobilis 4G LTE',
-    phoneNumber: '+213 661 12 34 56',
+    carrier: 'جاري فحص الشريحة 1...',
+    phoneNumber: '',
     hasDataPackage: true,
-    dataTrafficMB: 1850,
-    signalPercent: 96,
+    dataTrafficMB: 0,
+    signalPercent: 95,
     isDataActive: true,
     status: 'active',
     networkType: '4G LTE',
-    operatorCode: '603 01 (Mobilis DZ)',
-    detectedAt: 'تلقائي عبر نظام أندرويد',
+    operatorCode: 'Hardware SIM 1',
+    detectedAt: 'بانتظار قراءة عتاد الهاتف',
   },
   {
     slot: 2,
-    carrier: 'Djezzy 4G',
-    phoneNumber: '+213 770 98 76 54',
+    carrier: 'جاري فحص الشريحة 2...',
+    phoneNumber: '',
     hasDataPackage: true,
-    dataTrafficMB: 920,
-    signalPercent: 88,
+    dataTrafficMB: 0,
+    signalPercent: 0,
     isDataActive: false,
-    status: 'active',
+    status: 'standby',
     networkType: '4G LTE',
-    operatorCode: '603 02 (Djezzy DZ)',
-    detectedAt: 'تلقائي عبر نظام أندرويد',
+    operatorCode: 'Hardware SIM 2',
+    detectedAt: 'بانتظار قراءة عتاد الهاتف',
   },
 ];
 
@@ -166,8 +150,8 @@ export async function saveNetworkAndSimState(state: NetworkManagementState): Pro
 }
 
 /**
- * Automatically inspects telephony and network subsystem to detect carrier names for SIM 1 and SIM 2.
- * Supports Mobilis, Djezzy, Ooredoo, STC, Mobily, Zain, etc.
+ * Strictly queries the native Capacitor SimCardPlugin on Android to read the real physical
+ * SIM cards currently inserted in slot 1 and slot 2.
  */
 export async function autoDetectDeviceCarriers(): Promise<{
   state: NetworkManagementState;
@@ -178,48 +162,70 @@ export async function autoDetectDeviceCarriers(): Promise<{
   const state = await getNetworkAndSimState();
   const [sim1, sim2] = state.simCards;
 
-  // Inspect network connection API if present
-  const navConn = typeof navigator !== 'undefined' ? (navigator as any).connection : null;
-  const effectiveType = navConn?.effectiveType || '4g';
-  const networkGeneration: '5G' | '4G LTE' | '4G+' | '3G' =
-    effectiveType === '5g' ? '5G' : '4G LTE';
-
-  const tz = typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : '';
-  const isAlgeriaZone =
-    tz.toLowerCase().includes('algiers') ||
-    tz.toLowerCase().includes('alger') ||
-    (typeof navigator !== 'undefined' && navigator.language?.includes('dz'));
-
-  let sim1Carrier = sim1.carrier || 'Mobilis 4G LTE';
-  let sim1Code = sim1.operatorCode || '603 01 (Mobilis DZ)';
-  let sim2Carrier = sim2.carrier || 'Djezzy 4G';
-  let sim2Code = sim2.operatorCode || '603 02 (Djezzy DZ)';
-
-  // If newly detected or default
-  if (!sim1.carrier || sim1.carrier.includes('STC')) {
-    sim1Carrier = 'Mobilis 4G LTE';
-    sim1Code = '603 01 (ATM Mobilis)';
-  }
-  if (!sim2.carrier || sim2.carrier.includes('Mobily')) {
-    sim2Carrier = 'Djezzy 4G';
-    sim2Code = '603 02 (Djezzy)';
-  }
-
   const now = new Date().toLocaleTimeString();
+  let logMessage = '';
 
-  sim1.carrier = sim1Carrier;
-  sim1.networkType = networkGeneration;
-  sim1.operatorCode = sim1Code;
-  sim1.signalPercent = Math.floor(88 + Math.random() * 10);
-  sim1.detectedAt = `تم الفحص التلقائي بنجاح (${now})`;
+  const isNative = Capacitor.isNativePlatform();
 
-  sim2.carrier = sim2Carrier;
-  sim2.networkType = networkGeneration;
-  sim2.operatorCode = sim2Code;
-  sim2.signalPercent = Math.floor(82 + Math.random() * 12);
-  sim2.detectedAt = `تم الفحص التلقائي بنجاح (${now})`;
+  if (isNative) {
+    try {
+      const nativeData = await getRealHardwareSimCards();
 
-  const logMessage = `✓ اكتشاف تلقائي ناجح لشبكات الاتصال: SIM 1: ${sim1Carrier} (${sim1Code}) • SIM 2: ${sim2Carrier} (${sim2Code}) بدقة إشارة ${sim1.signalPercent}% / ${sim2.signalPercent}%`;
+      // Update SIM 1 from Real Hardware
+      if (nativeData.sim1 && nativeData.sim1.isInserted) {
+        sim1.carrier = nativeData.sim1.carrier || 'Unknown Carrier';
+        sim1.status = 'active';
+        sim1.operatorCode = nativeData.sim1.countryIso
+          ? `${nativeData.sim1.displayName || nativeData.sim1.carrier} (${nativeData.sim1.countryIso.toUpperCase()})`
+          : (nativeData.sim1.displayName || nativeData.sim1.carrier);
+        sim1.detectedAt = `شريحة حقيقية متصلة بالعتاد (${now})`;
+        sim1.signalPercent = 95;
+      } else {
+        sim1.carrier = 'لا توجد شريحة (No SIM Card)';
+        sim1.status = 'standby';
+        sim1.operatorCode = 'منفذ SIM 1 فارغ في الجهاز';
+        sim1.detectedAt = `منفذ فارغ (${now})`;
+        sim1.signalPercent = 0;
+      }
+
+      // Update SIM 2 from Real Hardware
+      if (nativeData.sim2 && nativeData.sim2.isInserted) {
+        sim2.carrier = nativeData.sim2.carrier || 'Unknown Carrier';
+        sim2.status = 'active';
+        sim2.operatorCode = nativeData.sim2.countryIso
+          ? `${nativeData.sim2.displayName || nativeData.sim2.carrier} (${nativeData.sim2.countryIso.toUpperCase()})`
+          : (nativeData.sim2.displayName || nativeData.sim2.carrier);
+        sim2.detectedAt = `شريحة حقيقية متصلة بالعتاد (${now})`;
+        sim2.signalPercent = 90;
+      } else {
+        sim2.carrier = 'لا توجد شريحة (No SIM Card)';
+        sim2.status = 'standby';
+        sim2.operatorCode = 'منفذ SIM 2 فارغ في الجهاز';
+        sim2.detectedAt = `منفذ فارغ (${now})`;
+        sim2.signalPercent = 0;
+      }
+
+      state.isHardwareDetected = true;
+      logMessage = `✓ تم كشف العتاد الفعلي بنجاح: SIM 1: ${sim1.carrier} • SIM 2: ${sim2.carrier}`;
+    } catch (err) {
+      console.warn('Hardware SIM detection error:', err);
+      logMessage = `⚠️ لم يتمكن من الوصول لعتاد الشرائح: ${(err as Error)?.message || 'تأكد من منح إذن الهاتف'}`;
+    }
+  } else {
+    // Non-native Web browser preview
+    sim1.carrier = 'Ooredoo (بيئة تجريبية - Web)';
+    sim1.operatorCode = 'يتطلب تشغيل تطبيق APK للوصول إلى عتاد الهاتف الفعلي';
+    sim1.detectedAt = `عرض محاكاة الويب (${now})`;
+    sim1.signalPercent = 92;
+
+    sim2.carrier = 'Djezzy (بيئة تجريبية - Web)';
+    sim2.operatorCode = 'يتطلب تشغيل تطبيق APK للوصول إلى عتاد الهاتف الفعلي';
+    sim2.detectedAt = `عرض محاكاة الويب (${now})`;
+    sim2.signalPercent = 85;
+
+    state.isHardwareDetected = false;
+    logMessage = `ℹ️ بيئة الويب: سيتم قراءة الشرائح الحقيقية (مثل Ooredoo / Djezzy) فورياً عند فتح تطبيق APK على هاتفك`;
+  }
 
   state.lastCarrierScanTimestamp = now;
   state.carrierScanLog = logMessage;
@@ -230,32 +236,9 @@ export async function autoDetectDeviceCarriers(): Promise<{
   return {
     state,
     log: logMessage,
-    detectedSim1: sim1Carrier,
-    detectedSim2: sim2Carrier,
+    detectedSim1: sim1.carrier,
+    detectedSim2: sim2.carrier,
   };
-}
-
-/**
- * Manually or programmatically update carrier information for a specific SIM card slot
- */
-export async function updateSimCarrier(
-  slot: 1 | 2,
-  carrierName: string,
-  operatorCode?: string,
-  networkType?: '5G' | '4G LTE' | '4G+' | '3G',
-  phoneNumber?: string
-): Promise<NetworkManagementState> {
-  const state = await getNetworkAndSimState();
-  const sim = slot === 1 ? state.simCards[0] : state.simCards[1];
-
-  sim.carrier = carrierName;
-  if (operatorCode) sim.operatorCode = operatorCode;
-  if (networkType) sim.networkType = networkType;
-  if (phoneNumber) sim.phoneNumber = phoneNumber;
-  sim.detectedAt = `تحديث يدوي / تلقائي (${new Date().toLocaleTimeString()})`;
-
-  await saveNetworkAndSimState(state);
-  return state;
 }
 
 /**

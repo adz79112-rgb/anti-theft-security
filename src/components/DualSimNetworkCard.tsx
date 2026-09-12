@@ -6,17 +6,11 @@ import {
   Wifi,
   WifiOff,
   RefreshCw,
-  Send,
   EyeOff,
   CheckCircle2,
   AlertTriangle,
-  ArrowLeftRight,
-  ShieldAlert,
-  Zap,
   Cpu,
-  Layers,
-  Sparkles,
-  ChevronDown,
+  Lock,
 } from 'lucide-react';
 import { Language, DispatchEvent } from '../types';
 import {
@@ -25,9 +19,6 @@ import {
   inspectAndAutoSwitchMobileData,
   sendDualSimSmsFallback,
   autoDetectDeviceCarriers,
-  updateSimCarrier,
-  KNOWN_CARRIER_PRESETS,
-  CarrierPreset,
   NetworkManagementState,
   DualSimSmsResult,
 } from '../utils/simManager';
@@ -48,7 +39,6 @@ export const DualSimNetworkCard: React.FC<DualSimNetworkCardProps> = ({
   const [isScanningCarriers, setIsScanningCarriers] = useState(false);
   const [testResult, setTestResult] = useState<DualSimSmsResult | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
-  const [editingSlot, setEditingSlot] = useState<1 | 2 | null>(null);
 
   const refreshState = async () => {
     const state = await getNetworkAndSimState();
@@ -57,9 +47,11 @@ export const DualSimNetworkCard: React.FC<DualSimNetworkCardProps> = ({
 
   useEffect(() => {
     refreshState();
+    // Automatically detect physical SIM cards on mount
+    handleAutoDetectCarriers();
   }, []);
 
-  // Automatic Carrier Detection (TelephonyManager API Simulation)
+  // Automatic Real Hardware SIM Detection (Android SubscriptionManager / TelephonyManager)
   const handleAutoDetectCarriers = async () => {
     setIsScanningCarriers(true);
     setActionNotice(null);
@@ -71,7 +63,7 @@ export const DualSimNetworkCard: React.FC<DualSimNetworkCardProps> = ({
 
       onLogDispatch({
         timestamp: new Date().toLocaleTimeString(),
-        recipient: 'Carrier Detector (TelephonyManager)',
+        recipient: 'Hardware SIM Scanner (Android SubscriptionManager)',
         type: 'location_ping',
         content: result.log,
         status: 'delivered',
@@ -81,19 +73,6 @@ export const DualSimNetworkCard: React.FC<DualSimNetworkCardProps> = ({
         setIsScanningCarriers(false);
       }, 500);
     }
-  };
-
-  const handleSelectPreset = async (slot: 1 | 2, preset: CarrierPreset) => {
-    const updated = await updateSimCarrier(
-      slot,
-      preset.name,
-      `${preset.code} (${preset.name})`,
-      preset.networkType
-    );
-    setNetworkState(updated);
-    setEditingSlot(null);
-    const msg = `${translateInline(lang, 'SIM ${slot} carrier updated to: ${preset.name} (${preset.networkType})', 'تم تحديث مشغل SIM ${slot} إلى: ${preset.name} (${preset.networkType})')}`;
-    setActionNotice(msg);
   };
 
   // Simulate toggling mobile data to test auto-recovery
@@ -276,32 +255,27 @@ export const DualSimNetworkCard: React.FC<DualSimNetworkCardProps> = ({
             </div>
           </div>
 
-          {/* Preset Selector Dropdown for SIM 1 */}
-          <div className="mt-3 pt-3 border-t border-slate-800/70">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-slate-400">${translateInline(lang, 'Quick Carrier Switch:', 'تغيير المشغل السريع:')}</span>
-              <button
-                type="button"
-                onClick={() => setEditingSlot(editingSlot === 1 ? null : 1)}
-                className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <span>${translateInline(lang, 'Select another carrier', 'اختيار مشغل آخر')}</span>
-                <ChevronDown className="w-3 h-3" />
-              </button>
+          {/* Read-Only Hardware Indicator for SIM 1 */}
+          <div className="mt-3 pt-3 border-t border-slate-800/70 flex flex-col gap-2">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="flex items-center gap-1.5 text-emerald-400 font-mono-code font-semibold">
+                <Cpu className="w-3.5 h-3.5" />
+                <span>{translateInline(lang, 'Physical Hardware Slot 1', 'المنفذ الفيزيائي للعتاد 1')}</span>
+              </span>
+              <span className="flex items-center gap-1 text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 font-mono-code">
+                <Lock className="w-3 h-3 text-slate-400" />
+                <span>{translateInline(lang, 'Read-Only (Hardware)', 'قراءة فقط من العتاد')}</span>
+              </span>
             </div>
-            {editingSlot === 1 && (
-              <div className="grid grid-cols-2 gap-1.5 mt-2 p-2 bg-slate-950 rounded-xl border border-slate-800">
-                {KNOWN_CARRIER_PRESETS.map((preset) => (
-                  <button
-                    key={preset.code}
-                    type="button"
-                    onClick={() => handleSelectPreset(1, preset)}
-                    className="p-1.5 text-[11px] rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 text-start border border-slate-800 transition cursor-pointer font-mono-code"
-                  >
-                    <span className="font-bold block text-emerald-400">{preset.name}</span>
-                    <span className="text-[9px] text-slate-500">{preset.country}</span>
-                  </button>
-                ))}
+            {sim1.operatorCode && (
+              <div className="text-[11px] font-mono-code text-slate-400 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800/80 flex items-center justify-between">
+                <span>{translateInline(lang, 'Operator:', 'المشغل:')}</span>
+                <span className="text-slate-200 font-bold">{sim1.operatorCode}</span>
+              </div>
+            )}
+            {sim1.detectedAt && (
+              <div className="text-[10px] text-slate-500 text-end">
+                {sim1.detectedAt}
               </div>
             )}
           </div>
@@ -337,36 +311,35 @@ export const DualSimNetworkCard: React.FC<DualSimNetworkCardProps> = ({
             </span>
             <div className="flex items-center gap-1.5 text-yellow-400 text-sm font-semibold">
               <AlertTriangle className="w-4 h-4" />
-              <span>{translateInline(lang, 'Emergency Backup Only', 'شريحة احتياطية للطوارئ فقط')}</span>
+              <span>
+                {sim2.carrier.includes('No SIM')
+                  ? translateInline(lang, 'Slot is empty', 'المنفذ فارغ')
+                  : translateInline(lang, 'Emergency Backup Ready', 'شريحة الطوارئ جاهزة')}
+              </span>
             </div>
           </div>
 
-          {/* Preset Selector Dropdown for SIM 2 */}
-          <div className="mt-3 pt-3 border-t border-slate-800/70">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] text-slate-400">${translateInline(lang, 'Quick Carrier Switch:', 'تغيير المشغل السريع:')}</span>
-              <button
-                type="button"
-                onClick={() => setEditingSlot(editingSlot === 2 ? null : 2)}
-                className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <span>${translateInline(lang, 'Select another carrier', 'اختيار مشغل آخر')}</span>
-                <ChevronDown className="w-3 h-3" />
-              </button>
+          {/* Read-Only Hardware Indicator for SIM 2 */}
+          <div className="mt-3 pt-3 border-t border-slate-800/70 flex flex-col gap-2">
+            <div className="flex items-center justify-between text-[11px]">
+              <span className="flex items-center gap-1.5 text-yellow-400 font-mono-code font-semibold">
+                <Cpu className="w-3.5 h-3.5" />
+                <span>{translateInline(lang, 'Physical Hardware Slot 2', 'المنفذ الفيزيائي للعتاد 2')}</span>
+              </span>
+              <span className="flex items-center gap-1 text-[10px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800 font-mono-code">
+                <Lock className="w-3 h-3 text-slate-400" />
+                <span>{translateInline(lang, 'Read-Only (Hardware)', 'قراءة فقط من العتاد')}</span>
+              </span>
             </div>
-            {editingSlot === 2 && (
-              <div className="grid grid-cols-2 gap-1.5 mt-2 p-2 bg-slate-950 rounded-xl border border-slate-800">
-                {KNOWN_CARRIER_PRESETS.map((preset) => (
-                  <button
-                    key={preset.code}
-                    type="button"
-                    onClick={() => handleSelectPreset(2, preset)}
-                    className="p-1.5 text-[11px] rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 text-start border border-slate-800 transition cursor-pointer font-mono-code"
-                  >
-                    <span className="font-bold block text-cyan-400">{preset.name}</span>
-                    <span className="text-[9px] text-slate-500">{preset.country}</span>
-                  </button>
-                ))}
+            {sim2.operatorCode && (
+              <div className="text-[11px] font-mono-code text-slate-400 bg-slate-950 px-2.5 py-1.5 rounded-lg border border-slate-800/80 flex items-center justify-between">
+                <span>{translateInline(lang, 'Operator:', 'المشغل:')}</span>
+                <span className="text-slate-200 font-bold">{sim2.operatorCode}</span>
+              </div>
+            )}
+            {sim2.detectedAt && (
+              <div className="text-[10px] text-slate-500 text-end">
+                {sim2.detectedAt}
               </div>
             )}
           </div>
