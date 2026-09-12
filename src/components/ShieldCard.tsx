@@ -22,7 +22,7 @@ import {
   DeviceAdminStatus,
   DEVICE_ADMIN_POLICIES,
 } from '../utils/deviceManagerPolicy';
-import { DeviceAuthModal } from './DeviceAuthModal';
+import { authenticateAsync } from '../utils/localAuthentication';
 import { siren } from '../utils/audio';
 
 interface ShieldCardProps {
@@ -44,10 +44,8 @@ export const ShieldCard: React.FC<ShieldCardProps> = ({
     policies: DEVICE_ADMIN_POLICIES,
   });
 
-  // Biometric prompt state
-  const [isBiometricPromptOpen, setIsBiometricPromptOpen] = useState(false);
-  const [promptReason, setPromptReason] = useState<string>('');
-  const [pendingAction, setPendingAction] = useState<'deactivate' | null>(null);
+  // Direct native authentication state
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [rejectionAlert, setRejectionAlert] = useState<string | null>(null);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
 
@@ -58,62 +56,30 @@ export const ShieldCard: React.FC<ShieldCardProps> = ({
     });
   }, []);
 
-  // Handle Toggle of Device Admin / Anti-Uninstall
-  const handleToggleAdmin = async () => {
-    if (adminStatus.isAntiUninstallActive) {
-      // Trying to TURN OFF -> MUST prompt biometrics!
-      setPromptReason(
-        translateInline(lang, 'Biometric verification required to deactivate Device Administrator', 'تأكيد الهوية البيومترية لإلغاء صلاحية مدير الجهاز (Device Admin Deactivation)')
-      );
-      setPendingAction('deactivate');
-      setIsBiometricPromptOpen(true);
-    } else {
-      // Turning ON -> Safe to enable
-      await activateDeviceAdminPolicy();
-      setAdminStatus((prev) => ({
-        ...prev,
-        isAdminActive: true,
-        isAntiUninstallActive: true,
-      }));
-      setSuccessNotice(
-        translateInline(lang, 'Device Admin Policy & Anti-Uninstall activated successfully!', 'تم تفعيل صلاحية مدير الجهاز وحماية إلغاء التثبيت بنجاح!')
-      );
-      setTimeout(() => setSuccessNotice(null), 4000);
-    }
-  };
-
   // Biometric Success Handler
   const handleBiometricSuccess = async () => {
-    setIsBiometricPromptOpen(false);
-
-    if (pendingAction === 'deactivate') {
-      await AsyncStorage.setItem(STORAGE_KEYS.DEVICE_ADMIN_ACTIVE, 'false');
-      await AsyncStorage.setItem(STORAGE_KEYS.ANTI_UNINSTALL_ACTIVE, 'false');
-      setAdminStatus((prev) => ({
-        ...prev,
-        isAdminActive: false,
-        isAntiUninstallActive: false,
-      }));
-      setRejectionAlert(null);
-      setSuccessNotice(
-        translateInline(lang, 'Owner biometric verified. Device Admin deactivated temporarily.', 'تم التحقق من بصمة المالك وإلغاء صلاحية مدير الجهاز مؤقتاً.')
-      );
-      setTimeout(() => setSuccessNotice(null), 4000);
-    }
-
-    setPendingAction(null);
+    await AsyncStorage.setItem(STORAGE_KEYS.DEVICE_ADMIN_ACTIVE, 'false');
+    await AsyncStorage.setItem(STORAGE_KEYS.ANTI_UNINSTALL_ACTIVE, 'false');
+    setAdminStatus((prev) => ({
+      ...prev,
+      isAdminActive: false,
+      isAntiUninstallActive: false,
+    }));
+    setRejectionAlert(null);
+    setSuccessNotice(
+      translateInline(lang, 'Owner biometric verified. Device Admin deactivated temporarily.', 'تم التحقق من بصمة المالك وإلغاء صلاحية مدير الجهاز مؤقتاً.')
+    );
+    setTimeout(() => setSuccessNotice(null), 4000);
   };
 
   // Biometric Failure / Cancellation Handler
   const handleBiometricCancelOrFailed = () => {
-    setIsBiometricPromptOpen(false);
     siren.playBriefAlert();
 
     const rejectMsg =
       translateInline(lang, '⛔ Operation rejected! Uninstallation blocked, app protected, and user redirected.', '⛔ تم رفض العملية تلقائياً! تم حظر محاولة إلغاء التثبيت وحماية التطبيق وإعادة التوجيه للأمان.');
 
     setRejectionAlert(rejectMsg);
-    setPendingAction(null);
 
     // Dispatch security event
     if (onSecurityLog) {
@@ -130,6 +96,50 @@ export const ShieldCard: React.FC<ShieldCardProps> = ({
     setTimeout(() => {
       setRejectionAlert(null);
     }, 6000);
+  };
+
+  // Handle Toggle of Device Admin / Anti-Uninstall
+  const handleToggleAdmin = async () => {
+    if (isAuthenticating) return;
+
+    if (adminStatus.isAntiUninstallActive) {
+      // Trying to TURN OFF -> MUST prompt Android native biometrics directly!
+      setIsAuthenticating(true);
+      try {
+        const authRes = await authenticateAsync({
+          promptMessage: translateInline(
+            lang,
+            'Biometric verification required to deactivate Device Administrator',
+            'تأكيد الهوية البيومترية لإلغاء صلاحية مدير الجهاز (Device Admin Deactivation)'
+          ),
+          cancelLabel: translateInline(lang, 'Cancel', 'إلغاء'),
+          fallbackLabel: translateInline(lang, 'Use PIN/Pattern', 'استخدام رمز PIN أو النمط'),
+          disableDeviceFallback: false,
+        });
+
+        if (authRes.success) {
+          await handleBiometricSuccess();
+        } else {
+          handleBiometricCancelOrFailed();
+        }
+      } catch {
+        handleBiometricCancelOrFailed();
+      } finally {
+        setIsAuthenticating(false);
+      }
+    } else {
+      // Turning ON -> Safe to enable
+      await activateDeviceAdminPolicy();
+      setAdminStatus((prev) => ({
+        ...prev,
+        isAdminActive: true,
+        isAntiUninstallActive: true,
+      }));
+      setSuccessNotice(
+        translateInline(lang, 'Device Admin Policy & Anti-Uninstall activated successfully!', 'تم تفعيل صلاحية مدير الجهاز وحماية إلغاء التثبيت بنجاح!')
+      );
+      setTimeout(() => setSuccessNotice(null), 4000);
+    }
   };
 
   return (
@@ -255,20 +265,6 @@ export const ShieldCard: React.FC<ShieldCardProps> = ({
           </span>
         </button>
       </div>
-
-      {/* ======================================================== */}
-      {/* 4. BIOMETRIC PROMPT DIALOG (Fingerprint, Face, PIN)       */}
-      {/* ======================================================== */}
-      <DeviceAuthModal
-        isOpen={isBiometricPromptOpen}
-        onSuccess={handleBiometricSuccess}
-        onCancel={handleBiometricCancelOrFailed}
-        title={
-          translateInline(lang, 'Android Biometric Prompt • Mandatory Biometrics', 'Android Biometric Prompt • التحقق البيومتري الإلزامي')
-        }
-        subtitle={promptReason}
-        allowCancel={true}
-      />
     </div>
   );
 };

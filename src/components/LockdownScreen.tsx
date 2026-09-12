@@ -9,7 +9,6 @@ import {
   Send,
   Loader2,
   Lock,
-  KeyRound,
   Sparkles,
 } from 'lucide-react';
 import { Language, DispatchEvent, IntruderCapture } from '../types';
@@ -18,7 +17,8 @@ import {
   StealthCycleResult,
 } from '../utils/lockdownService';
 import { getNetworkAndSimState, NetworkManagementState } from '../utils/simManager';
-import { triggerNativeDeviceAuth } from '../utils/nativeDeviceAuth';
+import { authenticateAsync } from '../utils/localAuthentication';
+import { recordFailedAuthAttempt } from '../utils/authFailCounter';
 
 interface LockdownScreenProps {
   isOpen: boolean;
@@ -63,10 +63,6 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
   const [unlockSuccess, setUnlockSuccess] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Fallback PIN / Screen Lock Sheet
-  const [showPinInput, setShowPinInput] = useState<boolean>(false);
-  const [enteredPin, setEnteredPin] = useState<string>('');
-
   // Technical debug HUD
   const [showTelemetryHud, setShowTelemetryHud] = useState<boolean>(false);
 
@@ -84,7 +80,6 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
   const tapResetTimerRef = useRef<NodeJS.Timeout | null>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const scanTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Successful Unlock Callback
   const handleUnlockSuccess = useCallback(
@@ -107,38 +102,77 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
     [lang, onDismiss]
   );
 
-  // Biometric Touch & Hardware Sensor verification handler
-  const handleFingerprintTouch = useCallback(async () => {
+  // Direct Android OS Biometric & Screen Lock verification handler
+  const handleNativeAuth = useCallback(async () => {
+    if (isScanningFingerprint) return;
     setIsScanningFingerprint(true);
     setAuthError(null);
 
     // Initial haptic pulse for sensor touch
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
-      navigator.vibrate(60);
+      navigator.vibrate(50);
     }
 
-    // Try official WebAuthn system dialog in background
-    triggerNativeDeviceAuth('DroidGuard Security')
-      .then((res) => {
-        if (res.success) {
-          handleUnlockSuccess(
-            res.method === 'system_biometrics'
-              ? translateInline(lang, 'Android Biometric Fingerprint', 'بصمة الإصبع الرسمية لنظام أندرويد')
-              : translateInline(lang, 'Android System Screen Lock', 'قفل شاشة نظام أندرويد الأصلي')
+    try {
+      const authRes = await authenticateAsync({
+        promptMessage: translateInline(
+          lang,
+          'Confirm owner identity to unlock device',
+          'أثبت هويتك كمالك للجهاز لإلغاء القفل'
+        ),
+        cancelLabel: translateInline(lang, 'Cancel', 'إلغاء'),
+        fallbackLabel: translateInline(lang, 'Use PIN/Pattern', 'استخدام رمز PIN أو النمط'),
+        disableDeviceFallback: false,
+      });
+
+      if (authRes.success) {
+        handleUnlockSuccess(
+          translateInline(lang, 'Android Biometrics / PIN', 'بصمة أو رمز PIN النظام الأصلي')
+        );
+      } else {
+        const failRes = await recordFailedAuthAttempt({
+          customBotToken: telegramBotToken,
+          customChatId: telegramChatId,
+          customUserEmail: userEmail,
+          customEmergencyPhone: emergencyPhone,
+          onLogDispatch,
+          onSaveCapture,
+        });
+
+        if (failRes.isThirdAttempt) {
+          setAuthError(
+            translateInline(
+              lang,
+              '🚨 Intruder photo captured and emergency alerts dispatched!',
+              '🚨 تم التقاط صورة المتسلل صامتاً! تم إرسال البلاغات للطوارئ.'
+            )
+          );
+        } else {
+          setAuthError(
+            translateInline(
+              lang,
+              `Authentication failed (${failRes.newCount} of 3 attempts).`,
+              `فشلت المصادقة (${failRes.newCount} من 3 محاولات).`
+            )
           );
         }
-      })
-      .catch(() => {});
-
-    // Seamless instant biometric authentication after 450ms contact
-    if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
-    scanTimerRef.current = setTimeout(() => {
+      }
+    } catch (err: any) {
+      console.warn('Native biometric error in LockdownScreen:', err);
+    } finally {
       setIsScanningFingerprint(false);
-      handleUnlockSuccess(
-        translateInline(lang, 'Android Biometric Fingerprint Sensor', 'مستشعر بصمة الإصبع لنظام أندرويد')
-      );
-    }, 450);
-  }, [lang, handleUnlockSuccess]);
+    }
+  }, [
+    isScanningFingerprint,
+    lang,
+    handleUnlockSuccess,
+    telegramBotToken,
+    telegramChatId,
+    userEmail,
+    emergencyPhone,
+    onLogDispatch,
+    onSaveCapture,
+  ]);
 
   // Handle Black Screen Tap with EXACT 5-Tap verification
   const handlePointerOrTouchTap = useCallback(
@@ -258,8 +292,6 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
       setSilenceCountdown(null);
       setUnlockSuccess(false);
       setAuthError(null);
-      setShowPinInput(false);
-      setEnteredPin('');
       return;
     }
 
@@ -289,7 +321,6 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
       if (tapResetTimerRef.current) clearTimeout(tapResetTimerRef.current);
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
       if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-      if (scanTimerRef.current) clearTimeout(scanTimerRef.current);
     };
   }, [isOpen]);
 
@@ -381,7 +412,6 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
                 setIsScreenAwake(false);
                 setAuthError(null);
                 setShowTelemetryHud(false);
-                setShowPinInput(false);
               }}
               className="px-3 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-400 hover:text-white text-xs flex items-center gap-1.5 transition cursor-pointer"
             >
@@ -406,59 +436,8 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
                   )}
                 </p>
               </div>
-            ) : showPinInput ? (
-              /* Fallback Device PIN Screen */
-              <div className="p-6 rounded-3xl bg-slate-900/90 border border-cyan-500/30 text-center space-y-4 shadow-2xl backdrop-blur-md">
-                <div className="flex items-center justify-center gap-2 text-cyan-400">
-                  <KeyRound className="w-5 h-5" />
-                  <span className="text-xs font-bold tracking-wide uppercase">
-                    {translateInline(lang, 'Device Screen Lock PIN', 'رمز قفل شاشة الهاتف')}
-                  </span>
-                </div>
-
-                <p className="text-xs text-slate-300">
-                  {translateInline(
-                    lang,
-                    'Enter your phone screen lock PIN/code or tap Unlock:',
-                    'أدخل رمز قفل الهاتف أو اضغط فتح القفل مباشرة:'
-                  )}
-                </p>
-
-                <input
-                  type="password"
-                  value={enteredPin}
-                  onChange={(e) => setEnteredPin(e.target.value)}
-                  placeholder="••••"
-                  maxLength={8}
-                  autoFocus
-                  className="w-full text-center text-2xl font-mono-code bg-slate-950 border border-cyan-500/50 rounded-2xl py-3 text-cyan-300 tracking-widest focus:outline-none focus:border-cyan-400"
-                />
-
-                <div className="flex items-center gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      handleUnlockSuccess(
-                        translateInline(lang, 'Device Screen Lock PIN', 'رمز قفل شاشة الهاتف الأصلي')
-                      );
-                    }}
-                    className="flex-1 py-3 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-lg shadow-cyan-600/30 cursor-pointer"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span>{translateInline(lang, 'Unlock Device Now', 'فتح قفل الهاتف الآن')}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setShowPinInput(false)}
-                    className="py-3 px-4 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition cursor-pointer"
-                  >
-                    {translateInline(lang, 'Back to Fingerprint', 'رجوع للبصمة')}
-                  </button>
-                </div>
-              </div>
             ) : (
-              /* Main Interactive Fingerprint Biometric Interface */
+              /* Main Interactive Fingerprint & OS Lock Interface */
               <div className="p-6 rounded-3xl bg-slate-900/90 border border-cyan-500/30 text-center space-y-5 shadow-2xl backdrop-blur-md">
                 <div className="flex items-center justify-center gap-2 text-cyan-400">
                   <Shield className="w-5 h-5" />
@@ -474,20 +453,18 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
                   <p className="text-xs text-slate-300">
                     {translateInline(
                       lang,
-                      'Place your finger on the sensor to unlock instantly.',
-                      'ضع إصبعك على مستشعر البصمة لفتح القفل فوراً.'
+                      'Authenticate via Android Biometrics, Fingerprint, Face or device PIN.',
+                      'المصادقة عبر أمان أندرويد: البصمة، الوجه، أو رمز PIN / النمط الخاص بالجهاز.'
                     )}
                   </p>
                 </div>
 
-                {/* Fingerprint Sensor Trigger Button with Touch Recognition */}
+                {/* Fingerprint Sensor Trigger Button (directly invokes Android BiometricPrompt) */}
                 <div className="flex flex-col items-center justify-center py-2">
                   <button
                     type="button"
                     id="btn-trigger-android-biometrics"
-                    onClick={handleFingerprintTouch}
-                    onPointerDown={handleFingerprintTouch}
-                    onTouchStart={handleFingerprintTouch}
+                    onClick={handleNativeAuth}
                     disabled={isScanningFingerprint}
                     className={`relative w-28 h-28 rounded-full flex items-center justify-center border-2 transition-all cursor-pointer select-none active:scale-95 ${
                       isScanningFingerprint
@@ -511,27 +488,28 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
                     {isScanningFingerprint ? (
                       <>
                         <Sparkles className="w-3.5 h-3.5 text-cyan-300 animate-spin" />
-                        <span>{translateInline(lang, 'Verifying Fingerprint...', 'جارٍ قراءة البصمة والتحقق...')}</span>
+                        <span>{translateInline(lang, 'Awaiting OS Authentication...', 'بانتظار مصادقة نظام Android الأصلي...')}</span>
                       </>
                     ) : (
-                      <span>{translateInline(lang, 'Touch sensor to verify & unlock', 'المس المستشعر للتحقق وفتح القفل')}</span>
+                      <span>{translateInline(lang, 'Touch sensor to verify & unlock', 'المس المستشعر للتحقق عبر أمان الهاتف')}</span>
                     )}
                   </span>
                 </div>
 
-                {/* Fallback Option Button */}
+                {/* Direct Android Screen Lock / PIN button */}
                 <button
                   type="button"
                   id="btn-use-device-screen-lock"
-                  onClick={() => setShowPinInput(true)}
-                  className="w-full py-2.5 px-4 rounded-2xl bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer"
+                  onClick={handleNativeAuth}
+                  disabled={isScanningFingerprint}
+                  className="w-full py-3 px-4 rounded-2xl bg-cyan-600/20 hover:bg-cyan-600/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold flex items-center justify-center gap-2 transition cursor-pointer active:scale-98"
                 >
                   <Lock className="w-4 h-4" />
                   <span>
                     {translateInline(
                       lang,
-                      'Use Device Screen Lock / PIN',
-                      'استخدام قفل شاشة الهاتف / رمز الـ PIN'
+                      'Unlock with Device Biometrics / PIN / Pattern',
+                      'إلغاء القفل ببصمة / PIN / نمط نظام الهاتف الأصلي'
                     )}
                   </span>
                 </button>

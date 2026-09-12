@@ -128,94 +128,11 @@ export const DeviceAuthModal: React.FC<DeviceAuthModalProps> = ({
       await handleFailedAttempt(
         translateInline(lang, 'Authentication error: ', 'خطأ في المصادقة: ') + (err?.message || 'Unknown error')
       );
+      if (onCancel) onCancel();
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-200" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
-      <div className="bg-slate-900 border border-slate-700 w-full max-w-sm rounded-2xl shadow-2xl shadow-emerald-900/10 overflow-hidden flex flex-col">
-        {/* Header */}
-        <div className="bg-slate-800/50 p-4 border-b border-slate-700 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <ShieldAlert className="w-5 h-5 text-emerald-400" />
-            <h3 className="font-bold text-slate-100">{title}</h3>
-          </div>
-          {allowCancel && !authSuccess && (
-            <button
-              id="cancel-auth-btn"
-              onClick={onCancel}
-              className="text-slate-400 hover:text-slate-200 transition bg-slate-800 hover:bg-slate-700 p-1.5 rounded-lg"
-            >
-              <span className="sr-only">Close</span>
-              &times;
-            </button>
-          )}
-        </div>
-
-        {/* Content */}
-        <div className="p-6 flex flex-col items-center text-center">
-          <div className={`w-20 h-20 rounded-full flex items-center justify-center mb-4 transition-all duration-300 ${
-            authSuccess 
-              ? 'bg-emerald-500/20 text-emerald-400 scale-110' 
-              : isAuthenticating
-              ? 'bg-blue-500/20 text-blue-400 animate-pulse'
-              : 'bg-slate-800 text-slate-300'
-          }`}>
-            {authSuccess ? (
-              <CheckCircle2 className="w-10 h-10" />
-            ) : isAuthenticating ? (
-              <Lock className="w-10 h-10" />
-            ) : (
-              <ShieldAlert className="w-10 h-10" />
-            )}
-          </div>
-          
-          <h4 className="text-lg font-bold text-slate-100 mb-1">
-            {authSuccess 
-              ? translateInline(lang, 'Identity Verified', 'تم التحقق من الهوية')
-              : isAuthenticating
-              ? translateInline(lang, 'Awaiting OS Authentication...', 'بانتظار مصادقة النظام...')
-              : subtitle}
-          </h4>
-          
-          <p className="text-sm text-slate-400 mb-6">
-            {reason || translateInline(lang, 'Please complete the native security prompt to access this area.', 'يرجى إكمال نافذة الأمان الخاصة بالنظام للوصول إلى هذه المنطقة.')}
-          </p>
-
-          {!isAuthenticating && !authSuccess && (
-            <button
-              onClick={triggerNativeAuth}
-              className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-900/20 transition-all flex items-center justify-center gap-2"
-            >
-              <Lock className="w-5 h-5" />
-              {translateInline(lang, 'Unlock Device', 'إلغاء قفل الجهاز')}
-            </button>
-          )}
-
-          {/* Emergency Intruder Selfie Alert Banner */}
-          {intruderAlertMsg && (
-            <div className="mt-6 p-3 bg-rose-950/70 border border-rose-500/60 rounded-xl text-rose-200 text-xs text-center space-y-1.5 shadow-lg shadow-rose-950/50 animate-pulse w-full">
-              <div className="flex items-center justify-center gap-1.5 text-rose-300 font-bold">
-                <Camera className="w-4 h-4 text-rose-400" />
-                <span>{translateInline(lang, 'Intruder photo captured silently', 'تم التقاط صورة المتسلل صامتاً')}</span>
-              </div>
-              <p className="text-[11px] leading-relaxed text-rose-200">{intruderAlertMsg}</p>
-              <div className="flex justify-center gap-2 pt-1 text-[10px] text-rose-300">
-                <span className="bg-rose-900/60 px-2 py-0.5 rounded-full border border-rose-500/30">Telegram ✓</span>
-                <span className="bg-rose-900/60 px-2 py-0.5 rounded-full border border-rose-500/30">Gmail ✓</span>
-                <span className="bg-rose-900/60 px-2 py-0.5 rounded-full border border-rose-500/30">Dual-SMS ✓</span>
-              </div>
-            </div>
-          )}
-
-          {errorMsg && (
-            <div className="mt-4 p-3 bg-rose-500/10 border border-rose-500/30 rounded-lg text-rose-400 text-xs text-center w-full flex flex-col items-center gap-2">
-              <AlertTriangle className="w-5 h-5" />
-              {errorMsg}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
+  // Completely headless: NEVER render any in-app HTML modal or dialog box.
+  // The official Android OS BiometricPrompt dialog handles 100% of the UI natively.
+  return null;
 };

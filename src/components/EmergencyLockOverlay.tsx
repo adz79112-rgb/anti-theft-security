@@ -1,9 +1,10 @@
 import { translateInline } from '../utils/translateInline';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Volume2, ShieldAlert, MapPin, Send, ExternalLink, Smartphone, AlertTriangle, Power, RotateCcw, PhoneCall, Mic } from 'lucide-react';
+import { Volume2, ShieldAlert, MapPin, Send, ExternalLink, Smartphone, AlertTriangle, Power, RotateCcw, PhoneCall, Mic, Lock } from 'lucide-react';
 import { siren } from '../utils/audio';
 import { voiceAlert } from '../utils/voiceAlert';
-import { DeviceAuthModal } from './DeviceAuthModal';
+import { authenticateAsync } from '../utils/localAuthentication';
+import { recordFailedAuthAttempt } from '../utils/authFailCounter';
 import { LocationResult } from '../utils/location';
 import { Language } from '../types';
 import { getTranslation } from '../utils/translations';
@@ -26,18 +27,68 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
   onTriggerFakePowerOff,
 }) => {
   const t = getTranslation(lang);
-  const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [alarmDecibels, setAlarmDecibels] = useState(105);
   const [showPowerMenu, setShowPowerMenu] = useState(false);
   const [isShuttingDown, setIsShuttingDown] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [authFeedback, setAuthFeedback] = useState<string | null>(null);
 
   // Stop siren and voice and dismiss lock overlay upon successful OS authentication
   const handleAuthSuccess = useCallback(() => {
     siren.stop();
     voiceAlert.stop();
-    setShowAuthDialog(false);
     onDismiss();
   }, [onDismiss]);
+
+  // Directly trigger native Android BiometricPrompt (Fingerprint, Face, PIN / Pattern)
+  const handleTriggerNativeAuth = useCallback(async () => {
+    if (isAuthenticating) return;
+    setIsAuthenticating(true);
+    setAuthFeedback(null);
+
+    try {
+      const res = await authenticateAsync({
+        promptMessage: translateInline(
+          lang,
+          'Confirm owner identity to unlock device',
+          'أثبت هويتك كمالك للجهاز لإلغاء القفل'
+        ),
+        cancelLabel: translateInline(lang, 'Cancel', 'إلغاء'),
+        fallbackLabel: translateInline(lang, 'Use PIN/Pattern', 'استخدام رمز PIN أو النمط'),
+        disableDeviceFallback: false,
+      });
+
+      if (res.success) {
+        handleAuthSuccess();
+      } else {
+        const failRes = await recordFailedAuthAttempt({
+          customEmergencyPhone: triggerSender,
+        });
+
+        if (failRes.isThirdAttempt) {
+          setAuthFeedback(
+            translateInline(
+              lang,
+              '🚨 Intruder photo captured and emergency alerts dispatched!',
+              '🚨 تم التقاط صورة المتسلل صامتاً! تم استنفاد 3 محاولات وإرسال التنبيهات.'
+            )
+          );
+        } else {
+          setAuthFeedback(
+            translateInline(
+              lang,
+              `Authentication failed (${failRes.newCount} of 3 attempts).`,
+              `فشلت المصادقة (${failRes.newCount} من 3 محاولات).`
+            )
+          );
+        }
+      }
+    } catch (err) {
+      console.warn('Native biometric error:', err);
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }, [isAuthenticating, lang, triggerSender, handleAuthSuccess]);
 
   // Handle fake power off action by thief
   const handleConfirmFakePowerOff = useCallback(() => {
@@ -94,14 +145,20 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown, true);
 
+    // Auto-trigger native Android BiometricPrompt so owner can unlock immediately
+    const autoAuthTimer = setTimeout(() => {
+      handleTriggerNativeAuth();
+    }, 500);
+
     return () => {
+      clearTimeout(autoAuthTimer);
       siren.stop();
       voiceAlert.stop();
       clearInterval(meterInterval);
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [isOpen, lang]);
+  }, [isOpen, lang, handleTriggerNativeAuth]);
 
   if (!isOpen) return null;
 
@@ -213,16 +270,31 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
           </p>
         </div>
 
-        {/* Action Button to trigger OS Device Credential Prompt if closed */}
-        <div className="pt-2 text-center flex flex-col sm:flex-row gap-2">
+        {/* Action Button: Directly triggers Native Android System Lock Screen Prompt (NO custom modal) */}
+        <div className="pt-2 text-center flex flex-col gap-2">
           <button
             id="retrigger-os-auth-btn"
-            onClick={() => setShowAuthDialog(true)}
-            className="flex-1 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer"
+            onClick={handleTriggerNativeAuth}
+            disabled={isAuthenticating}
+            className="w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer disabled:opacity-60"
           >
-            <Smartphone className="w-4 h-4" />
-            <span>{translateInline(lang, 'Owner Authentication & Unlock', 'إلغاء قفل الطوارئ للمالك (بصمة / PIN)')}</span>
+            {isAuthenticating ? (
+              <Lock className="w-4 h-4 animate-spin text-emerald-300" />
+            ) : (
+              <Smartphone className="w-4 h-4" />
+            )}
+            <span>
+              {isAuthenticating
+                ? translateInline(lang, 'Awaiting OS Biometrics...', 'بانتظار مصادقة نظام Android الأصلي...')
+                : translateInline(lang, 'Owner Authentication & Unlock (Fingerprint / PIN)', 'إلغاء قفل الطوارئ للمالك (بصمة / PIN)')}
+            </span>
           </button>
+
+          {authFeedback && (
+            <div className="p-3 bg-rose-950/80 border border-rose-500/60 rounded-xl text-rose-200 text-xs font-medium animate-pulse text-center">
+              {authFeedback}
+            </div>
+          )}
         </div>
       </div>
 
@@ -231,16 +303,6 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
         <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
         <span>Android Device Lock Overlay • Non-Dismissible Security Screen</span>
       </div>
-
-      {/* System-level Authentication Dialog (Android BiometricPrompt / DeviceCredentials) */}
-      <DeviceAuthModal
-        isOpen={showAuthDialog}
-        onSuccess={handleAuthSuccess}
-        onCancel={() => setShowAuthDialog(false)}
-        title={t.osAuthPrompt}
-        subtitle={t.osAuthDesc}
-        allowCancel={true}
-      />
 
       {/* 
         =======================================================================
