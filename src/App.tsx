@@ -125,11 +125,6 @@ export default function App() {
         setShowFirstLaunchLangModal(false);
       }
     });
-
-    // Silently pre-authorize and start background GPS watcher on app boot
-    initializeBackgroundGPS().catch((err) => {
-      console.log('[App] Background GPS priming:', err);
-    });
   }, []);
 
   const handleSelectLanguage = useCallback((newLang: Language) => {
@@ -303,11 +298,16 @@ export default function App() {
     setSmsPermissionGranted(granted);
   }, []);
 
-  // Immediate Startup Permission Request: Trigger native Android SEND_SMS & READ_PHONE_STATE permissions on launch
+  // Execute unified startup security permission request once, then prime background GPS
   useEffect(() => {
     requestStartupSecurityPermissions().then((result) => {
       console.log('DroidGuard Security Permissions startup check:', result);
       setSmsPermissionGranted(Boolean(result.smsGranted || result.granted));
+      
+      // Now that location permissions are requested/checked, start the silent GPS watcher
+      initializeBackgroundGPS().catch((err) => {
+        console.log('[App] Background GPS priming:', err);
+      });
     });
   }, []);
 

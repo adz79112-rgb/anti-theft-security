@@ -25,6 +25,7 @@ import {
 import {
   checkSmsPermissionStatus,
   requestDirectSmsPermission,
+  requestBackgroundActivityPermission,
   sanitizePhoneNumber,
 } from '../utils/nativeEmergencySms';
 import { Capacitor } from '@capacitor/core';
@@ -104,6 +105,17 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
     } finally {
       setIsRequestingPermission(false);
       setTimeout(() => setSaveFeedback(null), 6000);
+    }
+  };
+
+  const handleRequestBackgroundActivity = async () => {
+    try {
+      const granted = await requestBackgroundActivityPermission();
+      if (granted) {
+        setSaveFeedback(translateInline(lang, '✓ Opened battery optimization settings. Please grant unrestricted background activity (Recommended for ColorOS/Oppo).', '✓ تم فتح إعدادات تحسين البطارية. يرجى السماح بالعمل في الخلفية (ضروري لأجهزة Oppo/ColorOS).'));
+      }
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -350,6 +362,16 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
               'يرجى إدخال رقم هاتف شخص قريب أو هاتف آخر لك، ولا تقم بإدخال رقم شريحة (SIM) هذا الهاتف نفسه حتى تصلك البلاغات وإحداثيات الموقع عند فقدانه.'
             )}
           </p>
+        </div>
+
+        <div className="mt-2 flex justify-end">
+          <button
+            type="button"
+            onClick={handleRequestBackgroundActivity}
+            className="text-xs px-3 py-1.5 rounded-lg border border-amber-500/40 text-amber-500 hover:bg-amber-500/10 transition cursor-pointer"
+          >
+            {translateInline(lang, 'Oppo/ColorOS SMS Fix (Allow Background)', 'حل مشكلة إرسال SMS لأجهزة Oppo/ColorOS')}
+          </button>
         </div>
 
         {/* Feedback message */}

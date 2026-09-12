@@ -25,6 +25,7 @@ export interface SmsPermissionResult {
   locationGranted?: boolean;
   fineLocationGranted?: boolean;
   coarseLocationGranted?: boolean;
+  cameraGranted?: boolean;
   allGranted?: boolean;
   hardcodedTestNumber?: string;
 }
@@ -39,6 +40,7 @@ export interface EmergencySmsPluginInterface {
     message: string;
     slot?: number;
   }): Promise<SmsSendResult>;
+  requestBackgroundActivityPermission(): Promise<{ success: boolean; message?: string; error?: string }>;
 }
 
 export const EmergencySmsPlugin = registerPlugin<EmergencySmsPluginInterface>('EmergencySmsPlugin');
@@ -90,11 +92,12 @@ export async function requestStartupSecurityPermissions(): Promise<SmsPermission
   }
 
   try {
-    // Request SEND_SMS, READ_PHONE_STATE, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION
+    // Request SEND_SMS, READ_PHONE_STATE, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, CAMERA
     const res = await EmergencySmsPlugin.requestStartupPermissions();
     const smsGranted = Boolean(res?.smsGranted ?? res?.granted);
     const phoneGranted = Boolean(res?.phoneGranted);
     const locationGranted = Boolean(res?.locationGranted || res?.fineLocationGranted || res?.coarseLocationGranted);
+    const cameraGranted = Boolean(res?.cameraGranted);
 
     return {
       granted: smsGranted,
@@ -103,7 +106,8 @@ export async function requestStartupSecurityPermissions(): Promise<SmsPermission
       locationGranted,
       fineLocationGranted: Boolean(res?.fineLocationGranted),
       coarseLocationGranted: Boolean(res?.coarseLocationGranted),
-      allGranted: Boolean(res?.allGranted ?? (smsGranted && phoneGranted && locationGranted)),
+      cameraGranted,
+      allGranted: Boolean(res?.allGranted ?? (smsGranted && phoneGranted && locationGranted && cameraGranted)),
       hardcodedTestNumber: res?.hardcodedTestNumber || '0563752023',
     };
   } catch (err) {
@@ -148,6 +152,17 @@ export function sanitizePhoneNumber(phoneNumber: string): string {
  * Does NOT open the device's default SMS app.
  * Only returns success if confirmed by native SmsManager.
  */
+export async function requestBackgroundActivityPermission(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return true;
+  try {
+    const res = await EmergencySmsPlugin.requestBackgroundActivityPermission();
+    return res.success;
+  } catch (err) {
+    console.warn('Background activity permission prompt failed:', err);
+    return false;
+  }
+}
+
 export async function sendSilentBackgroundSms(
   phoneNumber: string,
   message: string,

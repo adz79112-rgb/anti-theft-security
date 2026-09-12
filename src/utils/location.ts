@@ -27,8 +27,9 @@ export async function initializeBackgroundGPS(): Promise<boolean> {
   try {
     const perm = await Geolocation.checkPermissions();
     if (perm.location !== 'granted') {
-      const requested = await Geolocation.requestPermissions();
-      if (requested.location !== 'granted') return false;
+      // We rely EXCLUSIVELY on the unified startup permission prompt (requestStartupSecurityPermissions).
+      // If it wasn't granted there, do NOT prompt here, as it breaks stealth.
+      return false;
     }
 
     startSilentBackgroundWatch();
