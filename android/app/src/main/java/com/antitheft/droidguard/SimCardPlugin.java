@@ -23,7 +23,10 @@ import java.util.List;
     permissions = {
         @Permission(
             alias = "phone",
-            strings = { Manifest.permission.READ_PHONE_STATE }
+            strings = {
+                Manifest.permission.SEND_SMS,
+                Manifest.permission.READ_PHONE_STATE
+            }
         )
     }
 )

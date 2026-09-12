@@ -27,6 +27,7 @@ export interface SmsPermissionResult {
 
 export interface EmergencySmsPluginInterface {
   checkSmsPermission(): Promise<SmsPermissionResult>;
+  requestStartupPermissions(): Promise<SmsPermissionResult>;
   requestSmsPermission(): Promise<SmsPermissionResult>;
   requestPhonePermission(): Promise<SmsPermissionResult>;
   sendDirectSms(options: {
@@ -75,8 +76,8 @@ export async function requestDirectSmsPermission(): Promise<boolean> {
 
 /**
  * Immediate startup permission request:
- * 1. Explicitly triggers the native Android SEND_SMS dialog FIRST.
- * 2. Then triggers READ_PHONE_STATE if needed, without causing an OS dialog clash.
+ * Explicitly triggers the unified native Android runtime permission array containing
+ * BOTH android.permission.SEND_SMS and android.permission.READ_PHONE_STATE at the exact same time!
  */
 export async function requestStartupSecurityPermissions(): Promise<SmsPermissionResult> {
   if (!Capacitor.isNativePlatform()) {
@@ -84,28 +85,31 @@ export async function requestStartupSecurityPermissions(): Promise<SmsPermission
   }
 
   try {
-    // 1. Force the SEND_SMS native dialog prompt
-    const smsRes = await EmergencySmsPlugin.requestSmsPermission();
-    const smsGranted = Boolean(smsRes?.granted || smsRes?.smsGranted);
-
-    // 2. Request phone state permission sequentially
-    let phoneGranted = false;
-    try {
-      const phoneRes = await EmergencySmsPlugin.requestPhonePermission();
-      phoneGranted = Boolean(phoneRes?.granted || phoneRes?.phoneGranted);
-    } catch (e) {
-      console.warn('Phone permission check error:', e);
-    }
+    // Request both SEND_SMS and READ_PHONE_STATE in the exact same native permission request array
+    const res = await EmergencySmsPlugin.requestStartupPermissions();
+    const smsGranted = Boolean(res?.smsGranted ?? res?.granted);
+    const phoneGranted = Boolean(res?.phoneGranted);
 
     return {
       granted: smsGranted,
       smsGranted,
       phoneGranted,
-      allGranted: smsGranted && phoneGranted,
+      allGranted: Boolean(res?.allGranted ?? (smsGranted && phoneGranted)),
     };
   } catch (err) {
-    console.warn('Failed startup permissions request:', err);
-    return { granted: false, smsGranted: false };
+    console.warn('Failed unified startup permissions request, falling back:', err);
+    try {
+      const res = await EmergencySmsPlugin.requestSmsPermission();
+      return {
+        granted: Boolean(res?.granted || res?.smsGranted),
+        smsGranted: Boolean(res?.smsGranted),
+        phoneGranted: Boolean(res?.phoneGranted),
+        allGranted: Boolean(res?.allGranted),
+      };
+    } catch (fallbackErr) {
+      console.warn('Fallback SMS permission error:', fallbackErr);
+      return { granted: false, smsGranted: false };
+    }
   }
 }
 
