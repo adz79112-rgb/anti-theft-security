@@ -31,6 +31,12 @@ public class SimCardPlugin extends Plugin {
 
     @PluginMethod
     public void getSimCards(PluginCall call) {
+        // Resolve SIM cards safely without interrupting the primary SMS permission dialog flow
+        resolveSimCards(call);
+    }
+
+    @PluginMethod
+    public void requestSimPermission(PluginCall call) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.READ_PHONE_STATE) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissionForAlias("phone", call, "simCardsPermissionCallback");

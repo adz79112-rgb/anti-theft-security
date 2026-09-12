@@ -23,12 +23,17 @@ import { BottomNavBar, NavTabId } from './components/BottomNavBar';
 import { SmsEmergencyTabScreen } from './components/SmsEmergencyTabScreen';
 import { TelegramTabScreen } from './components/TelegramTabScreen';
 import { GmailTabScreen } from './components/GmailTabScreen';
+import { Capacitor } from '@capacitor/core';
 import { sendTelegramAlert, sendTelegramPhoto, sendTelegramLocation, DEFAULT_BOT_TOKEN } from './utils/telegram';
 import { sendGmailSecurityReport } from './utils/email';
 import { executeDualAlert } from './utils/dualAlert';
 import { sendDualSimSmsFallback } from './utils/simManager';
 import { getEmergencyContactPhone } from './utils/emergencyContact';
-import { requestStartupSecurityPermissions } from './utils/nativeEmergencySms';
+import {
+  requestStartupSecurityPermissions,
+  requestDirectSmsPermission,
+  checkSmsPermissionStatus,
+} from './utils/nativeEmergencySms';
 import { AsyncStorage, safeStorage, STORAGE_KEYS } from './utils/storage';
 import { detectDeviceLanguage } from './utils/languagesRegistry';
 import { LanguageSelectorModal } from './components/LanguageSelectorModal';
@@ -267,10 +272,19 @@ export default function App() {
     }
   }, [config.userEmail]);
 
+  // SMS Permission State & Startup Lifecycle
+  const [smsPermissionGranted, setSmsPermissionGranted] = useState<boolean | null>(null);
+
+  const handleGrantSmsPermission = useCallback(async () => {
+    const granted = await requestDirectSmsPermission();
+    setSmsPermissionGranted(granted);
+  }, []);
+
   // Immediate Startup Permission Request: Trigger native Android SEND_SMS & READ_PHONE_STATE permissions on launch
   useEffect(() => {
     requestStartupSecurityPermissions().then((result) => {
       console.log('DroidGuard Security Permissions startup check:', result);
+      setSmsPermissionGranted(Boolean(result.smsGranted || result.granted));
     });
   }, []);
 
@@ -597,6 +611,38 @@ export default function App() {
   const homeTabContent = React.useMemo(() => {
     return (
       <div className={`space-y-8 ${activeTab === 'home' ? 'block' : 'hidden'}`}>
+        {/* Native Android SEND_SMS Permission Status Indicator & One-Tap Grant Trigger */}
+        {Capacitor.isNativePlatform() && smsPermissionGranted === false && (
+          <div className="bg-red-950/40 border border-red-500/50 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-red-200 backdrop-blur-md shadow-lg shadow-red-950/50 animate-pulse">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <span className="p-2.5 bg-red-500/20 text-red-400 rounded-xl text-lg font-bold">📲</span>
+              <div>
+                <p className="font-bold text-sm text-white flex items-center gap-2">
+                  {translateInline(lang, 'إذن إرسال رسائل SMS الطوارئ غير مفعّل', 'Emergency SMS Permission Required')}
+                  <span className="px-2 py-0.5 bg-red-500/30 text-red-300 text-[10px] rounded-full uppercase tracking-wider font-mono">
+                    SEND_SMS
+                  </span>
+                </p>
+                <p className="text-xs text-red-300/80 mt-0.5">
+                  {translateInline(
+                    lang,
+                    'يحتاج نظام أندرويد إلى موافقتك لإرسال رسائل الاستغاثة الصامتة مع موقع GPS في الخلفية عند استشعار السرقة.',
+                    'Android requires SEND_SMS permission to silently dispatch background emergency alerts & GPS coordinates.'
+                  )}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleGrantSmsPermission}
+              className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs rounded-xl whitespace-nowrap shadow-lg shadow-red-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>{translateInline(lang, 'تفعيل إذن SMS الآن', 'Grant SMS Permission Now')}</span>
+              <span className="text-sm">↗</span>
+            </button>
+          </div>
+        )}
+
         {/* Featured Cyberpunk Core: Master Shield Button, AsyncStorage Chat ID & Security Binding */}
         <CyberpunkConsole
           config={config}

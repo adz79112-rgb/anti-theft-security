@@ -44,10 +44,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
         @Permission(
             alias = "phone",
             strings = { Manifest.permission.READ_PHONE_STATE }
-        ),
-        @Permission(
-            alias = "allSecurity",
-            strings = { Manifest.permission.SEND_SMS, Manifest.permission.READ_PHONE_STATE }
         )
     }
 )
@@ -77,24 +73,26 @@ public class EmergencySmsPlugin extends Plugin {
     @PluginMethod
     public void requestSmsPermission(PluginCall call) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            boolean smsGranted = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED;
-            boolean phoneGranted = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
+            boolean smsGranted = ActivityCompat.checkSelfPermission(
+                getContext(),
+                Manifest.permission.SEND_SMS
+            ) == PackageManager.PERMISSION_GRANTED;
 
-            if (!smsGranted || !phoneGranted) {
-                requestPermissionForAlias("allSecurity", call, "allSecurityPermissionCallback");
+            if (!smsGranted) {
+                // Explicitly trigger the native Android runtime popup for SEND_SMS
+                requestPermissionForAlias("sms", call, "smsPermissionCallback");
                 return;
             }
         }
         JSObject ret = new JSObject();
         ret.put("granted", true);
         ret.put("smsGranted", true);
-        ret.put("phoneGranted", true);
         ret.put("allGranted", true);
         call.resolve(ret);
     }
 
     @PermissionCallback
-    private void allSecurityPermissionCallback(PluginCall call) {
+    private void smsPermissionCallback(PluginCall call) {
         boolean smsGranted = ActivityCompat.checkSelfPermission(
             getContext(),
             Manifest.permission.SEND_SMS
@@ -110,6 +108,38 @@ public class EmergencySmsPlugin extends Plugin {
         ret.put("smsGranted", smsGranted);
         ret.put("phoneGranted", phoneGranted);
         ret.put("allGranted", smsGranted && phoneGranted);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void requestPhonePermission(PluginCall call) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            boolean phoneGranted = ActivityCompat.checkSelfPermission(
+                getContext(),
+                Manifest.permission.READ_PHONE_STATE
+            ) == PackageManager.PERMISSION_GRANTED;
+
+            if (!phoneGranted) {
+                requestPermissionForAlias("phone", call, "phonePermissionCallback");
+                return;
+            }
+        }
+        JSObject ret = new JSObject();
+        ret.put("granted", true);
+        ret.put("phoneGranted", true);
+        call.resolve(ret);
+    }
+
+    @PermissionCallback
+    private void phonePermissionCallback(PluginCall call) {
+        boolean phoneGranted = ActivityCompat.checkSelfPermission(
+            getContext(),
+            Manifest.permission.READ_PHONE_STATE
+        ) == PackageManager.PERMISSION_GRANTED;
+
+        JSObject ret = new JSObject();
+        ret.put("granted", phoneGranted);
+        ret.put("phoneGranted", phoneGranted);
         call.resolve(ret);
     }
 

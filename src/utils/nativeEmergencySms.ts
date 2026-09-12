@@ -28,6 +28,7 @@ export interface SmsPermissionResult {
 export interface EmergencySmsPluginInterface {
   checkSmsPermission(): Promise<SmsPermissionResult>;
   requestSmsPermission(): Promise<SmsPermissionResult>;
+  requestPhonePermission(): Promise<SmsPermissionResult>;
   sendDirectSms(options: {
     phoneNumber: string;
     message: string;
@@ -55,8 +56,8 @@ export async function checkSmsPermissionStatus(): Promise<boolean> {
 }
 
 /**
- * Explicitly prompts the user for the Android SEND_SMS and READ_PHONE_STATE runtime permissions.
- * Designed to be invoked on initial startup / dashboard mount.
+ * Explicitly triggers the native Android runtime popup for SEND_SMS:
+ * "Allow DroidGuard to send and view SMS messages"
  */
 export async function requestDirectSmsPermission(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) {
@@ -65,7 +66,7 @@ export async function requestDirectSmsPermission(): Promise<boolean> {
 
   try {
     const res = await EmergencySmsPlugin.requestSmsPermission();
-    return Boolean(res?.granted || res?.smsGranted || res?.allGranted);
+    return Boolean(res?.granted || res?.smsGranted);
   } catch (err) {
     console.warn('Failed to request SMS permission:', err);
     return false;
@@ -73,7 +74,9 @@ export async function requestDirectSmsPermission(): Promise<boolean> {
 }
 
 /**
- * Immediate startup permission request: triggers native Android runtime permission dialog on mount.
+ * Immediate startup permission request:
+ * 1. Explicitly triggers the native Android SEND_SMS dialog FIRST.
+ * 2. Then triggers READ_PHONE_STATE if needed, without causing an OS dialog clash.
  */
 export async function requestStartupSecurityPermissions(): Promise<SmsPermissionResult> {
   if (!Capacitor.isNativePlatform()) {
@@ -81,16 +84,28 @@ export async function requestStartupSecurityPermissions(): Promise<SmsPermission
   }
 
   try {
-    const res = await EmergencySmsPlugin.requestSmsPermission();
+    // 1. Force the SEND_SMS native dialog prompt
+    const smsRes = await EmergencySmsPlugin.requestSmsPermission();
+    const smsGranted = Boolean(smsRes?.granted || smsRes?.smsGranted);
+
+    // 2. Request phone state permission sequentially
+    let phoneGranted = false;
+    try {
+      const phoneRes = await EmergencySmsPlugin.requestPhonePermission();
+      phoneGranted = Boolean(phoneRes?.granted || phoneRes?.phoneGranted);
+    } catch (e) {
+      console.warn('Phone permission check error:', e);
+    }
+
     return {
-      granted: Boolean(res?.granted || res?.smsGranted),
-      smsGranted: Boolean(res?.smsGranted),
-      phoneGranted: Boolean(res?.phoneGranted),
-      allGranted: Boolean(res?.allGranted),
+      granted: smsGranted,
+      smsGranted,
+      phoneGranted,
+      allGranted: smsGranted && phoneGranted,
     };
   } catch (err) {
     console.warn('Failed startup permissions request:', err);
-    return { granted: false };
+    return { granted: false, smsGranted: false };
   }
 }
 
