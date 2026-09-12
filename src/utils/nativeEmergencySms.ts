@@ -41,6 +41,11 @@ export interface EmergencySmsPluginInterface {
     slot?: number;
   }): Promise<SmsSendResult>;
   requestBackgroundActivityPermission(): Promise<{ success: boolean; message?: string; error?: string }>;
+  openDeveloperSettings(): Promise<{ success: boolean; error?: string }>;
+  openAppSettings(): Promise<{ success: boolean; error?: string }>;
+  checkDeviceAdminStatus(): Promise<{ isAdmin: boolean; error?: string }>;
+  requestDeviceAdmin(): Promise<{ success: boolean; isAdmin?: boolean; alreadyActive?: boolean; message?: string; error?: string }>;
+  lockDeviceNow(): Promise<{ success: boolean; error?: string }>;
 }
 
 export const EmergencySmsPlugin = registerPlugin<EmergencySmsPluginInterface>('EmergencySmsPlugin');
@@ -159,6 +164,62 @@ export async function requestBackgroundActivityPermission(): Promise<boolean> {
     return res.success;
   } catch (err) {
     console.warn('Background activity permission prompt failed:', err);
+    return false;
+  }
+}
+
+export async function openDeveloperSettings(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    const res = await EmergencySmsPlugin.openDeveloperSettings();
+    return res.success;
+  } catch (err) {
+    console.warn('Failed to open developer settings:', err);
+    return false;
+  }
+}
+
+export async function openAppSettings(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    const res = await EmergencySmsPlugin.openAppSettings();
+    return res.success;
+  } catch (err) {
+    console.warn('Failed to open app settings:', err);
+    return false;
+  }
+}
+
+export async function checkDeviceAdminStatus(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    const res = await EmergencySmsPlugin.checkDeviceAdminStatus();
+    return Boolean(res?.isAdmin);
+  } catch (err) {
+    console.warn('Failed to check device admin status:', err);
+    return false;
+  }
+}
+
+export async function requestDeviceAdmin(): Promise<{ success: boolean; isAdmin?: boolean; alreadyActive?: boolean; message?: string; error?: string }> {
+  if (!Capacitor.isNativePlatform()) {
+    return { success: false, error: 'Device Admin is only available on native Android.' };
+  }
+  try {
+    return await EmergencySmsPlugin.requestDeviceAdmin();
+  } catch (err: any) {
+    console.warn('Failed to request device admin:', err);
+    return { success: false, error: err?.message || 'Failed to launch Device Admin intent.' };
+  }
+}
+
+export async function lockDeviceNow(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    const res = await EmergencySmsPlugin.lockDeviceNow();
+    return Boolean(res?.success);
+  } catch (err) {
+    console.warn('Failed to lock device:', err);
     return false;
   }
 }

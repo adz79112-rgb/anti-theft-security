@@ -33,6 +33,8 @@ import {
   requestStartupSecurityPermissions,
   requestDirectSmsPermission,
   checkSmsPermissionStatus,
+  checkDeviceAdminStatus,
+  requestDeviceAdmin,
 } from './utils/nativeEmergencySms';
 import { AsyncStorage, safeStorage, STORAGE_KEYS } from './utils/storage';
 import { detectDeviceLanguage } from './utils/languagesRegistry';
@@ -290,26 +292,57 @@ export default function App() {
     }
   }, [config.userEmail]);
 
-  // SMS Permission State & Startup Lifecycle
+  // SMS Permission & Device Administrator Startup Lifecycle
   const [smsPermissionGranted, setSmsPermissionGranted] = useState<boolean | null>(null);
+  const [deviceAdminActive, setDeviceAdminActive] = useState<boolean | null>(null);
 
   const handleGrantSmsPermission = useCallback(async () => {
     const granted = await requestDirectSmsPermission();
     setSmsPermissionGranted(granted);
   }, []);
 
-  // Execute unified startup security permission request once, then prime background GPS
+  const handleGrantDeviceAdmin = useCallback(async () => {
+    const res = await requestDeviceAdmin();
+    if (res.isAdmin || res.alreadyActive) {
+      setDeviceAdminActive(true);
+    }
+  }, []);
+
+  // Check and sync security permissions and device admin status
+  const checkSecurityState = useCallback(async () => {
+    if (Capacitor.isNativePlatform()) {
+      const [smsStatus, adminStatus] = await Promise.all([
+        checkSmsPermissionStatus(),
+        checkDeviceAdminStatus(),
+      ]);
+      setSmsPermissionGranted(smsStatus);
+      setDeviceAdminActive(adminStatus);
+    }
+  }, []);
+
+  // Execute unified startup security permission request once, then prime background GPS and Device Admin
   useEffect(() => {
     requestStartupSecurityPermissions().then((result) => {
       console.log('DroidGuard Security Permissions startup check:', result);
       setSmsPermissionGranted(Boolean(result.smsGranted || result.granted));
       
+      // Check Device Admin status
+      checkDeviceAdminStatus().then((isAdmin) => {
+        setDeviceAdminActive(isAdmin);
+      });
+
       // Now that location permissions are requested/checked, start the silent GPS watcher
       initializeBackgroundGPS().catch((err) => {
         console.log('[App] Background GPS priming:', err);
       });
     });
-  }, []);
+
+    const handleFocus = () => {
+      checkSecurityState();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [checkSecurityState]);
 
   // Sync HTML dir attribute when language toggles
   useEffect(() => {
@@ -679,6 +712,38 @@ export default function App() {
             >
               <span>{translateInline(lang, 'تفعيل إذن SMS الآن', 'Grant SMS Permission Now')}</span>
               <span className="text-sm">↗</span>
+            </button>
+          </div>
+        )}
+
+        {/* Native Android Device Administrator Rights Elevation Banner */}
+        {Capacitor.isNativePlatform() && deviceAdminActive === false && (
+          <div className="bg-indigo-950/50 border border-indigo-500/50 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-indigo-200 backdrop-blur-md shadow-lg shadow-indigo-950/60">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <span className="p-2.5 bg-indigo-500/20 text-indigo-300 rounded-xl text-lg font-bold">🛡️</span>
+              <div>
+                <p className="font-bold text-sm text-white flex items-center gap-2">
+                  {translateInline(lang, 'تفعيل صلاحية مسؤول الجهاز (Device Administrator)', 'Activate Device Administrator Protection')}
+                  <span className="px-2 py-0.5 bg-indigo-500/30 text-indigo-300 text-[10px] rounded-full uppercase tracking-wider font-mono font-bold">
+                    SYSTEM PRIVILEGE
+                  </span>
+                </p>
+                <p className="text-xs text-indigo-300/80 mt-0.5">
+                  {translateInline(
+                    lang,
+                    'يمنح التطبيق صلاحيات عالية لحماية الهاتف من الإلغاء، تنفيذ القفل الفوري للشاشة، ورفع أولوية إرسال SMS في الخلفية.',
+                    'Grants elevated OS privileges to prevent uninstallation, execute instant screen locks, and prioritize offline background emergency SMS.'
+                  )}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleGrantDeviceAdmin}
+              className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs rounded-xl whitespace-nowrap shadow-lg shadow-indigo-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>{translateInline(lang, 'تفعيل مسؤول الجهاز الآن', 'Activate Device Admin Rights')}</span>
+              <span className="text-sm">🛡️</span>
             </button>
           </div>
         )}

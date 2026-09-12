@@ -9,11 +9,17 @@ import {
   Radio,
   Smartphone,
   ShieldCheck,
+  ShieldAlert,
+  Lock,
   Info,
   Check,
   Copy,
   Layers,
   Sparkles,
+  Wrench,
+  Settings,
+  ExternalLink,
+  X,
 } from 'lucide-react';
 import { Language, DispatchEvent, SecurityConfig } from '../types';
 import {
@@ -26,6 +32,11 @@ import {
   checkSmsPermissionStatus,
   requestDirectSmsPermission,
   requestBackgroundActivityPermission,
+  openDeveloperSettings,
+  openAppSettings,
+  checkDeviceAdminStatus,
+  requestDeviceAdmin,
+  lockDeviceNow,
   sanitizePhoneNumber,
 } from '../utils/nativeEmergencySms';
 import { Capacitor } from '@capacitor/core';
@@ -50,24 +61,98 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
   const [smsPermissionGranted, setSmsPermissionGranted] = useState<boolean | null>(null);
+  const [deviceAdminActive, setDeviceAdminActive] = useState<boolean | null>(null);
   const [isRequestingPermission, setIsRequestingPermission] = useState<boolean>(false);
+  const [isActivatingAdmin, setIsActivatingAdmin] = useState<boolean>(false);
+  const [showOppoModal, setShowOppoModal] = useState<boolean>(false);
 
-  // Load emergency contact phone and check SEND_SMS permission status on mount
+  // Load emergency contact phone, check SEND_SMS and Device Admin status
+  const refreshSecurityStatus = async () => {
+    if (Capacitor.isNativePlatform()) {
+      const [smsGranted, adminActive] = await Promise.all([
+        checkSmsPermissionStatus(),
+        checkDeviceAdminStatus(),
+      ]);
+      setSmsPermissionGranted(smsGranted);
+      setDeviceAdminActive(adminActive);
+    } else {
+      setSmsPermissionGranted(false);
+      setDeviceAdminActive(false);
+    }
+  };
+
   useEffect(() => {
     async function loadPhoneAndCheckPerm() {
       const phone = await getEmergencyContactPhone(config.emergencyContactPhone);
       setEmergencyPhone(phone);
       setIsSaved(Boolean(phone));
-
-      if (Capacitor.isNativePlatform()) {
-        const granted = await checkSmsPermissionStatus();
-        setSmsPermissionGranted(granted);
-      } else {
-        setSmsPermissionGranted(false);
-      }
+      await refreshSecurityStatus();
     }
     loadPhoneAndCheckPerm();
+
+    const handleFocus = () => {
+      refreshSecurityStatus();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, [config.emergencyContactPhone]);
+
+  // Activate Device Administrator Rights Handler
+  const handleActivateDeviceAdmin = async () => {
+    setIsActivatingAdmin(true);
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const result = await requestDeviceAdmin();
+        if (result.alreadyActive || result.isAdmin) {
+          setDeviceAdminActive(true);
+          setSaveFeedback(
+            translateInline(
+              lang,
+              '✓ Device Administrator protection is active & elevated priority enabled!',
+              '✓ صلاحية مسؤول الجهاز (Device Admin) مفعّلة بالفعل! تم تعزيز أولوية النظام وأمان الخلفية.'
+            )
+          );
+        } else {
+          setSaveFeedback(
+            translateInline(
+              lang,
+              'ℹ️ System activation dialog opened. Please tap "Activate this device admin app".',
+              'ℹ️ تم فتح نافذة تفعيل مسؤول الجهاز. يرجى الضغط على "تفعيل تطبيق مشرف هذا الجهاز".'
+            )
+          );
+        }
+      } else {
+        setSaveFeedback(
+          translateInline(
+            lang,
+            'ℹ️ Device Administrator requires running on an Android device via native DevicePolicyManager.',
+            'ℹ️ صلاحية مسؤول الجهاز (Device Admin) هي ميزة لنظام أندرويد لحماية الهاتف وقفل الشاشة وتجاوز القيود.'
+          )
+        );
+      }
+    } finally {
+      setIsActivatingAdmin(false);
+      setTimeout(() => setSaveFeedback(null), 6000);
+    }
+  };
+
+  // Immediate Hardware Screen Lock Test
+  const handleTestLockScreen = async () => {
+    if (!deviceAdminActive) {
+      handleActivateDeviceAdmin();
+      return;
+    }
+    const locked = await lockDeviceNow();
+    if (locked) {
+      setSaveFeedback(
+        translateInline(
+          lang,
+          '🔒 Hardware screen lock executed successfully via DevicePolicyManager!',
+          '🔒 تم قفل شاشة الهاتف فورياً بنجاح بواسطة مسؤول الجهاز (DevicePolicyManager)!'
+        )
+      );
+    }
+  };
 
   // Explicit permission request action
   const handleRequestPermission = async () => {
@@ -113,6 +198,40 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
       const granted = await requestBackgroundActivityPermission();
       if (granted) {
         setSaveFeedback(translateInline(lang, '✓ Opened battery optimization settings. Please grant unrestricted background activity (Recommended for ColorOS/Oppo).', '✓ تم فتح إعدادات تحسين البطارية. يرجى السماح بالعمل في الخلفية (ضروري لأجهزة Oppo/ColorOS).'));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleOpenDevOptions = async () => {
+    try {
+      const ok = await openDeveloperSettings();
+      if (ok) {
+        setSaveFeedback(
+          translateInline(
+            lang,
+            '✓ Opened Developer Options! Scroll down to find "Disable permission monitoring" and turn it ON.',
+            '✓ تم فتح خيارات المطور! مرر للأسفل وابحث عن "تعطيل مراقبة الأذونات" (Disable permission monitoring) وفعّلها لإيقاف نافذة العد التنازلي نهائياً.'
+          )
+        );
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleOpenAppSettings = async () => {
+    try {
+      const ok = await openAppSettings();
+      if (ok) {
+        setSaveFeedback(
+          translateInline(
+            lang,
+            '✓ Opened App Details settings.',
+            '✓ تم فتح صفحة معلومات التطبيق.'
+          )
+        );
       }
     } catch (e) {
       console.error(e);
@@ -364,14 +483,86 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
           </p>
         </div>
 
-        <div className="mt-2 flex justify-end">
-          <button
-            type="button"
-            onClick={handleRequestBackgroundActivity}
-            className="text-xs px-3 py-1.5 rounded-lg border border-amber-500/40 text-amber-500 hover:bg-amber-500/10 transition cursor-pointer"
-          >
-            {translateInline(lang, 'Oppo/ColorOS SMS Fix (Allow Background)', 'حل مشكلة إرسال SMS لأجهزة Oppo/ColorOS')}
-          </button>
+        {/* 2. Device Administrator (DevicePolicyManager) System Privilege Card */}
+        <div
+          id="device-admin-status-card"
+          className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col gap-3 ${
+            deviceAdminActive
+              ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
+              : 'bg-indigo-950/30 border-indigo-500/40 text-indigo-200'
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div
+                className={`p-2.5 rounded-xl border shrink-0 mt-0.5 ${
+                  deviceAdminActive
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                    : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                }`}
+              >
+                {deviceAdminActive ? <ShieldCheck className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-sm font-bold text-white">
+                    {translateInline(
+                      lang,
+                      'Device Administrator Privileges (DevicePolicyManager)',
+                      'صلاحية مسؤول الجهاز (Device Administrator API)'
+                    )}
+                  </h4>
+                  <span
+                    className={`text-[10px] font-mono-code font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                      deviceAdminActive
+                        ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
+                        : 'bg-amber-500/30 text-amber-300 border border-amber-500/40'
+                    }`}
+                  >
+                    {deviceAdminActive
+                      ? translateInline(lang, 'ACTIVE & ELEVATED ✓', 'مفعّل بأعلى الصلاحيات ✓')
+                      : translateInline(lang, 'ACTION REQUIRED ⚠️', 'مطلوب التفعيل ⚠️')}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  {translateInline(
+                    lang,
+                    'Grants elevated OS-level protection for offline SMS dispatch, anti-tamper persistence, and instant hardware screen lock commands.',
+                    'تمنح التطبيق صلاحيات أمان عالية على مستوى نظام أندرويد لضمان إرسال رسائل SMS الطوارئ في الخلفية بأعلى أولوية، وحماية التطبيق من الإلغاء، وتنفيذ القفل الفوري للشاشة.'
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              {!deviceAdminActive ? (
+                <button
+                  id="btn-activate-device-admin"
+                  type="button"
+                  onClick={handleActivateDeviceAdmin}
+                  disabled={isActivatingAdmin}
+                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold font-mono-code transition cursor-pointer shadow-lg shadow-indigo-950/60 flex items-center gap-2 disabled:opacity-50"
+                >
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>
+                    {isActivatingAdmin
+                      ? translateInline(lang, 'Activating...', 'جاري التفعيل...')
+                      : translateInline(lang, 'Activate Device Admin Rights', 'تفعيل صلاحية مسؤول الجهاز الآن')}
+                  </span>
+                </button>
+              ) : (
+                <button
+                  id="btn-test-lock-screen"
+                  type="button"
+                  onClick={handleTestLockScreen}
+                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold font-mono-code transition cursor-pointer flex items-center gap-1.5"
+                >
+                  <Lock className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>{translateInline(lang, 'Test Instant Lock', 'اختبار قفل الشاشة')}</span>
+                </button>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Feedback message */}
@@ -464,6 +655,108 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
           onLogDispatch={onLogDispatch}
         />
       </div>
+
+      {/* Oppo / ColorOS / Realme Stealth Configuration Modal */}
+      {showOppoModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-amber-500/40 shadow-2xl p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  <Wrench className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-slate-100">
+                    {translateInline(lang, 'ColorOS / Oppo Stealth Bypass Guide', 'دليل إلغاء نافذة العد التنازلي لهواتف Oppo و Realme')}
+                  </h3>
+                  <p className="text-xs text-amber-400">
+                    {translateInline(lang, 'Remove the 5-second SMS confirmation popup permanently', 'إيقاف نافذة تأكيد الإرسال المنبثقة بشكل نهائي')}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowOppoModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              {translateInline(
+                lang,
+                'Oppo (ColorOS) and Realme devices include a system-level security hook that intercepts background SMS dispatch and shows a 5-second countdown dialog. Follow these quick steps to disable it permanently:',
+                'تتضمن هواتف Oppo و Realme طبقة أمان مدمجة في النظام تقوم باعتراض رسائل الطوارئ في الخلفية وتظهر نافذة عد تنازلي (5 ثوانٍ). لإلغائها نهائياً وضمان إرسال الرسالة سراً وبصمت تام، اتبع الخطوات التالية:'
+              )}
+            </p>
+
+            {/* Step 1 */}
+            <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
+                <span className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">1</span>
+                <span>{translateInline(lang, 'Step 1: Disable Permission Monitoring in Developer Options', 'الخطوة 1: تعطيل مراقبة الأذونات في خيارات المطور')}</span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-normal">
+                {translateInline(
+                  lang,
+                  'Open Developer Options, scroll down to the bottom, and enable "Disable permission monitoring" (or "Disable system optimization"). Then restart your phone.',
+                  'انقر على الزر بالأسفل لفتح خيارات المطور، ثم انزل لأسفل الصفحة وفعل خيار "تعطيل مراقبة الأذونات" (Disable permission monitoring) أو (تعطيل تحسين النظام)، ثم أعد تشغيل الهاتف.'
+                )}
+              </p>
+              <button
+                type="button"
+                onClick={handleOpenDevOptions}
+                className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span>{translateInline(lang, 'Open Developer Options Now', 'فتح خيارات المطور الآن (Developer Options)')}</span>
+              </button>
+            </div>
+
+            {/* Step 2 */}
+            <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
+              <div className="flex items-center gap-2 text-xs font-bold text-cyan-300">
+                <span className="w-5 h-5 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">2</span>
+                <span>{translateInline(lang, 'Step 2: Allow Unrestricted Background Activity', 'الخطوة 2: السماح بالعمل في الخلفية دون قيود')}</span>
+              </div>
+              <p className="text-[11px] text-slate-300 leading-normal">
+                {translateInline(
+                  lang,
+                  'Ensure the app is exempted from battery optimization so ColorOS does not restrict background SMS dispatch tasks.',
+                  'تأكد من استثناء التطبيق من قيود توفير البطارية ليعمل بشكل فوري وحر في الخلفية عند السرقة.'
+                )}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={handleRequestBackgroundActivity}
+                  className="py-2 px-3 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <span>{translateInline(lang, 'Ignore Battery Optimization', 'استثناء البطارية')}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleOpenAppSettings}
+                  className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
+                >
+                  <span>{translateInline(lang, 'App Info & Permissions', 'معلومات التطبيق والأذونات')}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowOppoModal(false)}
+                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition cursor-pointer"
+              >
+                {translateInline(lang, 'Close', 'إغلاق')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
