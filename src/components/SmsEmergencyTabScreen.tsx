@@ -318,7 +318,7 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
                 setEmergencyPhone(e.target.value);
                 setIsSaved(false);
               }}
-              placeholder={translateInline(lang, '+44 7911 123456 or +1 202 555 0123', '+213 661 12 34 56 أو +966 50 123 4567')}
+              placeholder={translateInline(lang, '+1 202 555 0123', '+1 202 555 0123 / +966 5X XXX XXXX')}
               className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-700 hover:border-slate-600 focus:border-amber-400 focus:outline-none text-slate-100 font-mono-code text-sm font-bold placeholder-slate-600 transition"
               dir="ltr"
             />

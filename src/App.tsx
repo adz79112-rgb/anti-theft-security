@@ -55,7 +55,7 @@ const DEFAULT_CONFIG: SecurityConfig = {
   userEmail: 'adz79112@gmail.com',
   antiUninstallActive: true,
   deviceAdminActive: true,
-  emergencyContactPhone: '+213 661 12 34 56',
+  emergencyContactPhone: '',
 };
 
 const generateUniqueId = (prefix: string = 'id'): string => {
@@ -183,7 +183,20 @@ export default function App() {
   const [isTheftModeTriggered, setIsTheftModeTriggered] = useState<boolean>(false);
   const [isStealthStolenModeOpen, setIsStealthStolenModeOpen] = useState<boolean>(false);
   const [stealthUnlockNotice, setStealthUnlockNotice] = useState<string | null>(null);
-  const [theftTriggerSender, setTheftTriggerSender] = useState<string>('+966 50 123 4567');
+  const [theftTriggerSender, setTheftTriggerSender] = useState<string>(() => {
+    try {
+      const saved = safeStorage.getItem('antitheft_config');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.emergencyContactPhone && typeof parsed.emergencyContactPhone === 'string') {
+          return parsed.emergencyContactPhone.trim();
+        }
+      }
+    } catch {
+      // ignore
+    }
+    return '';
+  });
   const [currentLocation, setCurrentLocation] = useState<LocationResult | null>(null);
 
   // Intruder Captures History
@@ -233,8 +246,18 @@ export default function App() {
     }
   }, [dispatchEvents]);
 
-  // Hydrate Telegram Chat ID & User Email from AsyncStorage on startup
+  // Hydrate Telegram Chat ID, User Email & Emergency Phone from storage on startup
   useEffect(() => {
+    getEmergencyContactPhone().then((savedPhone) => {
+      if (savedPhone && savedPhone.trim()) {
+        setConfig((prev) => ({
+          ...prev,
+          emergencyContactPhone: savedPhone.trim(),
+        }));
+        setTheftTriggerSender((prev) => (prev ? prev : savedPhone.trim()));
+      }
+    });
+
     AsyncStorage.getItem(STORAGE_KEYS.CHAT_ID).then((savedChatId) => {
       if (savedChatId && savedChatId.trim()) {
         setConfig((prev) => ({
@@ -316,13 +339,28 @@ export default function App() {
           setCaptures((prev) => [newCapture, ...prev]);
 
           // 1. Silent Background Emergency SMS via native Android SmsManager
-          const emergencyPhone = config.emergencyContactPhone || (await getEmergencyContactPhone()) || '+213 661 12 34 56';
+          const emergencyPhone = (config.emergencyContactPhone && config.emergencyContactPhone.trim())
+            || (await getEmergencyContactPhone());
           const smsBody = `🚨 [إنذار سرقة DroidGuard]\nالموقع المباشر للجهاز:\n${loc.mapsUrl}\nإحداثيات: ${loc.source === 'unavailable' ? 'غير متوفر' : loc.latitude.toFixed(5) + ', ' + loc.longitude.toFixed(5)}\nالوقت: ${timestamp}`;
 
           const recipientsToAlert: string[] = [];
           if (emergencyPhone && emergencyPhone.trim()) recipientsToAlert.push(emergencyPhone.trim());
           if (senderNumber && senderNumber.trim() && !recipientsToAlert.includes(senderNumber.trim())) {
             recipientsToAlert.push(senderNumber.trim());
+          }
+
+          if (recipientsToAlert.length === 0) {
+            setDispatchEvents((prev) => [
+              {
+                id: generateUniqueId('disp'),
+                timestamp,
+                recipient: 'لم يتم تحديد رقم طوارئ',
+                type: 'emergency_sms',
+                content: '[تعذر إرسال SMS] لم يتم ضبط رقم هاتف الطوارئ في الإعدادات. يرجى إضافته من تبويب SMS.',
+                status: 'failed',
+              },
+              ...prev,
+            ]);
           }
 
           for (const recipient of recipientsToAlert) {
@@ -597,12 +635,12 @@ export default function App() {
   }
 
   const handleTriggerTheft = useCallback(() => {
-    executeTheftTrigger(theftTriggerSender || config.emergencyContactPhone || '+213 661 12 34 56');
+    executeTheftTrigger(theftTriggerSender || config.emergencyContactPhone || '');
   }, [theftTriggerSender, config.emergencyContactPhone, executeTheftTrigger]);
 
   const handleTriggerCamera = useCallback(() => {
-    executeCameraTrigger(theftTriggerSender || '+213 661 12 34 56');
-  }, [theftTriggerSender]);
+    executeCameraTrigger(theftTriggerSender || config.emergencyContactPhone || '');
+  }, [theftTriggerSender, config.emergencyContactPhone, executeCameraTrigger]);
 
   const handleTabSelect = useCallback((tab: NavTabId) => {
     setActiveTab(tab);
@@ -761,7 +799,7 @@ export default function App() {
         onSelectLang={handleSelectLanguage}
         onLockApp={() => setIsAppAuthenticated(false)}
         onTriggerFakePowerOff={() =>
-          executeTheftTrigger(theftTriggerSender || config.emergencyContactPhone || '+213 661 12 34 56')
+          executeTheftTrigger(theftTriggerSender || config.emergencyContactPhone || '')
         }
       />
 
@@ -832,6 +870,7 @@ export default function App() {
         isOpen={isTheftModeTriggered}
         onDismiss={handleDismissTheftLock}
         triggerSender={theftTriggerSender}
+        emergencyPhone={config.emergencyContactPhone}
         location={currentLocation}
         lang={lang}
         onTriggerFakePowerOff={() => {

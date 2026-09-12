@@ -125,20 +125,13 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
         disableDeviceFallback: false,
       });
 
+      setIsScanningFingerprint(false);
+
       if (authRes.success) {
         handleUnlockSuccess(
           translateInline(lang, 'Android Biometrics / PIN', 'بصمة أو رمز PIN النظام الأصلي')
         );
       } else {
-        const failRes = await recordFailedAuthAttempt({
-          customBotToken: telegramBotToken,
-          customChatId: telegramChatId,
-          customUserEmail: userEmail,
-          customEmergencyPhone: emergencyPhone,
-          onLogDispatch,
-          onSaveCapture,
-        });
-
         const isLockout = authRes.error && (
           authRes.error.toLowerCase().includes('lockout') ||
           authRes.error.toLowerCase().includes('too many')
@@ -152,23 +145,45 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
               `⚠️ تم قفل مستشعر البصمة: ${authRes.error}. يرجى استخدام رمز PIN أو نمط الهاتف.`
             )
           );
-        } else if (failRes.isThirdAttempt) {
-          setAuthError(
-            translateInline(
-              lang,
-              '🚨 Intruder photo captured and emergency alerts dispatched!',
-              '🚨 تم التقاط صورة المتسلل صامتاً! تم إرسال البلاغات للطوارئ.'
-            )
-          );
         } else {
           setAuthError(
             translateInline(
               lang,
-              `Authentication failed (${failRes.newCount} of 3 attempts). ${authRes.error ? '(' + authRes.error + ')' : ''}`,
-              `فشلت المصادقة (${failRes.newCount} من 3 محاولات). ${authRes.error ? '(' + authRes.error + ')' : ''}`
+              `Authentication failed. ${authRes.error ? '(' + authRes.error + ')' : ''}`,
+              `فشلت المصادقة. ${authRes.error ? '(' + authRes.error + ')' : ''}`
             )
           );
         }
+
+        // Record failed attempt and trigger alerts asynchronously in the background
+        recordFailedAuthAttempt({
+          customBotToken: telegramBotToken,
+          customChatId: telegramChatId,
+          customUserEmail: userEmail,
+          customEmergencyPhone: emergencyPhone,
+          onLogDispatch,
+          onSaveCapture,
+        }).then((failRes) => {
+          if (failRes.isThirdAttempt) {
+            setAuthError(
+              translateInline(
+                lang,
+                '🚨 Intruder photo captured and emergency alerts dispatched!',
+                '🚨 تم التقاط صورة المتسلل صامتاً! تم إرسال البلاغات للطوارئ.'
+              )
+            );
+          } else {
+            setAuthError(
+              translateInline(
+                lang,
+                `Authentication failed (${failRes.newCount} of 3 attempts). ${authRes.error ? '(' + authRes.error + ')' : ''}`,
+                `فشلت المصادقة (${failRes.newCount} من 3 محاولات). ${authRes.error ? '(' + authRes.error + ')' : ''}`
+              )
+            );
+          }
+        }).catch((err) => {
+          console.warn('Failed recording auth attempt:', err);
+        });
       }
     } catch (err: any) {
       console.warn('Native biometric error in LockdownScreen:', err);
@@ -577,7 +592,7 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
               <div className="space-y-1 text-slate-400">
                 <p>• Verified Gmail: {userEmail || 'adz79112@gmail.com'} (✓ Dispatched)</p>
                 <p>• Telegram: {telegramChatId ? `@${telegramChatId}` : 'Configured via Bot'} (✓ Active)</p>
-                <p>• Dual-SIM SMS: {emergencyPhone || '+213 661 12 34 56'} (SIM 1 + SIM 2)</p>
+                <p>• Dual-SIM SMS: {emergencyPhone || translateInline(lang, 'Not configured (Configure in SMS tab)', 'غير محدد (يرجى الضبط في تبويب SMS)')} (SIM 1 + SIM 2)</p>
               </div>
               <button
                 type="button"

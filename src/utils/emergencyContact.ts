@@ -1,9 +1,9 @@
 import { AsyncStorage, STORAGE_KEYS } from './storage';
 
-export const DEFAULT_EMERGENCY_PHONE = '+213 661 12 34 56';
+export const DEFAULT_EMERGENCY_PHONE = '';
 
 /**
- * Retrieve the saved primary emergency phone number from AsyncStorage
+ * Retrieve the saved primary emergency phone number from AsyncStorage or localStorage
  */
 export async function getEmergencyContactPhone(fallback?: string): Promise<string> {
   try {
@@ -14,7 +14,23 @@ export async function getEmergencyContactPhone(fallback?: string): Promise<strin
   } catch (err) {
     console.warn('Failed to retrieve emergency phone from storage:', err);
   }
-  return fallback || DEFAULT_EMERGENCY_PHONE;
+
+  // Backup check in local configuration storage
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const cfg = localStorage.getItem('antitheft_config');
+      if (cfg) {
+        const parsed = JSON.parse(cfg);
+        if (parsed.emergencyContactPhone && typeof parsed.emergencyContactPhone === 'string' && parsed.emergencyContactPhone.trim()) {
+          return parsed.emergencyContactPhone.trim();
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  return (fallback && fallback.trim()) || '';
 }
 
 /**

@@ -88,16 +88,22 @@ export async function executeStealthDispatchCycle(
   // Dispatched simultaneously to both:
   // a) Primary verified emergency contact phone
   // b) The command sender (if present)
-  const emergencyPhone = customEmergencyPhone || (await getEmergencyContactPhone());
+  const emergencyPhone = (customEmergencyPhone && customEmergencyPhone.trim()) || (await getEmergencyContactPhone());
   const smsBody = `[إنذار سرقة DroidGuard - دورة خفية #${cycleNumber}]\nالموقع المباشر للجهاز:\n${mapsUrl}\nإحداثيات: ${location.source === 'unavailable' ? 'غير متوفر' : location.latitude.toFixed(5) + ', ' + location.longitude.toFixed(5)}`;
 
   const recipientsToAlert: string[] = [];
-  if (emergencyPhone) recipientsToAlert.push(emergencyPhone);
-  if (cleanSender && !recipientsToAlert.includes(cleanSender)) {
-    recipientsToAlert.push(cleanSender);
+  if (emergencyPhone && emergencyPhone.trim()) recipientsToAlert.push(emergencyPhone.trim());
+  if (cleanSender && cleanSender.trim() && !recipientsToAlert.includes(cleanSender.trim())) {
+    recipientsToAlert.push(cleanSender.trim());
   }
-  if (recipientsToAlert.length === 0) {
-    recipientsToAlert.push('+213 661 12 34 56');
+  if (recipientsToAlert.length === 0 && callbacks?.onLogDispatch) {
+    callbacks.onLogDispatch({
+      timestamp,
+      recipient: 'لم يتم تحديد رقم طوارئ',
+      type: 'emergency_sms',
+      content: `[تعذر إرسال SMS] لم يتم ضبط رقم هاتف الطوارئ في الإعدادات. يرجى ضبط رقم الطوارئ في تبويب SMS.`,
+      status: 'failed',
+    });
   }
 
   let primaryDualSimResult: DualSimSmsResult | null = null;

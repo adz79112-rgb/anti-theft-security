@@ -13,6 +13,7 @@ interface EmergencyLockOverlayProps {
   isOpen: boolean;
   onDismiss: () => void;
   triggerSender: string;
+  emergencyPhone?: string;
   location: LocationResult | null;
   lang: Language;
   onTriggerFakePowerOff?: () => void;
@@ -22,6 +23,7 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
   isOpen,
   onDismiss,
   triggerSender,
+  emergencyPhone,
   location,
   lang,
   onTriggerFakePowerOff,
@@ -58,13 +60,11 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
         disableDeviceFallback: false,
       });
 
+      setIsAuthenticating(false);
+
       if (res.success) {
         handleAuthSuccess();
       } else {
-        const failRes = await recordFailedAuthAttempt({
-          customEmergencyPhone: triggerSender,
-        });
-
         const isLockout = res.error && (
           res.error.toLowerCase().includes('lockout') ||
           res.error.toLowerCase().includes('too many')
@@ -78,23 +78,40 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
               `⚠️ تم قفل مستشعر البصمة: ${res.error}. استخدم رمز PIN أو النمط.`
             )
           );
-        } else if (failRes.isThirdAttempt) {
-          setAuthFeedback(
-            translateInline(
-              lang,
-              '🚨 Intruder photo captured and emergency alerts dispatched!',
-              '🚨 تم التقاط صورة المتسلل صامتاً! تم استنفاد 3 محاولات وإرسال التنبيهات.'
-            )
-          );
         } else {
           setAuthFeedback(
             translateInline(
               lang,
-              `Authentication failed (${failRes.newCount} of 3 attempts). ${res.error ? '(' + res.error + ')' : ''}`,
-              `فشلت المصادقة (${failRes.newCount} من 3 محاولات). ${res.error ? '(' + res.error + ')' : ''}`
+              `Authentication failed. ${res.error ? '(' + res.error + ')' : ''}`,
+              `فشلت المصادقة. ${res.error ? '(' + res.error + ')' : ''}`
             )
           );
         }
+
+        // Run emergency reporting asynchronously in background without blocking UI unlock state
+        recordFailedAuthAttempt({
+          customEmergencyPhone: emergencyPhone || triggerSender,
+        }).then((failRes) => {
+          if (failRes.isThirdAttempt) {
+            setAuthFeedback(
+              translateInline(
+                lang,
+                '🚨 Intruder photo captured and emergency alerts dispatched!',
+                '🚨 تم التقاط صورة المتسلل صامتاً! تم استنفاد 3 محاولات وإرسال التنبيهات.'
+              )
+            );
+          } else {
+            setAuthFeedback(
+              translateInline(
+                lang,
+                `Authentication failed (${failRes.newCount} of 3 attempts). ${res.error ? '(' + res.error + ')' : ''}`,
+                `فشلت المصادقة (${failRes.newCount} من 3 محاولات). ${res.error ? '(' + res.error + ')' : ''}`
+              )
+            );
+          }
+        }).catch((err) => {
+          console.warn('Background failed auth record error:', err);
+        });
       }
     } catch (err: any) {
       console.warn('Native biometric error:', err);
@@ -108,7 +125,7 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
     } finally {
       setIsAuthenticating(false);
     }
-  }, [isAuthenticating, lang, triggerSender, handleAuthSuccess]);
+  }, [isAuthenticating, lang, triggerSender, emergencyPhone, handleAuthSuccess]);
 
   // Handle fake power off action by thief
   const handleConfirmFakePowerOff = useCallback(() => {
@@ -285,8 +302,14 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
             <span>{translateInline(lang, 'Emergency report sent automatically via SMS', 'تم إرسال بلاغ الطوارئ تلقائياً بالرسائل النصية')}</span>
           </div>
           <p className="text-xs text-slate-300">
-            {translateInline(lang, 'Location coordinates and map link sent to the trigger number:', 'تم إرسال إحداثيات الموقع ورابط الخريطة إلى رقم المفتاح المحرّك:')}
-            <span className="font-mono-code text-blue-300 font-bold mx-1.5">{triggerSender}</span>
+            {translateInline(lang, 'Emergency GPS location dispatch destination:', 'وجهة إرسال موقع GPS الطارئ:')}
+            {(emergencyPhone || triggerSender) ? (
+              <span className="font-mono-code text-blue-300 font-bold mx-1.5">{emergencyPhone || triggerSender}</span>
+            ) : (
+              <span className="font-mono-code text-amber-300 font-medium mx-1.5">
+                {translateInline(lang, 'No emergency contact set (Configure in SMS Tab)', 'لم يتم تحديد رقم طوارئ (يرجى الضبط في تبويب SMS)')}
+              </span>
+            )}
           </p>
         </div>
 

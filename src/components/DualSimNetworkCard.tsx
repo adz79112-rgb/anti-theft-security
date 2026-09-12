@@ -24,6 +24,7 @@ import {
   NetworkManagementState,
   DualSimSmsResult,
 } from '../utils/simManager';
+import { getEmergencyContactPhone } from '../utils/emergencyContact';
 
 interface DualSimNetworkCardProps {
   lang: Language;
@@ -118,7 +119,18 @@ export const DualSimNetworkCard: React.FC<DualSimNetworkCardProps> = ({
   const handleTestDualSimSms = async () => {
     setIsTestingSms(true);
     try {
-      const recipient = '+213 661 00 00 00';
+      const emergencyPhone = await getEmergencyContactPhone();
+      if (!emergencyPhone) {
+        setActionNotice(
+          translateInline(
+            lang,
+            '⚠️ Please set an Emergency Contact Phone number in the SMS Tab before testing.',
+            '⚠️ يرجى تحديد رقم هاتف الطوارئ في تبويب SMS أولاً قبل إجراء الاختبار.'
+          )
+        );
+        return;
+      }
+      const recipient = emergencyPhone;
       const mapsUrl = 'https://maps.google.com/?q=36.7538,3.0588';
       const body = `${translateInline(lang, '[DroidGuard Security Test] Dual GPS location dispatch via SIM 1 and SIM 2: ${mapsUrl}', '[تجربة أمان DroidGuard] فحص إرسال موقع GPS المزدوج عبر SIM 1 و SIM 2: ${mapsUrl}')}`;
       const res = await sendDualSimSmsFallback(recipient, body);

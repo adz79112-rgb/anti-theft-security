@@ -135,124 +135,168 @@ export async function recordFailedAuthAttempt(
   if (newCount === 3 || (newCount > 3 && newCount % 3 === 0)) {
     const timestamp = new Date().toLocaleTimeString();
 
-    // 1. Silent Front Camera Snapshot in the background
-    let photoUrl: string | undefined;
-    try {
-      const snap = await captureFrontCameraPhoto();
-      if (snap) photoUrl = snap;
-    } catch (camErr) {
-      console.warn('Silent camera capture failed:', camErr);
-    }
-
-    // 2. Fetch GPS Coordinates
-    const location = await fetchDeviceLocation();
-    const mapsUrl = location.mapsUrl;
-
-    const captureData: Omit<IntruderCapture, 'id'> = {
-      imageUrl: photoUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=600&auto=format&fit=crop&q=80',
-      timestamp,
-      location: {
-        latitude: location.latitude,
-        longitude: location.longitude,
-        accuracy: location.accuracy,
-        mapsUrl,
-        addressDescription: 'محاولة فتح فاشلة #3 - رصد بواسطة مستشعر الأمان',
-      },
-      triggerSource: `INTRUDER_FAILED_AUTH (3 محاولات فاشلة)`,
-      senderNumber: 'Android Security Lockscreen',
-      dispatchedVia: ['telegram', 'email', 'whatsapp'],
-    };
-
-    if (options?.onSaveCapture) {
-      options.onSaveCapture(captureData);
-    }
-
-    // 3. Emergency Channel A: Telegram Bot (Photo + Location Alert)
-    const botToken = (options?.customBotToken || DEFAULT_BOT_TOKEN).trim();
-    let chatId = (options?.customChatId || '').trim();
-    if (!chatId) {
-      const savedChatId = await AsyncStorage.getItem(STORAGE_KEYS.CHAT_ID);
-      if (savedChatId) chatId = savedChatId.trim();
-    }
-
-    if (chatId) {
+    // Launch heavy I/O & network emergency dispatches in non-blocking background task
+    (async () => {
       try {
-        const caption = `🚨 <b>[تنبيه اختراق فوري - DroidGuard]</b>\n\n⚠️ <b>السبب:</b> تم إدخال رمز PIN أو بصمة خاطئة 3 مرات متتالية!\n📍 <b>الموقع المباشر:</b> <a href="${mapsUrl}">خرائط Google</a>\n🌐 <b>الإحداثيات:</b> ${location.source === 'unavailable' ? 'غير متوفر' : location.latitude.toFixed(5) + ', ' + location.longitude.toFixed(5)}\n⏰ <b>الوقت:</b> ${timestamp}`;
-        if (photoUrl) {
-          await sendTelegramPhoto(botToken, chatId, photoUrl, caption);
-        } else {
-          await sendTelegramAlert(botToken, chatId, caption);
+        // 1. Silent Front Camera Snapshot
+        let photoUrl: string | undefined;
+        try {
+          const snap = await captureFrontCameraPhoto();
+          if (snap) photoUrl = snap;
+        } catch (camErr) {
+          console.warn('Silent camera capture failed:', camErr);
         }
-        if (location.source !== 'unavailable') { await sendTelegramLocation(botToken, chatId, location.latitude, location.longitude); }
 
-        if (options?.onLogDispatch) {
+        // 2. Fetch GPS Coordinates (bounded with 5-second timeout so it never hangs)
+        let location: LocationResult;
+        try {
+          const locPromise = fetchDeviceLocation();
+          const timeoutLoc = new Promise<LocationResult>((resolve) =>
+            setTimeout(
+              () =>
+                resolve({
+                  latitude: 0,
+                  longitude: 0,
+                  accuracy: 0,
+                  mapsUrl: 'https://maps.google.com/?q=0,0',
+                  timestamp,
+                  source: 'unavailable' as const,
+                }),
+              5000
+            )
+          );
+          location = await Promise.race([locPromise, timeoutLoc]);
+        } catch {
+          location = {
+            latitude: 0,
+            longitude: 0,
+            accuracy: 0,
+            mapsUrl: 'https://maps.google.com/?q=0,0',
+            timestamp,
+            source: 'unavailable' as const,
+          };
+        }
+        const mapsUrl = location.mapsUrl;
+
+        const captureData: Omit<IntruderCapture, 'id'> = {
+          imageUrl: photoUrl || '',
+          timestamp,
+          location: {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy,
+            mapsUrl,
+            addressDescription: 'محاولة فتح فاشلة #3 - رصد بواسطة مستشعر الأمان',
+          },
+          triggerSource: `INTRUDER_FAILED_AUTH (3 محاولات فاشلة)`,
+          senderNumber: 'Android Security Lockscreen',
+          dispatchedVia: ['telegram', 'email', 'sms'],
+        };
+
+        if (options?.onSaveCapture) {
+          options.onSaveCapture(captureData);
+        }
+
+        // 3. Emergency Channel A: Telegram Bot (Photo + Location Alert)
+        const botToken = (options?.customBotToken || DEFAULT_BOT_TOKEN).trim();
+        let chatId = (options?.customChatId || '').trim();
+        if (!chatId) {
+          const savedChatId = await AsyncStorage.getItem(STORAGE_KEYS.CHAT_ID);
+          if (savedChatId) chatId = savedChatId.trim();
+        }
+
+        if (chatId) {
+          try {
+            const caption = `🚨 <b>[تنبيه اختراق فوري - DroidGuard]</b>\n\n⚠️ <b>السبب:</b> تم إدخال رمز PIN أو بصمة خاطئة 3 مرات متتالية!\n📍 <b>الموقع المباشر:</b> <a href="${mapsUrl}">خرائط Google</a>\n🌐 <b>الإحداثيات:</b> ${location.source === 'unavailable' ? 'غير متوفر' : location.latitude.toFixed(5) + ', ' + location.longitude.toFixed(5)}\n⏰ <b>الوقت:</b> ${timestamp}`;
+            if (photoUrl) {
+              await sendTelegramPhoto(botToken, chatId, photoUrl, caption);
+            } else {
+              await sendTelegramAlert(botToken, chatId, caption);
+            }
+            if (location.source !== 'unavailable') {
+              await sendTelegramLocation(botToken, chatId, location.latitude, location.longitude);
+            }
+
+            if (options?.onLogDispatch) {
+              options.onLogDispatch({
+                timestamp,
+                recipient: `Telegram (@${chatId})`,
+                type: 'telegram_photo',
+                content: `[إنذار المتسلل #3] تم إرسال صورة الكاميرا الأمامية وإحداثيات الموقع مباشرة لحساب تليجرام إثر 3 محاولات دخول فاشلة`,
+                status: 'delivered',
+              });
+            }
+          } catch (tgErr) {
+            console.warn('Telegram intruder alert error:', tgErr);
+          }
+        }
+
+        // 4. Emergency Channel B: Gmail Security Incident Report
+        const targetEmail = options?.customUserEmail || (await getActiveAlertEmail());
+        if (targetEmail) {
+          try {
+            const emailRes = await sendGmailSecurityReport({
+              toEmail: targetEmail,
+              senderNumber: 'Android Lockscreen (3 Failed Attempts)',
+              mapsUrl,
+              latitude: location.latitude,
+              longitude: location.longitude,
+              photoUrl: captureData.imageUrl,
+            });
+
+            if (emailRes.ok && options?.onLogDispatch) {
+              options.onLogDispatch({
+                timestamp,
+                recipient: targetEmail,
+                type: 'gmail_report',
+                content: `[تقرير أمني عاجل - 3 محاولات فاشلة] تم إرسال صورة الدخيل ورابط موقع GPS (${mapsUrl}) إلى بريد الأمان المعتمد ${targetEmail}`,
+                status: 'delivered',
+              });
+            }
+          } catch (emailErr) {
+            console.warn('Gmail intruder report error:', emailErr);
+          }
+        }
+
+        // 5. Emergency Channel C: Dual-SIM SMS Automated Emergency Dispatch
+        const emergencyPhone = (options?.customEmergencyPhone && options.customEmergencyPhone.trim())
+          || (await getEmergencyContactPhone());
+
+        if (emergencyPhone && emergencyPhone.trim()) {
+          try {
+            const smsMessage = `[إنذار DroidGuard - 3 محاولات فاشلة]\nتم رصد محاولة اختراق الهاتف!\nرابط الموقع: ${mapsUrl}\nالإحداثيات: ${location.source === 'unavailable' ? 'غير متوفر' : location.latitude.toFixed(5) + ', ' + location.longitude.toFixed(5)}`;
+            const smsRes = await sendDualSimSmsFallback(emergencyPhone.trim(), smsMessage);
+
+            if (options?.onLogDispatch) {
+              const isSent = smsRes.sim1Delivered || smsRes.sim2Delivered;
+              options.onLogDispatch({
+                timestamp,
+                recipient: `${emergencyPhone} (Emergency Contact)`,
+                type: 'emergency_sms',
+                content: `[طوارئ SMS - 3 محاولات فاشلة] ${smsRes.summary}`,
+                status: isSent ? 'delivered' : 'failed',
+              });
+            }
+          } catch (smsErr) {
+            console.warn('Dual-SIM SMS intruder report error:', smsErr);
+          }
+        } else if (options?.onLogDispatch) {
           options.onLogDispatch({
             timestamp,
-            recipient: `Telegram (@${chatId})`,
-            type: 'telegram_photo',
-            content: `[إنذار المتسلل #3] تم إرسال صورة الكاميرا الأمامية وإحداثيات الموقع مباشرة لحساب تليجرام إثر 3 محاولات دخول فاشلة`,
-            status: 'delivered',
-          });
-        }
-      } catch (tgErr) {
-        console.warn('Telegram intruder alert error:', tgErr);
-      }
-    }
-
-    // 4. Emergency Channel B: Gmail Security Incident Report
-    const targetEmail = options?.customUserEmail || (await getActiveAlertEmail());
-    if (targetEmail) {
-      try {
-        const emailRes = await sendGmailSecurityReport({
-          toEmail: targetEmail,
-          senderNumber: 'Android Lockscreen (3 Failed Attempts)',
-          mapsUrl,
-          latitude: location.latitude,
-          longitude: location.longitude,
-          photoUrl: captureData.imageUrl,
-        });
-
-        if (emailRes.ok && options?.onLogDispatch) {
-          options.onLogDispatch({
-            timestamp,
-            recipient: targetEmail,
-            type: 'gmail_report',
-            content: `[تقرير أمني عاجل - 3 محاولات فاشلة] تم إرسال صورة الدخيل ورابط موقع GPS (${mapsUrl}) إلى بريد الأمان المعتمد ${targetEmail}`,
-            status: 'delivered',
-          });
-        }
-      } catch (emailErr) {
-        console.warn('Gmail intruder report error:', emailErr);
-      }
-    }
-
-    // 5. Emergency Channel C: Dual-SIM SMS Automated Emergency Dispatch
-    const emergencyPhone = options?.customEmergencyPhone || (await getEmergencyContactPhone());
-    if (emergencyPhone) {
-      try {
-        const smsMessage = `[إنذار DroidGuard - 3 محاولات فاشلة]\nتم رصد محاولة اختراق الهاتف!\nرابط الموقع: ${mapsUrl}\nالإحداثيات: ${location.source === 'unavailable' ? 'غير متوفر' : location.latitude.toFixed(5) + ', ' + location.longitude.toFixed(5)}`;
-        const smsRes = await sendDualSimSmsFallback(emergencyPhone, smsMessage);
-
-        if (options?.onLogDispatch) {
-          const isSent = smsRes.sim1Delivered || smsRes.sim2Delivered;
-          options.onLogDispatch({
-            timestamp,
-            recipient: `${emergencyPhone} (Emergency Contact)`,
+            recipient: 'No Emergency Contact Configured',
             type: 'emergency_sms',
-            content: `[طوارئ SMS - 3 محاولات فاشلة] ${smsRes.summary}`,
-            status: isSent ? 'delivered' : 'failed',
+            content: `[طوارئ SMS - 3 محاولات فاشلة] تعذر إرسال SMS لعدم ضبط رقم الطوارئ في الإعدادات.`,
+            status: 'failed',
           });
         }
-      } catch (smsErr) {
-        console.warn('Dual-SIM SMS intruder report error:', smsErr);
+      } catch (bgErr) {
+        console.warn('Background intruder alert dispatch failed:', bgErr);
       }
-    }
+    })();
 
     return {
       newCount,
       isThirdAttempt: true,
-      capture: captureData,
-      location,
     };
   }
 

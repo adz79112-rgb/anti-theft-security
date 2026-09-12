@@ -91,12 +91,18 @@ export async function executeDualAlert(
 
   // Target recipients list
   const smsTargets: string[] = [];
-  if (emergencyPhone) smsTargets.push(emergencyPhone);
-  if (cleanSender && !smsTargets.includes(cleanSender)) {
-    smsTargets.push(cleanSender);
+  if (emergencyPhone && emergencyPhone.trim()) smsTargets.push(emergencyPhone.trim());
+  if (cleanSender && cleanSender.trim() && !smsTargets.includes(cleanSender.trim())) {
+    smsTargets.push(cleanSender.trim());
   }
-  if (smsTargets.length === 0) {
-    smsTargets.push('+213 661 12 34 56');
+  if (smsTargets.length === 0 && callbacks?.onLogDispatch) {
+    callbacks.onLogDispatch({
+      timestamp: new Date().toLocaleTimeString(),
+      recipient: 'No Emergency Contact Configured',
+      type: 'emergency_sms',
+      content: '[تعذر إرسال SMS] لم يتم ضبط رقم هاتف الطوارئ في الإعدادات.',
+      status: 'failed',
+    });
   }
 
   for (const target of smsTargets) {

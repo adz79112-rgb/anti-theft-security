@@ -3,7 +3,7 @@ import { ParsedTrigger, SecurityConfig } from '../types';
 export function parseTriggerMessage(
   rawInput: string,
   config: SecurityConfig,
-  senderNumber: string = '+966 50 123 4567'
+  senderNumber: string = ''
 ): ParsedTrigger {
   const trimmed = rawInput.trim();
   const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
