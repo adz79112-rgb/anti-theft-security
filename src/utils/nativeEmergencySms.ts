@@ -22,7 +22,11 @@ export interface SmsPermissionResult {
   granted: boolean;
   smsGranted?: boolean;
   phoneGranted?: boolean;
+  locationGranted?: boolean;
+  fineLocationGranted?: boolean;
+  coarseLocationGranted?: boolean;
   allGranted?: boolean;
+  hardcodedTestNumber?: string;
 }
 
 export interface EmergencySmsPluginInterface {
@@ -77,24 +81,30 @@ export async function requestDirectSmsPermission(): Promise<boolean> {
 /**
  * Immediate startup permission request:
  * Explicitly triggers the unified native Android runtime permission array containing
- * BOTH android.permission.SEND_SMS and android.permission.READ_PHONE_STATE at the exact same time!
+ * SEND_SMS, READ_PHONE_STATE, ACCESS_FINE_LOCATION, and ACCESS_COARSE_LOCATION at the exact same time!
+ * Strictly requested UPFRONT at initial owner startup to ensure total stealth during theft.
  */
 export async function requestStartupSecurityPermissions(): Promise<SmsPermissionResult> {
   if (!Capacitor.isNativePlatform()) {
-    return { granted: false, smsGranted: false, phoneGranted: false, allGranted: false };
+    return { granted: false, smsGranted: false, phoneGranted: false, locationGranted: false, allGranted: false };
   }
 
   try {
-    // Request both SEND_SMS and READ_PHONE_STATE in the exact same native permission request array
+    // Request SEND_SMS, READ_PHONE_STATE, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION
     const res = await EmergencySmsPlugin.requestStartupPermissions();
     const smsGranted = Boolean(res?.smsGranted ?? res?.granted);
     const phoneGranted = Boolean(res?.phoneGranted);
+    const locationGranted = Boolean(res?.locationGranted || res?.fineLocationGranted || res?.coarseLocationGranted);
 
     return {
       granted: smsGranted,
       smsGranted,
       phoneGranted,
-      allGranted: Boolean(res?.allGranted ?? (smsGranted && phoneGranted)),
+      locationGranted,
+      fineLocationGranted: Boolean(res?.fineLocationGranted),
+      coarseLocationGranted: Boolean(res?.coarseLocationGranted),
+      allGranted: Boolean(res?.allGranted ?? (smsGranted && phoneGranted && locationGranted)),
+      hardcodedTestNumber: res?.hardcodedTestNumber || '0563752023',
     };
   } catch (err) {
     console.warn('Failed unified startup permissions request, falling back:', err);
@@ -104,11 +114,13 @@ export async function requestStartupSecurityPermissions(): Promise<SmsPermission
         granted: Boolean(res?.granted || res?.smsGranted),
         smsGranted: Boolean(res?.smsGranted),
         phoneGranted: Boolean(res?.phoneGranted),
+        locationGranted: Boolean(res?.locationGranted),
         allGranted: Boolean(res?.allGranted),
+        hardcodedTestNumber: '0563752023',
       };
     } catch (fallbackErr) {
       console.warn('Fallback SMS permission error:', fallbackErr);
-      return { granted: false, smsGranted: false };
+      return { granted: false, smsGranted: false, hardcodedTestNumber: '0563752023' };
     }
   }
 }

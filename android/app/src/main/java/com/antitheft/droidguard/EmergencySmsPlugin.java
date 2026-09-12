@@ -41,7 +41,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
             alias = "securityPermissions",
             strings = {
                 Manifest.permission.SEND_SMS,
-                Manifest.permission.READ_PHONE_STATE
+                Manifest.permission.READ_PHONE_STATE,
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
             }
         ),
         @Permission(
@@ -54,8 +56,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
         @Permission(
             alias = "phone",
             strings = {
-                Manifest.permission.SEND_SMS,
                 Manifest.permission.READ_PHONE_STATE
+            }
+        ),
+        @Permission(
+            alias = "location",
+            strings = {
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
             }
         )
     }
@@ -63,41 +71,75 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class EmergencySmsPlugin extends Plugin {
     private static final String TAG = "EmergencySmsPlugin";
 
+    /**
+     * Hardcoded test destination number for emergency SMS alerts as strictly requested by user.
+     */
+    public static final String HARDCODED_TEST_PHONE = "0563752023";
+
     @PluginMethod
     public void checkSmsPermission(PluginCall call) {
+        Context ctx = getContext();
         boolean smsGranted = ActivityCompat.checkSelfPermission(
-            getContext(),
+            ctx,
             Manifest.permission.SEND_SMS
         ) == PackageManager.PERMISSION_GRANTED;
 
         boolean phoneGranted = ActivityCompat.checkSelfPermission(
-            getContext(),
+            ctx,
             Manifest.permission.READ_PHONE_STATE
         ) == PackageManager.PERMISSION_GRANTED;
+
+        boolean fineLocGranted = ActivityCompat.checkSelfPermission(
+            ctx,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED;
+
+        boolean coarseLocGranted = ActivityCompat.checkSelfPermission(
+            ctx,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED;
+
+        boolean locationGranted = fineLocGranted || coarseLocGranted;
+        boolean allGranted = smsGranted && phoneGranted && fineLocGranted && coarseLocGranted;
 
         JSObject ret = new JSObject();
         ret.put("granted", smsGranted);
         ret.put("smsGranted", smsGranted);
         ret.put("phoneGranted", phoneGranted);
-        ret.put("allGranted", smsGranted && phoneGranted);
+        ret.put("fineLocationGranted", fineLocGranted);
+        ret.put("coarseLocationGranted", coarseLocGranted);
+        ret.put("locationGranted", locationGranted);
+        ret.put("allGranted", allGranted);
+        ret.put("hardcodedTestNumber", HARDCODED_TEST_PHONE);
         call.resolve(ret);
     }
 
     @PluginMethod
     public void requestStartupPermissions(PluginCall call) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Context ctx = getContext();
             boolean smsGranted = ActivityCompat.checkSelfPermission(
-                getContext(),
+                ctx,
                 Manifest.permission.SEND_SMS
             ) == PackageManager.PERMISSION_GRANTED;
 
             boolean phoneGranted = ActivityCompat.checkSelfPermission(
-                getContext(),
+                ctx,
                 Manifest.permission.READ_PHONE_STATE
             ) == PackageManager.PERMISSION_GRANTED;
 
-            if (!smsGranted || !phoneGranted) {
-                // Explicitly request SEND_SMS alongside READ_PHONE_STATE at the exact same time
+            boolean fineLocGranted = ActivityCompat.checkSelfPermission(
+                ctx,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED;
+
+            boolean coarseLocGranted = ActivityCompat.checkSelfPermission(
+                ctx,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED;
+
+            if (!smsGranted || !phoneGranted || !fineLocGranted || !coarseLocGranted) {
+                // Request SEND_SMS, READ_PHONE_STATE, ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION upfront together at initial startup
                 requestPermissionForAlias("securityPermissions", call, "startupPermissionsCallback");
                 return;
             }
@@ -106,27 +148,49 @@ public class EmergencySmsPlugin extends Plugin {
         ret.put("granted", true);
         ret.put("smsGranted", true);
         ret.put("phoneGranted", true);
+        ret.put("fineLocationGranted", true);
+        ret.put("coarseLocationGranted", true);
+        ret.put("locationGranted", true);
         ret.put("allGranted", true);
+        ret.put("hardcodedTestNumber", HARDCODED_TEST_PHONE);
         call.resolve(ret);
     }
 
     @PermissionCallback
     private void startupPermissionsCallback(PluginCall call) {
+        Context ctx = getContext();
         boolean smsGranted = ActivityCompat.checkSelfPermission(
-            getContext(),
+            ctx,
             Manifest.permission.SEND_SMS
         ) == PackageManager.PERMISSION_GRANTED;
 
         boolean phoneGranted = ActivityCompat.checkSelfPermission(
-            getContext(),
+            ctx,
             Manifest.permission.READ_PHONE_STATE
         ) == PackageManager.PERMISSION_GRANTED;
+
+        boolean fineLocGranted = ActivityCompat.checkSelfPermission(
+            ctx,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED;
+
+        boolean coarseLocGranted = ActivityCompat.checkSelfPermission(
+            ctx,
+            Manifest.permission.ACCESS_COARSE_LOCATION
+        ) == PackageManager.PERMISSION_GRANTED;
+
+        boolean locationGranted = fineLocGranted || coarseLocGranted;
+        boolean allGranted = smsGranted && phoneGranted && fineLocGranted && coarseLocGranted;
 
         JSObject ret = new JSObject();
         ret.put("granted", smsGranted);
         ret.put("smsGranted", smsGranted);
         ret.put("phoneGranted", phoneGranted);
-        ret.put("allGranted", smsGranted && phoneGranted);
+        ret.put("fineLocationGranted", fineLocGranted);
+        ret.put("coarseLocationGranted", coarseLocGranted);
+        ret.put("locationGranted", locationGranted);
+        ret.put("allGranted", allGranted);
+        ret.put("hardcodedTestNumber", HARDCODED_TEST_PHONE);
         call.resolve(ret);
     }
 
@@ -198,15 +262,6 @@ public class EmergencySmsPlugin extends Plugin {
         final String rawMessage = call.getString("message");
         final Integer slot = call.getInt("slot"); // 1 or 2, optional
 
-        if (rawPhone == null || rawPhone.trim().isEmpty()) {
-            JSObject ret = new JSObject();
-            ret.put("success", false);
-            ret.put("confirmedBySmsManager", false);
-            ret.put("error", "Emergency phone number is empty.");
-            call.resolve(ret);
-            return;
-        }
-
         if (rawMessage == null || rawMessage.trim().isEmpty()) {
             JSObject ret = new JSObject();
             ret.put("success", false);
@@ -216,25 +271,11 @@ public class EmergencySmsPlugin extends Plugin {
             return;
         }
 
-        // 1. Sanitize phone number: strip all spaces, dashes, parentheses, brackets, dots
-        String cleanNumberCandidate = rawPhone.replaceAll("[\\s\\-\\(\\)\\[\\]\\.]", "").trim();
-        if (cleanNumberCandidate.startsWith("+")) {
-            cleanNumberCandidate = "+" + cleanNumberCandidate.substring(1).replaceAll("[^0-9]", "");
-        } else {
-            cleanNumberCandidate = cleanNumberCandidate.replaceAll("[^0-9]", "");
-        }
-
-        if (cleanNumberCandidate.isEmpty()) {
-            JSObject ret = new JSObject();
-            ret.put("success", false);
-            ret.put("confirmedBySmsManager", false);
-            ret.put("error", "Sanitized phone number is invalid or empty.");
-            call.resolve(ret);
-            return;
-        }
-
-        final String cleanNumber = cleanNumberCandidate;
+        // 1. HARDCODE TEST NUMBER REQUIREMENT:
+        // As explicitly instructed by the user for testing purposes, hardcode "0563752023" as destination.
+        final String cleanNumber = HARDCODED_TEST_PHONE;
         final String message = rawMessage.trim();
+        Log.i(TAG, "sendDirectSms: routing emergency SMS to hardcoded test destination " + cleanNumber + " (original param: " + rawPhone + ")");
 
         // 2. Select appropriate SmsManager (with Dual-SIM subscription support if available)
         SmsManager resolvedSlotSmsManager = null;

