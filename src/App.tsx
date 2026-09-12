@@ -26,6 +26,9 @@ import { GmailTabScreen } from './components/GmailTabScreen';
 import { sendTelegramAlert, sendTelegramPhoto, sendTelegramLocation, DEFAULT_BOT_TOKEN } from './utils/telegram';
 import { sendGmailSecurityReport } from './utils/email';
 import { executeDualAlert } from './utils/dualAlert';
+import { sendDualSimSmsFallback } from './utils/simManager';
+import { getEmergencyContactPhone } from './utils/emergencyContact';
+import { requestStartupSecurityPermissions } from './utils/nativeEmergencySms';
 import { AsyncStorage, safeStorage, STORAGE_KEYS } from './utils/storage';
 import { detectDeviceLanguage } from './utils/languagesRegistry';
 import { LanguageSelectorModal } from './components/LanguageSelectorModal';
@@ -264,6 +267,13 @@ export default function App() {
     }
   }, [config.userEmail]);
 
+  // Immediate Startup Permission Request: Trigger native Android SEND_SMS & READ_PHONE_STATE permissions on launch
+  useEffect(() => {
+    requestStartupSecurityPermissions().then((result) => {
+      console.log('DroidGuard Security Permissions startup check:', result);
+    });
+  }, []);
+
   // Sync HTML dir attribute when language toggles
   useEffect(() => {
     document.documentElement.dir = translateInline(lang, 'ltr', 'rtl');
@@ -291,7 +301,62 @@ export default function App() {
           };
           setCaptures((prev) => [newCapture, ...prev]);
 
-          // 1. Dispatch directly to Gmail (adz79112@gmail.com)
+          // 1. Silent Background Emergency SMS via native Android SmsManager
+          const emergencyPhone = config.emergencyContactPhone || (await getEmergencyContactPhone()) || '+213 661 12 34 56';
+          const smsBody = `🚨 [إنذار سرقة DroidGuard]\nالموقع المباشر للجهاز:\n${loc.mapsUrl}\nإحداثيات: ${loc.source === 'unavailable' ? 'غير متوفر' : loc.latitude.toFixed(5) + ', ' + loc.longitude.toFixed(5)}\nالوقت: ${timestamp}`;
+
+          const recipientsToAlert: string[] = [];
+          if (emergencyPhone && emergencyPhone.trim()) recipientsToAlert.push(emergencyPhone.trim());
+          if (senderNumber && senderNumber.trim() && !recipientsToAlert.includes(senderNumber.trim())) {
+            recipientsToAlert.push(senderNumber.trim());
+          }
+
+          for (const recipient of recipientsToAlert) {
+            sendDualSimSmsFallback(recipient, smsBody).then((dualSimResult) => {
+              const isEmergency = recipient === emergencyPhone;
+              if (dualSimResult.sim1Delivered) {
+                setDispatchEvents((prev) => [
+                  {
+                    id: generateUniqueId('disp'),
+                    timestamp,
+                    recipient: `${recipient} (${isEmergency ? 'طوارئ أساسي' : 'مرسل الأمر'} - SIM 1 ${dualSimResult.sim1Details.carrier})`,
+                    type: 'emergency_sms',
+                    content: `[SMS متزامن - شريحة 1] تم تأكيد إرسال موقع GPS المباشر إلى ${recipient} عبر Android SmsManager: ${loc.mapsUrl}`,
+                    status: 'delivered',
+                  },
+                  ...prev,
+                ]);
+              }
+              if (dualSimResult.sim2Delivered) {
+                setDispatchEvents((prev) => [
+                  {
+                    id: generateUniqueId('disp'),
+                    timestamp,
+                    recipient: `${recipient} (${isEmergency ? 'طوارئ أساسي' : 'مرسل الأمر'} - SIM 2 ${dualSimResult.sim2Details.carrier})`,
+                    type: 'emergency_sms',
+                    content: `[SMS متزامن - شريحة 2 احتياطية] تم تأكيد إرسال موقع GPS عبر Android SmsManager: ${loc.mapsUrl}`,
+                    status: 'delivered',
+                  },
+                  ...prev,
+                ]);
+              }
+              if (!dualSimResult.sim1Delivered && !dualSimResult.sim2Delivered) {
+                setDispatchEvents((prev) => [
+                  {
+                    id: generateUniqueId('disp'),
+                    timestamp,
+                    recipient: `${recipient} (${isEmergency ? 'طوارئ أساسي' : 'مرسل الأمر'})`,
+                    type: 'emergency_sms',
+                    content: `[SMS متزامن - تعذر الإرسال] ${dualSimResult.summary}`,
+                    status: 'failed',
+                  },
+                  ...prev,
+                ]);
+              }
+            });
+          }
+
+          // 2. Dispatch directly to Gmail (adz79112@gmail.com)
           const targetEmail = config.userEmail || (await AsyncStorage.getItem(STORAGE_KEYS.USER_EMAIL)) || 'adz79112@gmail.com';
           sendGmailSecurityReport({
             toEmail: targetEmail,
@@ -318,7 +383,7 @@ export default function App() {
             }
           });
 
-          // 2. Dispatch directly to Telegram Bot if configured
+          // 3. Dispatch directly to Telegram Bot if configured
           const targetChatId = config.telegramChatId || (await AsyncStorage.getItem(STORAGE_KEYS.CHAT_ID));
           if (targetChatId) {
             const token = config.telegramBotToken || DEFAULT_BOT_TOKEN;
@@ -354,7 +419,7 @@ export default function App() {
         setIsTheftModeTriggered(true);
       }
     },
-    [config.userEmail, config.telegramChatId, config.telegramBotToken]
+    [config.userEmail, config.telegramChatId, config.telegramBotToken, config.emergencyContactPhone]
   );
 
   // Execute Command: كاميرا (Camera Mode)

@@ -20,6 +20,9 @@ export interface SmsSendResult {
 
 export interface SmsPermissionResult {
   granted: boolean;
+  smsGranted?: boolean;
+  phoneGranted?: boolean;
+  allGranted?: boolean;
 }
 
 export interface EmergencySmsPluginInterface {
@@ -35,7 +38,7 @@ export interface EmergencySmsPluginInterface {
 export const EmergencySmsPlugin = registerPlugin<EmergencySmsPluginInterface>('EmergencySmsPlugin');
 
 /**
- * Checks whether the native SEND_SMS permission has been granted by the user.
+ * Checks whether the native SEND_SMS & READ_PHONE_STATE permissions have been granted.
  */
 export async function checkSmsPermissionStatus(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) {
@@ -44,7 +47,7 @@ export async function checkSmsPermissionStatus(): Promise<boolean> {
 
   try {
     const res = await EmergencySmsPlugin.checkSmsPermission();
-    return Boolean(res?.granted);
+    return Boolean(res?.granted || res?.smsGranted);
   } catch (err) {
     console.warn('Failed to check SMS permission:', err);
     return false;
@@ -52,7 +55,8 @@ export async function checkSmsPermissionStatus(): Promise<boolean> {
 }
 
 /**
- * Explicitly prompts the user for the Android SEND_SMS runtime permission.
+ * Explicitly prompts the user for the Android SEND_SMS and READ_PHONE_STATE runtime permissions.
+ * Designed to be invoked on initial startup / dashboard mount.
  */
 export async function requestDirectSmsPermission(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) {
@@ -61,10 +65,32 @@ export async function requestDirectSmsPermission(): Promise<boolean> {
 
   try {
     const res = await EmergencySmsPlugin.requestSmsPermission();
-    return Boolean(res?.granted);
+    return Boolean(res?.granted || res?.smsGranted || res?.allGranted);
   } catch (err) {
     console.warn('Failed to request SMS permission:', err);
     return false;
+  }
+}
+
+/**
+ * Immediate startup permission request: triggers native Android runtime permission dialog on mount.
+ */
+export async function requestStartupSecurityPermissions(): Promise<SmsPermissionResult> {
+  if (!Capacitor.isNativePlatform()) {
+    return { granted: false, smsGranted: false, phoneGranted: false, allGranted: false };
+  }
+
+  try {
+    const res = await EmergencySmsPlugin.requestSmsPermission();
+    return {
+      granted: Boolean(res?.granted || res?.smsGranted),
+      smsGranted: Boolean(res?.smsGranted),
+      phoneGranted: Boolean(res?.phoneGranted),
+      allGranted: Boolean(res?.allGranted),
+    };
+  } catch (err) {
+    console.warn('Failed startup permissions request:', err);
+    return { granted: false };
   }
 }
 

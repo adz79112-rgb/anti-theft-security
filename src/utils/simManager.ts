@@ -330,7 +330,7 @@ export async function sendDualSimSmsFallback(
   // Real native background SMS dispatch via Android SmsManager
   // 1. Attempt SIM 1
   const res1 = await sendSilentBackgroundSms(recipient, message, 1);
-  const sim1Delivered = Boolean(res1.success && res1.confirmedBySmsManager);
+  let sim1Delivered = Boolean(res1.success && res1.confirmedBySmsManager);
 
   // 2. Attempt SIM 2 (Redundant Fallback)
   let sim2Delivered = false;
@@ -343,10 +343,21 @@ export async function sendDualSimSmsFallback(
     sim2Delivered = Boolean(res2.success && res2.confirmedBySmsManager);
   }
 
+  // 3. Ultra-Reliable Default SmsManager Fallback: If both slot-specific attempts failed on native Android
+  let defaultDelivered = false;
+  let resDefault: any = null;
+  if (Capacitor.isNativePlatform() && !sim1Delivered && !sim2Delivered) {
+    resDefault = await sendSilentBackgroundSms(recipient, message);
+    if (resDefault.success && resDefault.confirmedBySmsManager) {
+      defaultDelivered = true;
+      sim1Delivered = true; // Mark as delivered via primary device channel
+    }
+  }
+
   let summary = '';
   if (sim1Delivered && sim2Delivered) {
     summary = `✓ تم تأكيد الإرسال المزدوج بالخلفية عبر Android SmsManager: SIM 1 (${sim1.carrier}) + SIM 2 (${sim2.carrier}) لضمان الوصول المؤكد.`;
-  } else if (sim1Delivered) {
+  } else if (defaultDelivered || sim1Delivered) {
     summary = `✓ تم تأكيد إرسال رسالة الطوارئ الصامتة بنجاح عبر Android SmsManager (SIM 1: ${sim1.carrier}).`;
   } else if (sim2Delivered) {
     summary = `⚠️ تعذر الإرسال عبر SIM 1! تم التبديل الفوري وتأكيد الإرسال بنجاح عبر شريحة الطوارئ SIM 2 (${sim2.carrier}) بواسطة Android SmsManager.`;
@@ -354,13 +365,13 @@ export async function sendDualSimSmsFallback(
     if (!Capacitor.isNativePlatform()) {
       summary = `ℹ️ بيئة معاينة الويب: إرسال رسائل SMS الصامتة في الخلفية يتطلب تشغيل تطبيق APK على جهاز أندرويد فعلي مع عتاد شريحة اتصال وتفعيل إذن SEND_SMS.`;
     } else {
-      const primaryErr = res1.error || res2?.error || 'تعذر الإرسال عبر مشغل الشبكة';
+      const primaryErr = res1.error || res2?.error || resDefault?.error || 'تعذر الإرسال عبر مشغل الشبكة';
       summary = `❌ تعذر إرسال رسالة SMS الطوارئ عبر عتاد الهاتف: ${primaryErr}. يرجى التحقق من منح إذن SEND_SMS وتوفر تغطية الشبكة.`;
     }
   }
 
   return {
-    sim1Delivered,
+    sim1Delivered: sim1Delivered || defaultDelivered,
     sim2Delivered,
     recipient,
     message,
@@ -368,7 +379,7 @@ export async function sendDualSimSmsFallback(
     sim2Details: sim2,
     summary,
     sim1Error: res1.error,
-    sim2Error: res2?.error,
-    confirmedByNativeManager: sim1Delivered || sim2Delivered,
+    sim2Error: res2?.error || resDefault?.error,
+    confirmedByNativeManager: sim1Delivered || sim2Delivered || defaultDelivered,
   };
 }

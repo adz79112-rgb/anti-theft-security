@@ -14,6 +14,7 @@ import android.os.Looper;
 import android.telephony.SmsManager;
 import android.telephony.SubscriptionInfo;
 import android.telephony.SubscriptionManager;
+import android.util.Log;
 import androidx.core.app.ActivityCompat;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * Native Capacitor Plugin for direct, silent background SMS dispatch via Android SmsManager.
  * Does NOT open the device's default SMS application.
  * Reports success ONLY when confirmed by native SmsManager broadcast.
+ * Includes automatic fallback from SIM-specific slot managers to device default SmsManager.
  */
 @CapacitorPlugin(
     name = "EmergencySmsPlugin",
@@ -38,45 +40,76 @@ import java.util.concurrent.atomic.AtomicBoolean;
         @Permission(
             alias = "sms",
             strings = { Manifest.permission.SEND_SMS }
+        ),
+        @Permission(
+            alias = "phone",
+            strings = { Manifest.permission.READ_PHONE_STATE }
+        ),
+        @Permission(
+            alias = "allSecurity",
+            strings = { Manifest.permission.SEND_SMS, Manifest.permission.READ_PHONE_STATE }
         )
     }
 )
 public class EmergencySmsPlugin extends Plugin {
+    private static final String TAG = "EmergencySmsPlugin";
 
     @PluginMethod
     public void checkSmsPermission(PluginCall call) {
-        boolean granted = ActivityCompat.checkSelfPermission(
+        boolean smsGranted = ActivityCompat.checkSelfPermission(
             getContext(),
             Manifest.permission.SEND_SMS
         ) == PackageManager.PERMISSION_GRANTED;
 
+        boolean phoneGranted = ActivityCompat.checkSelfPermission(
+            getContext(),
+            Manifest.permission.READ_PHONE_STATE
+        ) == PackageManager.PERMISSION_GRANTED;
+
         JSObject ret = new JSObject();
-        ret.put("granted", granted);
+        ret.put("granted", smsGranted);
+        ret.put("smsGranted", smsGranted);
+        ret.put("phoneGranted", phoneGranted);
+        ret.put("allGranted", smsGranted && phoneGranted);
         call.resolve(ret);
     }
 
     @PluginMethod
     public void requestSmsPermission(PluginCall call) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            if (ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissionForAlias("sms", call, "smsPermissionCallback");
+            boolean smsGranted = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.SEND_SMS) == PackageManager.PERMISSION_GRANTED;
+            boolean phoneGranted = ActivityCompat.checkSelfPermission(getContext(), Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED;
+
+            if (!smsGranted || !phoneGranted) {
+                requestPermissionForAlias("allSecurity", call, "allSecurityPermissionCallback");
                 return;
             }
         }
         JSObject ret = new JSObject();
         ret.put("granted", true);
+        ret.put("smsGranted", true);
+        ret.put("phoneGranted", true);
+        ret.put("allGranted", true);
         call.resolve(ret);
     }
 
     @PermissionCallback
-    private void smsPermissionCallback(PluginCall call) {
-        boolean granted = ActivityCompat.checkSelfPermission(
+    private void allSecurityPermissionCallback(PluginCall call) {
+        boolean smsGranted = ActivityCompat.checkSelfPermission(
             getContext(),
             Manifest.permission.SEND_SMS
         ) == PackageManager.PERMISSION_GRANTED;
 
+        boolean phoneGranted = ActivityCompat.checkSelfPermission(
+            getContext(),
+            Manifest.permission.READ_PHONE_STATE
+        ) == PackageManager.PERMISSION_GRANTED;
+
         JSObject ret = new JSObject();
-        ret.put("granted", granted);
+        ret.put("granted", smsGranted);
+        ret.put("smsGranted", smsGranted);
+        ret.put("phoneGranted", phoneGranted);
+        ret.put("allGranted", smsGranted && phoneGranted);
         call.resolve(ret);
     }
 
@@ -89,7 +122,7 @@ public class EmergencySmsPlugin extends Plugin {
             JSObject ret = new JSObject();
             ret.put("success", false);
             ret.put("confirmedBySmsManager", false);
-            ret.put("error", "SEND_SMS permission has not been granted by the user.");
+            ret.put("error", "SEND_SMS permission has not been granted by user.");
             call.resolve(ret);
             return;
         }
@@ -121,6 +154,8 @@ public class EmergencySmsPlugin extends Plugin {
 
         // 2. Select appropriate SmsManager (with Dual-SIM subscription support if available)
         SmsManager smsManager = null;
+        boolean isSlotSpecific = false;
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && slot != null && (slot == 1 || slot == 2)) {
             try {
                 SubscriptionManager sm = (SubscriptionManager) context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
@@ -131,23 +166,32 @@ public class EmergencySmsPlugin extends Plugin {
                         for (SubscriptionInfo info : subList) {
                             if (info.getSimSlotIndex() == targetSlotIndex) {
                                 int subId = info.getSubscriptionId();
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                    smsManager = context.getSystemService(SmsManager.class).createForSubscriptionId(subId);
-                                } else {
-                                    smsManager = SmsManager.getSmsManagerForSubscriptionId(subId);
+                                if (subId >= 0) {
+                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                                        smsManager = context.getSystemService(SmsManager.class).createForSubscriptionId(subId);
+                                    } else {
+                                        smsManager = SmsManager.getSmsManagerForSubscriptionId(subId);
+                                    }
+                                    isSlotSpecific = (smsManager != null);
                                 }
                                 break;
                             }
                         }
                     }
                 }
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to resolve slot-specific SmsManager, falling back to default: " + e.getMessage());
+            }
         }
 
+        // Fallback to default SmsManager if slot manager was unavailable or not found
         if (smsManager == null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                smsManager = context.getSystemService(SmsManager.class);
-            } else {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    smsManager = context.getSystemService(SmsManager.class);
+                }
+            } catch (Exception ignored) {}
+            if (smsManager == null) {
                 smsManager = SmsManager.getDefault();
             }
         }
@@ -162,14 +206,17 @@ public class EmergencySmsPlugin extends Plugin {
         }
 
         // 3. Divide message into standard SMS segments
-        ArrayList<String> parts;
+        ArrayList<String> parts = null;
         try {
             parts = smsManager.divideMessage(message);
         } catch (Exception e) {
+            Log.w(TAG, "divideMessage failed, falling back to raw message: " + e.getMessage());
+        }
+        if (parts == null || parts.isEmpty()) {
             parts = new ArrayList<>();
             parts.add(message);
         }
-        final int totalParts = (parts != null && !parts.isEmpty()) ? parts.size() : 1;
+        final int totalParts = parts.size();
 
         // 4. Create single-shot PendingIntent with unique Action to capture radio confirmation
         final String actionSent = "com.antitheft.droidguard.SMS_SENT_" + UUID.randomUUID().toString();
@@ -256,15 +303,10 @@ public class EmergencySmsPlugin extends Plugin {
                 context.registerReceiver(sentReceiver, filter);
             }
         } catch (Exception regErr) {
-            JSObject ret = new JSObject();
-            ret.put("success", false);
-            ret.put("confirmedBySmsManager", false);
-            ret.put("error", "Failed to register SMS sent receiver: " + regErr.getMessage());
-            call.resolve(ret);
-            return;
+            Log.w(TAG, "Failed to register sentReceiver: " + regErr.getMessage());
         }
 
-        // Timeout fallback after 15 seconds
+        // Timeout fallback after 10 seconds
         handler.postDelayed(new Runnable() {
             @Override
             public void run() {
@@ -276,30 +318,56 @@ public class EmergencySmsPlugin extends Plugin {
                     JSObject ret = new JSObject();
                     ret.put("success", false);
                     ret.put("confirmedBySmsManager", false);
-                    ret.put("error", "SmsManager confirmation timed out (cellular network did not confirm within 15 seconds).");
+                    ret.put("error", "SmsManager radio confirmation timed out after 10s.");
                     call.resolve(ret);
                 }
             }
-        }, 15000);
+        }, 10000);
 
         // 6. Direct silent transmission without opening any UI
+        // With immediate fallback to SmsManager.getDefault() if slot-specific manager fails
         try {
-            if (parts != null && parts.size() > 1) {
+            if (parts.size() > 1) {
                 smsManager.sendMultipartTextMessage(phoneNumber, null, parts, sentIntents, null);
             } else {
                 smsManager.sendTextMessage(phoneNumber, null, message, sentPendingIntent, null);
             }
-        } catch (Exception sendErr) {
-            if (resolved.compareAndSet(false, true)) {
+        } catch (Exception primaryErr) {
+            Log.w(TAG, "Primary SMS dispatch failed: " + primaryErr.getMessage() + ". Retrying with default SmsManager immediately.");
+            if (isSlotSpecific) {
                 try {
-                    context.unregisterReceiver(sentReceiver);
-                } catch (Exception ignored) {}
+                    SmsManager defaultSms = SmsManager.getDefault();
+                    if (parts.size() > 1) {
+                        defaultSms.sendMultipartTextMessage(phoneNumber, null, parts, sentIntents, null);
+                    } else {
+                        defaultSms.sendTextMessage(phoneNumber, null, message, sentPendingIntent, null);
+                    }
+                } catch (Exception fallbackErr) {
+                    Log.e(TAG, "Fallback default SmsManager dispatch also failed: " + fallbackErr.getMessage());
+                    if (resolved.compareAndSet(false, true)) {
+                        try {
+                            context.unregisterReceiver(sentReceiver);
+                        } catch (Exception ignored) {}
 
-                JSObject ret = new JSObject();
-                ret.put("success", false);
-                ret.put("confirmedBySmsManager", false);
-                ret.put("error", "Exception during direct SMS dispatch: " + sendErr.getMessage());
-                call.resolve(ret);
+                        JSObject ret = new JSObject();
+                        ret.put("success", false);
+                        ret.put("confirmedBySmsManager", false);
+                        ret.put("error", "SmsManager dispatch error: " + fallbackErr.getMessage());
+                        call.resolve(ret);
+                    }
+                }
+            } else {
+                if (resolved.compareAndSet(false, true)) {
+                    try {
+                        context.unregisterReceiver(sentReceiver);
+                    } catch (Exception ignored) {}
+
+                    JSObject ret = new JSObject();
+                    ret.put("success", false);
+                    ret.put("confirmedBySmsManager", false);
+                    ret.put("error", "SmsManager dispatch error: " + primaryErr.getMessage());
+                    call.resolve(ret);
+                }
             }
         }
     }
