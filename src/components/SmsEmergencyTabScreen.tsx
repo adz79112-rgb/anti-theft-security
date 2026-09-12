@@ -22,6 +22,11 @@ import {
   isValidPhoneNumber,
   DEFAULT_EMERGENCY_PHONE,
 } from '../utils/emergencyContact';
+import {
+  checkSmsPermissionStatus,
+  requestDirectSmsPermission,
+} from '../utils/nativeEmergencySms';
+import { Capacitor } from '@capacitor/core';
 import { DualSimNetworkCard } from './DualSimNetworkCard';
 
 interface SmsEmergencyTabScreenProps {
@@ -42,16 +47,64 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
   const [emergencyPhone, setEmergencyPhone] = useState<string>('');
   const [isSaved, setIsSaved] = useState<boolean>(false);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
+  const [smsPermissionGranted, setSmsPermissionGranted] = useState<boolean | null>(null);
+  const [isRequestingPermission, setIsRequestingPermission] = useState<boolean>(false);
 
-  // Load emergency contact phone on mount
+  // Load emergency contact phone and check SEND_SMS permission status on mount
   useEffect(() => {
-    async function loadPhone() {
+    async function loadPhoneAndCheckPerm() {
       const phone = await getEmergencyContactPhone(config.emergencyContactPhone);
       setEmergencyPhone(phone);
       setIsSaved(Boolean(phone));
+
+      if (Capacitor.isNativePlatform()) {
+        const granted = await checkSmsPermissionStatus();
+        setSmsPermissionGranted(granted);
+      } else {
+        setSmsPermissionGranted(false);
+      }
     }
-    loadPhone();
+    loadPhoneAndCheckPerm();
   }, [config.emergencyContactPhone]);
+
+  // Explicit permission request action
+  const handleRequestPermission = async () => {
+    setIsRequestingPermission(true);
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const granted = await requestDirectSmsPermission();
+        setSmsPermissionGranted(granted);
+        if (granted) {
+          setSaveFeedback(
+            translateInline(
+              lang,
+              '✓ SEND_SMS permission granted by user! Silent background dispatch is fully armed.',
+              '✓ تم منح صلاحية إرسال الرسائل (SEND_SMS) بنجاح! الإرسال الصامت في الخلفية جاهز للعمل.'
+            )
+          );
+        } else {
+          setSaveFeedback(
+            translateInline(
+              lang,
+              '⚠️ SEND_SMS permission was denied. DroidGuard cannot send silent background SMS without this permission.',
+              '⚠️ تم رفض إذن SEND_SMS. لن يتمكن التطبيق من إرسال رسائل الطوارئ الصامتة حتى تمنح الإذن.'
+            )
+          );
+        }
+      } else {
+        setSaveFeedback(
+          translateInline(
+            lang,
+            'ℹ️ Web preview environment: SEND_SMS permission is an Android native runtime permission (requires running on an Android device).',
+            'ℹ️ بيئة معاينة الويب: إذن SEND_SMS هو إذن أندرويد أصلي (يتطلب تثبيت التطبيق على هاتف أندرويد حقيقي).'
+          )
+        );
+      }
+    } finally {
+      setIsRequestingPermission(false);
+      setTimeout(() => setSaveFeedback(null), 6000);
+    }
+  };
 
   const handleSavePhone = async () => {
     if (!isValidPhoneNumber(emergencyPhone)) {
@@ -61,6 +114,20 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
       return;
     }
 
+    // Step 3 requirement: Prompt user to grant SEND_SMS permission when configuring emergency contact
+    let permissionOk = smsPermissionGranted;
+    if (Capacitor.isNativePlatform() && !permissionOk) {
+      setIsRequestingPermission(true);
+      try {
+        permissionOk = await requestDirectSmsPermission();
+        setSmsPermissionGranted(permissionOk);
+      } catch (e) {
+        console.warn('SMS permission prompt error:', e);
+      } finally {
+        setIsRequestingPermission(false);
+      }
+    }
+
     await saveEmergencyContactPhone(emergencyPhone.trim());
     setIsSaved(true);
     onChangeConfig({
@@ -68,13 +135,37 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
       emergencyContactPhone: emergencyPhone.trim(),
     });
 
-    setSaveFeedback(
-      translateInline(lang, '✓ Primary Emergency phone verified & saved to secure storage!', '✓ تم حفظ واعتماد رقم هاتف الطوارئ في الذاكرة الدائمة بنجاح!')
-    );
+    if (Capacitor.isNativePlatform()) {
+      if (permissionOk) {
+        setSaveFeedback(
+          translateInline(
+            lang,
+            '✓ SEND_SMS permission granted & emergency contact saved successfully!',
+            '✓ تم منح إذن SMS (SEND_SMS) وحفظ رقم هاتف الطوارئ المعتمد بنجاح في عتاد الهاتف!'
+          )
+        );
+      } else {
+        setSaveFeedback(
+          translateInline(
+            lang,
+            '⚠️ Emergency phone saved, but SEND_SMS permission was NOT granted. Background SMS will fail until permission is allowed in Android Settings.',
+            '⚠️ تم حفظ رقم الطوارئ، ولكن لم يتم منح إذن SMS (SEND_SMS). لن يتم إرسال الرسائل الصامتة حتى تسمح بالإذن.'
+          )
+        );
+      }
+    } else {
+      setSaveFeedback(
+        translateInline(
+          lang,
+          '✓ Emergency contact saved. (Note: Silent background SMS will use native Android SmsManager when installed on device).',
+          '✓ تم حفظ واعتماد رقم هاتف الطوارئ في الذاكرة الدائمة بنجاح! (ملاحظة: يتطلب الإرسال الصامت المباشر تشغيل التطبيق على أندرويد مع إذن SEND_SMS).'
+        )
+      );
+    }
 
     setTimeout(() => {
       setSaveFeedback(null);
-    }, 4000);
+    }, 6000);
   };
 
   return (
@@ -133,7 +224,7 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
 
           {/* Quick country code presets */}
           <div className="hidden sm:flex items-center gap-1.5 text-[11px]">
-            <span className="text-slate-500">${translateInline(lang, 'Quick Codes:', 'رموز سريعة:')}</span>
+            <span className="text-slate-500">{translateInline(lang, 'Quick Codes:', 'رموز سريعة:')}</span>
             <button
               type="button"
               onClick={() => setEmergencyPhone('+213 ')}
@@ -151,6 +242,71 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
           </div>
         </div>
 
+        {/* Android SEND_SMS Native Permission Banner */}
+        <div
+          id="sms-permission-status-banner"
+          className={`p-3.5 rounded-2xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+            smsPermissionGranted
+              ? 'bg-emerald-950/40 border-emerald-500/40 text-emerald-200'
+              : 'bg-amber-950/40 border-amber-500/40 text-amber-200'
+          }`}
+        >
+          <div className="flex items-start sm:items-center gap-2.5">
+            {smsPermissionGranted ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5 sm:mt-0" />
+            ) : (
+              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5 sm:mt-0" />
+            )}
+            <div>
+              <div className="text-xs font-bold font-mono-code flex items-center gap-2">
+                <span>
+                  {smsPermissionGranted
+                    ? translateInline(
+                        lang,
+                        'Android SEND_SMS Permission: GRANTED & ARMED ✓',
+                        'إذن إرسال الرسائل الصامتة (SEND_SMS): مفعّل ومصرّح به ✓'
+                      )
+                    : translateInline(
+                        lang,
+                        'Android SEND_SMS Permission: REQUIRED FOR SILENT DISPATCH ⚠️',
+                        'إذن أندرويد (SEND_SMS) مطلوب للإرسال الصامت في الخلفية ⚠️'
+                      )}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+                {smsPermissionGranted
+                  ? translateInline(
+                      lang,
+                      'Emergency SMS & live GPS coordinates will dispatch silently via Android native SmsManager without opening the default messaging app.',
+                      'سيتم إرسال رسائل الطوارئ ورابط موقع GPS بصمت تام في الخلفية عبر Android SmsManager مباشرة دون فتح تطبيق الرسائل الافتراضي.'
+                    )
+                  : translateInline(
+                      lang,
+                      'DroidGuard requires the SEND_SMS runtime permission to transmit silent distress signals and GPS links in the background upon theft.',
+                      'يحتاج تطبيق DroidGuard لإذن SEND_SMS لإرسال بلاغات الطوارئ وإحداثيات GPS في الخلفية تلقائياً وبصمت تام عند وقوع السرقة.'
+                    )}
+              </p>
+            </div>
+          </div>
+
+          {!smsPermissionGranted && (
+            <button
+              id="btn-grant-sms-permission"
+              type="button"
+              onClick={handleRequestPermission}
+              disabled={isRequestingPermission}
+              className="shrink-0 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold font-mono-code transition cursor-pointer shadow-md shadow-amber-950/40 flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>
+                {isRequestingPermission
+                  ? translateInline(lang, 'Requesting...', 'جاري الطلب...')
+                  : translateInline(lang, 'Grant SEND_SMS Permission', 'منح إذن SEND_SMS الآن')}
+              </span>
+            </button>
+          )}
+        </div>
+
         {/* Input and Action Buttons */}
         <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
           <div className="sm:col-span-8 relative">
@@ -162,7 +318,7 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
                 setEmergencyPhone(e.target.value);
                 setIsSaved(false);
               }}
-              placeholder="${translateInline(lang, '+44 7911 123456 or +1 202 555 0123', '+213 661 12 34 56 أو +966 50 123 4567')}"
+              placeholder={translateInline(lang, '+44 7911 123456 or +1 202 555 0123', '+213 661 12 34 56 أو +966 50 123 4567')}
               className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-700 hover:border-slate-600 focus:border-amber-400 focus:outline-none text-slate-100 font-mono-code text-sm font-bold placeholder-slate-600 transition"
               dir="ltr"
             />

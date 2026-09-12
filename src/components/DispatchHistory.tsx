@@ -1,6 +1,6 @@
 import React from 'react';
 import { translateInline } from '../utils/translateInline';
-import { Send, CheckCircle2, Clock, Bot, MessageSquare, AlertTriangle } from 'lucide-react';
+import { Send, CheckCircle2, Clock, Bot, MessageSquare, AlertTriangle, XCircle } from 'lucide-react';
 import { DispatchEvent, Language } from '../types';
 import { getTranslation } from '../utils/translations';
 
@@ -118,20 +118,29 @@ export const DispatchHistory: React.FC<DispatchHistoryProps> = ({ logs, onClearL
         <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
           {logs.map((log, index) => {
             const badge = getDispatchBadge(log.type);
+            const isFailed = log.status === 'failed';
             return (
               <div
                 key={`${log.id || 'log'}-${index}`}
-                className="p-3 rounded-2xl bg-slate-950/90 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2"
+                className={`p-3 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 transition ${
+                  isFailed
+                    ? 'bg-rose-950/20 border-rose-500/40'
+                    : 'bg-slate-950/90 border-slate-800'
+                }`}
               >
                 <div className="flex items-start gap-3">
                   <div
                     className={`p-2 rounded-xl mt-0.5 ${
-                      badge.isTelegram
+                      isFailed
+                        ? 'bg-rose-500/15 text-rose-400'
+                        : badge.isTelegram
                         ? 'bg-sky-500/15 text-sky-400'
                         : 'bg-emerald-500/10 text-emerald-400'
                     }`}
                   >
-                    {badge.isTelegram ? (
+                    {isFailed ? (
+                      <XCircle className="w-4 h-4 text-rose-400" />
+                    ) : badge.isTelegram ? (
                       <Bot className="w-4 h-4" />
                     ) : (
                       <CheckCircle2 className="w-4 h-4" />
@@ -145,7 +154,9 @@ export const DispatchHistory: React.FC<DispatchHistoryProps> = ({ logs, onClearL
                           : translateInline(lang, 'Auto-reply to sender:', 'الرد التلقائي إلى نفس رقم المرسل:')}{' '}
                         <span
                           className={`font-mono-code font-bold px-2 py-0.5 rounded border ${
-                            badge.isTelegram
+                            isFailed
+                              ? 'text-rose-300 bg-rose-500/10 border-rose-500/30'
+                              : badge.isTelegram
                               ? 'text-sky-300 bg-sky-500/10 border-sky-500/20'
                               : 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20'
                           }`}
@@ -169,15 +180,25 @@ export const DispatchHistory: React.FC<DispatchHistoryProps> = ({ logs, onClearL
                   </span>
                   <span
                     className={`text-[10px] font-medium flex items-center gap-1 justify-end mt-0.5 ${
-                      badge.isTelegram ? 'text-sky-400' : 'text-emerald-400'
+                      isFailed
+                        ? 'text-rose-400 font-bold'
+                        : badge.isTelegram
+                        ? 'text-sky-400'
+                        : 'text-emerald-400'
                     }`}
                   >
                     <span
                       className={`w-1.5 h-1.5 rounded-full ${
-                        badge.isTelegram ? 'bg-sky-400' : 'bg-emerald-400'
+                        isFailed
+                          ? 'bg-rose-400'
+                          : badge.isTelegram
+                          ? 'bg-sky-400'
+                          : 'bg-emerald-400'
                       }`}
                     />
-                    {badge.isTelegram
+                    {isFailed
+                      ? translateInline(lang, 'Failed (SmsManager)', 'تعذر الإرسال')
+                      : badge.isTelegram
                       ? translateInline(lang, 'Sent to Telegram', 'تم الإرسال لتليجرام')
                       : translateInline(lang, 'Delivered', 'تم التسليم للشبكة')}
                   </span>

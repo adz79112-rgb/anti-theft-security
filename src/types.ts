@@ -66,7 +66,7 @@ export interface DispatchEvent {
     | 'stealth_dispatch'
     | 'whatsapp_dispatch';
   content: string;
-  status: 'sent' | 'delivered';
+  status: 'sent' | 'delivered' | 'failed';
 }
 
 export type Language =

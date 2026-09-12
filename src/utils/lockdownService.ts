@@ -115,7 +115,7 @@ export async function executeStealthDispatchCycle(
           timestamp,
           recipient: `${recipient} (${isEmergency ? 'طوارئ أساسي' : 'مرسل الأمر'} - SIM 1 ${dualSimResult.sim1Details.carrier})`,
           type: 'emergency_sms',
-          content: `[SMS متزامن - شريحة 1] تم إرسال موقع GPS المباشر إلى ${recipient}: ${mapsUrl}`,
+          content: `[SMS متزامن - شريحة 1] تم تأكيد إرسال موقع GPS المباشر إلى ${recipient} عبر Android SmsManager: ${mapsUrl}`,
           status: 'delivered',
         });
       }
@@ -125,8 +125,18 @@ export async function executeStealthDispatchCycle(
           timestamp,
           recipient: `${recipient} (${isEmergency ? 'طوارئ أساسي' : 'مرسل الأمر'} - SIM 2 ${dualSimResult.sim2Details.carrier})`,
           type: 'emergency_sms',
-          content: `[SMS متزامن - شريحة 2 احتياطية] تم إرسال موقع GPS بنجاح كخط أمان بديل عبر SIM 2: ${mapsUrl}`,
+          content: `[SMS متزامن - شريحة 2 احتياطية] تم تأكيد إرسال موقع GPS كخط أمان بديل عبر Android SmsManager (SIM 2): ${mapsUrl}`,
           status: 'delivered',
+        });
+      }
+
+      if (!dualSimResult.sim1Delivered && !dualSimResult.sim2Delivered) {
+        callbacks.onLogDispatch({
+          timestamp,
+          recipient: `${recipient} (${isEmergency ? 'طوارئ أساسي' : 'مرسل الأمر'})`,
+          type: 'emergency_sms',
+          content: `[SMS متزامن - تعذر الإرسال] ${dualSimResult.summary}`,
+          status: 'failed',
         });
       }
     }

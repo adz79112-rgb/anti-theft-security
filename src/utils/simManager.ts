@@ -10,6 +10,7 @@
 
 import { AsyncStorage, STORAGE_KEYS } from './storage';
 import { getRealHardwareSimCards } from './nativeSimCard';
+import { sendSilentBackgroundSms } from './nativeEmergencySms';
 import { Capacitor } from '@capacitor/core';
 
 export interface SIMCard {
@@ -308,12 +309,16 @@ export interface DualSimSmsResult {
   sim1Details: SIMCard;
   sim2Details: SIMCard;
   summary: string;
+  sim1Error?: string;
+  sim2Error?: string;
+  confirmedByNativeManager?: boolean;
 }
 
 /**
  * Dual-SIM SMS Fallback:
- * Sends emergency SMS with GPS coordinates via SIM 1,
- * and also dispatches via SIM 2 as redundant fallback to guarantee delivery!
+ * Sends emergency SMS with GPS coordinates via native Android SmsManager silently in background.
+ * Attempts SIM 1, and also SIM 2 as fallback/redundant safety.
+ * Reports delivered ONLY if confirmed by native Android SmsManager.
  */
 export async function sendDualSimSmsFallback(
   recipient: string,
@@ -322,22 +327,36 @@ export async function sendDualSimSmsFallback(
   const state = await getNetworkAndSimState();
   const [sim1, sim2] = state.simCards;
 
-  // Simulate carrier SMS dispatch
-  // SIM 1 send attempt
-  const sim1Delivered = sim1.status !== 'low_balance' && sim1.signalPercent > 10;
+  // Real native background SMS dispatch via Android SmsManager
+  // 1. Attempt SIM 1
+  const res1 = await sendSilentBackgroundSms(recipient, message, 1);
+  const sim1Delivered = Boolean(res1.success && res1.confirmedBySmsManager);
 
-  // SIM 2 redundant send attempt (Fallback)
-  const sim2Delivered = sim2.status !== 'low_balance' && sim2.signalPercent > 10;
+  // 2. Attempt SIM 2 (Redundant Fallback)
+  let sim2Delivered = false;
+  let res2: any = null;
+
+  // Only attempt SIM 2 if it is inserted or active, or if SIM 1 failed
+  const isSim2Available = !sim2.carrier.includes('No SIM') && !sim2.carrier.includes('لا توجد شريحة');
+  if (isSim2Available || !sim1Delivered) {
+    res2 = await sendSilentBackgroundSms(recipient, message, 2);
+    sim2Delivered = Boolean(res2.success && res2.confirmedBySmsManager);
+  }
 
   let summary = '';
   if (sim1Delivered && sim2Delivered) {
-    summary = `✓ تم الإرسال المزدوج بنجاح عبر الشريحتين: SIM 1 (${sim1.carrier}) + SIM 2 (${sim2.carrier}) لضمان الوصول المؤكد.`;
+    summary = `✓ تم تأكيد الإرسال المزدوج بالخلفية عبر Android SmsManager: SIM 1 (${sim1.carrier}) + SIM 2 (${sim2.carrier}) لضمان الوصول المؤكد.`;
   } else if (sim1Delivered) {
-    summary = `✓ تم إرسال الرسالة بنجاح عبر SIM 1 (${sim1.carrier}).`;
+    summary = `✓ تم تأكيد إرسال رسالة الطوارئ الصامتة بنجاح عبر Android SmsManager (SIM 1: ${sim1.carrier}).`;
   } else if (sim2Delivered) {
-    summary = `⚠️ فشل الإرسال عبر SIM 1! تم التبديل الفوري والإرسال بنجاح عبر SIM 2 الاحتياطية (${sim2.carrier}).`;
+    summary = `⚠️ تعذر الإرسال عبر SIM 1! تم التبديل الفوري وتأكيد الإرسال بنجاح عبر شريحة الطوارئ SIM 2 (${sim2.carrier}) بواسطة Android SmsManager.`;
   } else {
-    summary = `❌ تعذر إرسال الـ SMS عبر الشريحتين بسبب انقطاع إشارة الشبكة.`;
+    if (!Capacitor.isNativePlatform()) {
+      summary = `ℹ️ بيئة معاينة الويب: إرسال رسائل SMS الصامتة في الخلفية يتطلب تشغيل تطبيق APK على جهاز أندرويد فعلي مع عتاد شريحة اتصال وتفعيل إذن SEND_SMS.`;
+    } else {
+      const primaryErr = res1.error || res2?.error || 'تعذر الإرسال عبر مشغل الشبكة';
+      summary = `❌ تعذر إرسال رسالة SMS الطوارئ عبر عتاد الهاتف: ${primaryErr}. يرجى التحقق من منح إذن SEND_SMS وتوفر تغطية الشبكة.`;
+    }
   }
 
   return {
@@ -348,5 +367,8 @@ export async function sendDualSimSmsFallback(
     sim1Details: sim1,
     sim2Details: sim2,
     summary,
+    sim1Error: res1.error,
+    sim2Error: res2?.error,
+    confirmedByNativeManager: sim1Delivered || sim2Delivered,
   };
 }

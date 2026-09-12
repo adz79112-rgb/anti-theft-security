@@ -104,12 +104,13 @@ export async function executeDualAlert(
     const simRes = await sendDualSimSmsFallback(target, smsBody);
 
     if (callbacks?.onLogDispatch) {
+      const isDelivered = simRes.sim1Delivered || simRes.sim2Delivered;
       callbacks.onLogDispatch({
         timestamp: new Date().toLocaleTimeString(),
         recipient: target,
         type: isEmergency ? 'emergency_sms' : 'dual_reverse_sms',
-        content: `[SMS متزامن ${isEmergency ? 'لرقم الطوارئ الأساسي' : 'لرقم مرسل الأمر'}] تم إرسال رابط موقع GPS المباشر: ${directGpsLink} (${simRes.summary})`,
-        status: 'delivered',
+        content: `[SMS متزامن ${isEmergency ? 'لرقم الطوارئ الأساسي' : 'لرقم مرسل الأمر'}] ${simRes.summary}`,
+        status: isDelivered ? 'delivered' : 'failed',
       });
     }
   }

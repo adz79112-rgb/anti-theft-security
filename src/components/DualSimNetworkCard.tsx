@@ -11,6 +11,8 @@ import {
   AlertTriangle,
   Cpu,
   Lock,
+  Send,
+  XCircle,
 } from 'lucide-react';
 import { Language, DispatchEvent } from '../types';
 import {
@@ -123,21 +125,29 @@ export const DualSimNetworkCard: React.FC<DualSimNetworkCardProps> = ({
       setTestResult(res);
       setActionNotice(res.summary);
 
-      // Log both SMS dispatches
+      // Log SIM 1 dispatch based strictly on SmsManager confirmation
       onLogDispatch({
         timestamp: new Date().toLocaleTimeString(),
-        recipient: `${recipient} (SIM 1)`,
+        recipient: `${recipient} (SIM 1: ${res.sim1Details.carrier})`,
         type: 'emergency_sms',
-        content: `${translateInline(lang, '[Dual-SIM SMS 1] Dispatched via SIM 1 (${res.sim1Details.carrier})', '[Dual-SIM SMS 1] تم الإرسال عبر SIM 1 (${res.sim1Details.carrier})')}`,
-        status: 'delivered',
+        content: res.sim1Delivered
+          ? `${translateInline(lang, '[Dual-SIM SMS 1] Sent & confirmed by native SmsManager', '[Dual-SIM SMS 1] تم الإرسال والتأكيد عبر Android SmsManager')}`
+          : `${translateInline(lang, '[Dual-SIM SMS 1] Failed:', '[Dual-SIM SMS 1] تعذر الإرسال عبر شريحة 1:')} ${res.sim1Error || 'Not confirmed'}`,
+        status: res.sim1Delivered ? 'delivered' : 'failed',
       });
-      onLogDispatch({
-        timestamp: new Date().toLocaleTimeString(),
-        recipient: `${recipient} (SIM 2 - Fallback)`,
-        type: 'emergency_sms',
-        content: `${translateInline(lang, '[Dual-SIM SMS 2 Fallback] Dispatched via SIM 2 (${res.sim2Details.carrier})', '[Dual-SIM SMS 2 احتياطية] تم الإرسال عبر SIM 2 (${res.sim2Details.carrier})')}`,
-        status: 'delivered',
-      });
+
+      // Log SIM 2 dispatch if attempted
+      if (res.sim2Delivered || res.sim2Error) {
+        onLogDispatch({
+          timestamp: new Date().toLocaleTimeString(),
+          recipient: `${recipient} (SIM 2: ${res.sim2Details.carrier})`,
+          type: 'emergency_sms',
+          content: res.sim2Delivered
+            ? `${translateInline(lang, '[Dual-SIM SMS 2] Sent & confirmed by native SmsManager', '[Dual-SIM SMS 2] تم الإرسال والتأكيد عبر Android SmsManager')}`
+            : `${translateInline(lang, '[Dual-SIM SMS 2] Failed:', '[Dual-SIM SMS 2] تعذر الإرسال عبر شريحة 2:')} ${res.sim2Error || 'Not confirmed'}`,
+          status: res.sim2Delivered ? 'delivered' : 'failed',
+        });
+      }
     } finally {
       setIsTestingSms(false);
     }
@@ -366,10 +376,81 @@ export const DualSimNetworkCard: React.FC<DualSimNetworkCardProps> = ({
           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
           <span>{translateInline(lang, 'Auto Dual-SIM Fallback Ready', 'جاهز للتحويل التلقائي بين الشريحتين')}</span>
         </div>
+
+        <button
+          type="button"
+          id="btn-test-native-sms-dispatch"
+          onClick={handleTestDualSimSms}
+          disabled={isTestingSms}
+          className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-mono-code font-bold flex items-center gap-1.5 transition cursor-pointer disabled:opacity-50"
+        >
+          <Send className={`w-3.5 h-3.5 ${isTestingSms ? 'animate-spin' : ''}`} />
+          <span>
+            {isTestingSms
+              ? translateInline(lang, 'Testing SmsManager...', 'جاري التأكيد عبر SmsManager...')
+              : translateInline(lang, 'Test Silent SMS Dispatch', 'تجربة إرسال SMS الصامت')}
+          </span>
+        </button>
       </div>
 
+      {/* Verified SmsManager Test Result */}
+      {testResult && (
+        <div className="p-3.5 rounded-2xl bg-slate-950/90 border border-slate-800 space-y-2 text-xs font-mono-code">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <span className="font-bold text-slate-200">
+              {translateInline(lang, 'Native Android SmsManager Report:', 'تقرير عتاد Android SmsManager:')}
+            </span>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+              testResult.sim1Delivered || testResult.sim2Delivered
+                ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+            }`}>
+              {testResult.sim1Delivered || testResult.sim2Delivered
+                ? translateInline(lang, 'DISPATCH CONFIRMED', 'تم تأكيد الإرسال بالعتاد')
+                : translateInline(lang, 'DISPATCH NOT CONFIRMED', 'لم يتم الإرسال')}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+            <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+              <span>SIM 1 ({testResult.sim1Details.carrier}):</span>
+              {testResult.sim1Delivered ? (
+                <span className="text-emerald-400 font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {translateInline(lang, 'Confirmed', 'مؤكد')}
+                </span>
+              ) : (
+                <span className="text-rose-400 font-bold flex items-center gap-1">
+                  <XCircle className="w-3.5 h-3.5" />
+                  {testResult.sim1Error || translateInline(lang, 'Failed', 'تعذر الإرسال')}
+                </span>
+              )}
+            </div>
+
+            <div className="p-2 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+              <span>SIM 2 ({testResult.sim2Details.carrier}):</span>
+              {testResult.sim2Delivered ? (
+                <span className="text-emerald-400 font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  {translateInline(lang, 'Confirmed', 'مؤكد')}
+                </span>
+              ) : (
+                <span className="text-slate-400 flex items-center gap-1">
+                  <XCircle className="w-3.5 h-3.5 text-slate-500" />
+                  {testResult.sim2Error || translateInline(lang, 'Standby', 'احتياطي')}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <p className="text-[11px] text-slate-400 pt-1">
+            {testResult.summary}
+          </p>
+        </div>
+      )}
+
       {/* Action notice banner */}
-      {actionNotice && (
+      {actionNotice && !testResult && (
         <div className="px-4 py-2.5 rounded-2xl bg-cyan-950/50 border border-cyan-500/40 text-cyan-200 text-xs font-mono-code flex items-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
           <span>{actionNotice}</span>

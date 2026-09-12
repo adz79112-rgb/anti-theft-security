@@ -234,12 +234,13 @@ export async function recordFailedAuthAttempt(
         const smsRes = await sendDualSimSmsFallback(emergencyPhone, smsMessage);
 
         if (options?.onLogDispatch) {
+          const isSent = smsRes.sim1Delivered || smsRes.sim2Delivered;
           options.onLogDispatch({
             timestamp,
             recipient: `${emergencyPhone} (Emergency Contact)`,
             type: 'emergency_sms',
-            content: `[طوارئ SMS - 3 محاولات فاشلة] تم إرسال رسالة SMS برابط الموقع إلى رقم الطوارئ المعتمد: ${smsRes.summary}`,
-            status: 'delivered',
+            content: `[طوارئ SMS - 3 محاولات فاشلة] ${smsRes.summary}`,
+            status: isSent ? 'delivered' : 'failed',
           });
         }
       } catch (smsErr) {
