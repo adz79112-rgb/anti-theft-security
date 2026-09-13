@@ -46,6 +46,7 @@ import {
 import { AsyncStorage, safeStorage, STORAGE_KEYS } from './utils/storage';
 import { detectDeviceLanguage } from './utils/languagesRegistry';
 import { LanguageSelectorModal } from './components/LanguageSelectorModal';
+import { ElevatedPermissionsModal } from './components/ElevatedPermissionsModal';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { OfflineIndicator } from './components/OfflineIndicator';
 
@@ -304,6 +305,7 @@ export default function App() {
   const [deviceAdminActive, setDeviceAdminActive] = useState<boolean | null>(null);
   const [isDefaultSmsAppActive, setIsDefaultSmsAppActive] = useState<boolean | null>(null);
   const [accessibilityServiceActive, setAccessibilityServiceActive] = useState<boolean | null>(null);
+  const [isElevatedPermissionsModalOpen, setIsElevatedPermissionsModalOpen] = useState<boolean>(false);
 
   const handleGrantSmsPermission = useCallback(async () => {
     const granted = await requestDirectSmsPermission();
@@ -359,20 +361,24 @@ export default function App() {
 
   // Execute unified startup security permission request once, then prime background GPS and Device Admin
   useEffect(() => {
-    requestStartupSecurityPermissions().then((result) => {
+    requestStartupSecurityPermissions().then(async (result) => {
       console.log('DroidGuard Security Permissions startup check:', result);
       setSmsPermissionGranted(Boolean(result.smsGranted || result.granted));
       
       // Check Device Admin, Default SMS and Accessibility status
-      checkDeviceAdminStatus().then((isAdmin) => {
-        setDeviceAdminActive(isAdmin);
-      });
-      checkIsDefaultSmsApp().then((isDef) => {
-        setIsDefaultSmsAppActive(isDef);
-      });
-      checkAccessibilityServiceStatus().then((isAcc) => {
-        setAccessibilityServiceActive(isAcc);
-      });
+      const [isAdmin, isDef, isAcc] = await Promise.all([
+        checkDeviceAdminStatus(),
+        checkIsDefaultSmsApp(),
+        checkAccessibilityServiceStatus(),
+      ]);
+      setDeviceAdminActive(isAdmin);
+      setIsDefaultSmsAppActive(isDef);
+      setAccessibilityServiceActive(isAcc);
+
+      // If running on Android and either Device Admin or Accessibility is missing, show guided setup
+      if (Capacitor.isNativePlatform() && (!isAdmin || !isAcc)) {
+        setIsElevatedPermissionsModalOpen(true);
+      }
 
       // Now that location permissions are requested/checked, start the silent GPS watcher
       initializeBackgroundGPS().catch((err) => {
@@ -756,7 +762,7 @@ export default function App() {
               onClick={handleSetDefaultSmsApp}
               className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold text-xs sm:text-sm rounded-xl whitespace-nowrap shadow-lg shadow-cyan-500/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
-              <span>{translateInline(lang, 'تعيين كتطبيق رسائل افتراضي الآن', 'Set as Default SMS App Now')}</span>
+              <span>{translateInline(lang, 'Set as Default SMS App Now', 'تعيين كتطبيق رسائل افتراضي الآن')}</span>
               <span className="text-base">🚀</span>
             </button>
           </div>
@@ -769,7 +775,7 @@ export default function App() {
               <span className="p-2.5 bg-red-500/20 text-red-400 rounded-xl text-lg font-bold">📲</span>
               <div>
                 <p className="font-bold text-sm text-white flex items-center gap-2">
-                  {translateInline(lang, 'إذن إرسال رسائل SMS الطوارئ غير مفعّل', 'Emergency SMS Permission Required')}
+                  {translateInline(lang, 'Emergency SMS Permission Required', 'إذن إرسال رسائل SMS الطوارئ غير مفعّل')}
                   <span className="px-2 py-0.5 bg-red-500/30 text-red-300 text-[10px] rounded-full uppercase tracking-wider font-mono">
                     SEND_SMS
                   </span>
@@ -777,8 +783,8 @@ export default function App() {
                 <p className="text-xs text-red-300/80 mt-0.5">
                   {translateInline(
                     lang,
-                    'يحتاج نظام أندرويد إلى موافقتك لإرسال رسائل الاستغاثة الصامتة مع موقع GPS في الخلفية عند استشعار السرقة.',
-                    'Android requires SEND_SMS permission to silently dispatch background emergency alerts & GPS coordinates.'
+                    'Android requires SEND_SMS permission to silently dispatch background emergency alerts & GPS coordinates.',
+                    'يحتاج نظام أندرويد إلى موافقتك لإرسال رسائل الاستغاثة الصامتة مع موقع GPS في الخلفية عند استشعار السرقة.'
                   )}
                 </p>
               </div>
@@ -788,7 +794,7 @@ export default function App() {
               onClick={handleGrantSmsPermission}
               className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs rounded-xl whitespace-nowrap shadow-lg shadow-red-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
             >
-              <span>{translateInline(lang, 'تفعيل إذن SMS الآن', 'Grant SMS Permission Now')}</span>
+              <span>{translateInline(lang, 'Grant SMS Permission Now', 'تفعيل إذن SMS الآن')}</span>
               <span className="text-sm">↗</span>
             </button>
           </div>
@@ -801,7 +807,7 @@ export default function App() {
               <span className="p-2.5 bg-indigo-500/20 text-indigo-300 rounded-xl text-lg font-bold">🛡️</span>
               <div>
                 <p className="font-bold text-sm text-white flex items-center gap-2">
-                  {translateInline(lang, 'تفعيل صلاحية مسؤول الجهاز (Device Administrator)', 'Activate Device Administrator Protection')}
+                  {translateInline(lang, 'Activate Device Administrator Protection', 'تفعيل صلاحية مسؤول الجهاز (Device Administrator)')}
                   <span className="px-2 py-0.5 bg-indigo-500/30 text-indigo-300 text-[10px] rounded-full uppercase tracking-wider font-mono font-bold">
                     SYSTEM PRIVILEGE
                   </span>
@@ -809,8 +815,8 @@ export default function App() {
                 <p className="text-xs text-indigo-300/80 mt-0.5">
                   {translateInline(
                     lang,
-                    'يمنح التطبيق صلاحيات عالية لحماية الهاتف من الإلغاء، تنفيذ القفل الفوري للشاشة، ورفع أولوية إرسال SMS في الخلفية.',
-                    'Grants elevated OS privileges to prevent uninstallation, execute instant screen locks, and prioritize offline background emergency SMS.'
+                    'Grants elevated OS privileges to prevent uninstallation, execute instant screen locks, and prioritize offline background emergency SMS.',
+                    'يمنح التطبيق صلاحيات عالية لحماية الهاتف من الإلغاء، تنفيذ القفل الفوري للشاشة، ورفع أولوية إرسال SMS في الخلفية.'
                   )}
                 </p>
               </div>
@@ -821,7 +827,7 @@ export default function App() {
                 onClick={handleGrantDeviceAdmin}
                 className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs rounded-xl whitespace-nowrap shadow-lg shadow-indigo-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
               >
-                <span>{translateInline(lang, 'تفعيل مسؤول الجهاز مباشرة', 'Activate Device Admin Rights')}</span>
+                <span>{translateInline(lang, 'Activate Device Admin Rights', 'تفعيل مسؤول الجهاز مباشرة')}</span>
                 <span className="text-sm">🛡️</span>
               </button>
               <button
@@ -834,7 +840,7 @@ export default function App() {
                   'فتح في الإعدادات مباشرة (استخدم هذا الخيار في حال ظهور شاشة سوداء)'
                 )}
               >
-                <span>{translateInline(lang, 'فتح في الإعدادات (حل بديل)', 'Open in Settings (Fallback)')}</span>
+                <span>{translateInline(lang, 'Open in Settings (Fallback)', 'فتح في الإعدادات (حل بديل)')}</span>
                 <span className="text-xs">⚙️</span>
               </button>
             </div>
@@ -848,7 +854,7 @@ export default function App() {
               <span className="p-2.5 bg-teal-500/20 text-teal-300 rounded-xl text-lg font-bold shrink-0 mt-0.5">🤖</span>
               <div>
                 <p className="font-bold text-sm text-white flex items-center gap-2 flex-wrap">
-                  {translateInline(lang, 'تفعيل خدمة المساعد التلقائي (إرسال الرسائل بدون لمس الشاشة)', 'Activate Auto-Confirm Service (Zero-Touch SMS)')}
+                  {translateInline(lang, 'Activate Auto-Confirm Service (Zero-Touch SMS)', 'تفعيل خدمة المساعد التلقائي (إرسال الرسائل بدون لمس الشاشة)')}
                   <span className="px-2 py-0.5 bg-teal-500/30 text-teal-300 text-[10px] rounded-full uppercase tracking-wider font-mono font-bold">
                     ZERO-TOUCH SMS
                   </span>
@@ -856,8 +862,8 @@ export default function App() {
                 <p className="text-xs text-teal-200/90 mt-1 leading-relaxed">
                   {translateInline(
                     lang,
-                    'تمنح التطبيق صلاحية الضغط التلقائي الفوري على زر "إرسال" فور ظهور نافذة "سيرسل رسالة SMS"، لتتمكن من إرسال رسائل الاستغاثة الصامتة بدون الحاجة للمس الشاشة أو الضغط على زر قبول نهائياً!',
-                    'Allows DroidGuard to instantly auto-click "Send" when Android shows the SMS confirmation dialog, dispatching silent alerts with zero physical touch.'
+                    'Allows DroidGuard to instantly auto-click "Send" when Android shows the SMS confirmation dialog, dispatching silent alerts with zero physical touch.',
+                    'تمنح التطبيق صلاحية الضغط التلقائي الفوري على زر "إرسال" فور ظهور نافذة "سيرسل رسالة SMS"، لتتمكن من إرسال رسائل الاستغاثة الصامتة بدون الحاجة للمس الشاشة أو الضغط على زر قبول نهائياً!'
                   )}
                 </p>
               </div>
@@ -867,7 +873,7 @@ export default function App() {
               onClick={handleGrantAccessibilityService}
               className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs rounded-xl whitespace-nowrap shadow-lg shadow-teal-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
-              <span>{translateInline(lang, 'تفعيل خدمة النقر التلقائي الآن', 'Activate Auto-Confirm Service')}</span>
+              <span>{translateInline(lang, 'Activate Auto-Confirm Service Now', 'تفعيل خدمة النقر التلقائي الآن')}</span>
               <span className="text-sm">⚡</span>
             </button>
           </div>
@@ -880,7 +886,7 @@ export default function App() {
               <span className="p-2.5 bg-amber-500/20 text-amber-300 rounded-xl text-lg font-bold shrink-0 mt-0.5">⚡</span>
               <div>
                 <p className="font-bold text-sm text-white flex items-center gap-2 flex-wrap">
-                  {translateInline(lang, 'تفعيل الوصول إلى الرسائل المميزة (تجاوز قيود الشركات المصنعة)', 'Enable Premium SMS Access (Bypass OEM Restrictions)')}
+                  {translateInline(lang, 'Enable Premium SMS Access (Bypass OEM Restrictions)', 'تفعيل الوصول إلى الرسائل المميزة (تجاوز قيود الشركات المصنعة)')}
                   <span className="px-2 py-0.5 bg-amber-500/30 text-amber-300 text-[10px] rounded-full uppercase tracking-wider font-mono font-bold">
                     OEM BYPASS
                   </span>
@@ -888,8 +894,8 @@ export default function App() {
                 <p className="text-xs text-amber-200/90 mt-1 leading-relaxed">
                   {translateInline(
                     lang,
-                    "يرجى التمرير للأسفل داخل صفحة معلومات التطبيق واختيار 'الوصول إلى الرسائل المميزة' (Premium SMS access) وتغييرها من 'سؤال' (Ask) إلى 'السماح دائماً' (Always Allow) لضمان إرسال رسائل الطوارئ في الخلفية بصمت تام دون نوافذ عد تنازلي.",
-                    "Please scroll down to 'Premium SMS access' (الوصول إلى الرسائل المميزة) and change it from 'Ask' to 'Always Allow' to ensure silent background SOS delivery without countdown popups."
+                    "Please scroll down to 'Premium SMS access' and change it from 'Ask' to 'Always Allow' to ensure silent background SOS delivery without countdown popups.",
+                    "يرجى التمرير للأسفل داخل صفحة معلومات التطبيق واختيار 'الوصول إلى الرسائل المميزة' (Premium SMS access) وتغييرها من 'سؤال' (Ask) إلى 'السماح دائماً' (Always Allow) لضمان إرسال رسائل الطوارئ في الخلفية بصمت تام دون نوافذ عد تنازلي."
                   )}
                 </p>
               </div>
@@ -899,7 +905,7 @@ export default function App() {
               onClick={() => openPremiumSmsSettings()}
               className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-bold text-xs rounded-xl whitespace-nowrap shadow-lg shadow-amber-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
-              <span>{translateInline(lang, 'تفعيل الوصول إلى الرسائل المميزة', 'Enable Premium SMS Access (Bypass OEM Restrictions)')}</span>
+              <span>{translateInline(lang, 'Enable Premium SMS Access', 'تفعيل الوصول إلى الرسائل المميزة')}</span>
               <span className="text-sm">⚙️</span>
             </button>
           </div>
@@ -1055,6 +1061,8 @@ export default function App() {
         onTriggerFakePowerOff={() =>
           executeTheftTrigger(theftTriggerSender || config.emergencyContactPhone || '')
         }
+        onOpenElevatedModal={() => setIsElevatedPermissionsModalOpen(true)}
+        hasElevatedIssues={Capacitor.isNativePlatform() && (!deviceAdminActive || !accessibilityServiceActive)}
       />
 
       {/* Main Container */}
@@ -1141,6 +1149,18 @@ export default function App() {
         currentLang={lang}
         onSelectLang={handleSelectLanguage}
         isFirstLaunch={true}
+      />
+
+      {/* Elevated Permissions & Auto-Confirm Onboarding Modal */}
+      <ElevatedPermissionsModal
+        isOpen={isElevatedPermissionsModalOpen}
+        onClose={() => setIsElevatedPermissionsModalOpen(false)}
+        lang={lang}
+        deviceAdminActive={deviceAdminActive}
+        accessibilityActive={accessibilityServiceActive}
+        onActivateDeviceAdmin={handleGrantDeviceAdmin}
+        onOpenDeviceAdminSettings={handleOpenDeviceAdminSettingsDirectly}
+        onActivateAccessibility={handleGrantAccessibilityService}
       />
     </div>
   );

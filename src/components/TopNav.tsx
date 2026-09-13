@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { translateInline } from '../utils/translateInline';
-import { Shield, Globe, Lock, Power, Download } from 'lucide-react';
+import { Shield, Globe, Lock, Power, Download, Sparkles } from 'lucide-react';
 import { Language } from '../types';
 import { getTranslation } from '../utils/translations';
 import { LANGUAGES_REGISTRY } from '../utils/languagesRegistry';
@@ -13,6 +13,8 @@ interface TopNavProps {
   onSelectLang: (newLang: Language) => void;
   onLockApp: () => void;
   onTriggerFakePowerOff?: () => void;
+  onOpenElevatedModal?: () => void;
+  hasElevatedIssues?: boolean;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -20,6 +22,8 @@ export const TopNav: React.FC<TopNavProps> = ({
   onSelectLang,
   onLockApp,
   onTriggerFakePowerOff,
+  onOpenElevatedModal,
+  hasElevatedIssues,
 }) => {
   const [isLangModalOpen, setIsLangModalOpen] = useState(false);
   const { isInstallable, isInstalled, install } = usePWAInstall();
@@ -47,8 +51,35 @@ export const TopNav: React.FC<TopNavProps> = ({
           </div>
         </div>
 
-        {/* Action Controls: PWA Install, Stealth Status Badge, Fake Power-Off Trap, Lock App & Language Selector */}
+        {/* Action Controls: Elevated Setup, PWA Install, Stealth Status Badge, Fake Power-Off Trap, Lock App & Language Selector */}
         <div className="flex items-center gap-2">
+          {/* Elevated Security Setup Button */}
+          {onOpenElevatedModal && (
+            <button
+              id="header-elevated-permissions-btn"
+              type="button"
+              onClick={onOpenElevatedModal}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition cursor-pointer shadow-sm ${
+                hasElevatedIssues
+                  ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40 animate-pulse'
+                  : 'bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-300 border-indigo-500/40'
+              }`}
+              title={translateInline(
+                lang,
+                'Elevated Security & Zero-Touch SMS Setup',
+                'إعداد الحماية القصوى والإرسال التلقائي'
+              )}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="hidden sm:inline font-mono-code">
+                {translateInline(lang, 'Elevated Setup', 'إعداد الحماية')}
+              </span>
+              {hasElevatedIssues && (
+                <span className="w-2 h-2 rounded-full bg-amber-400 ring-2 ring-slate-900 animate-ping" />
+              )}
+            </button>
+          )}
+
           {/* Direct PWA Install Button */}
           {!isInstalled && (
             <button
