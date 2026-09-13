@@ -48,6 +48,7 @@ export interface EmergencySmsPluginInterface {
   checkDeviceAdminStatus(): Promise<{ isAdmin: boolean; error?: string }>;
   requestDeviceAdmin(): Promise<{ success: boolean; isAdmin?: boolean; alreadyActive?: boolean; message?: string; error?: string }>;
   openDeviceAdminSettings(): Promise<{ success: boolean; error?: string }>;
+  deactivateDeviceAdmin(): Promise<{ success: boolean; isAdmin?: boolean; error?: string }>;
   isAccessibilityServiceEnabled(): Promise<{ isEnabled: boolean; error?: string }>;
   openAccessibilitySettings(): Promise<{ success: boolean; error?: string }>;
   lockDeviceNow(): Promise<{ success: boolean; error?: string }>;
@@ -254,6 +255,17 @@ export async function openDeviceAdminSettings(): Promise<boolean> {
     return Boolean(res?.success);
   } catch (err) {
     console.warn('Failed to open device admin settings:', err);
+    return false;
+  }
+}
+
+export async function deactivateDeviceAdminAction(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return true;
+  try {
+    const res = await EmergencySmsPlugin.deactivateDeviceAdmin();
+    return Boolean(res?.success && !res?.isAdmin);
+  } catch (err) {
+    console.warn('Failed to deactivate device admin:', err);
     return false;
   }
 }

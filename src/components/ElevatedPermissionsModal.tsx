@@ -14,6 +14,7 @@ interface ElevatedPermissionsModalProps {
   onOpenDeviceAdminSettings: () => void;
   onActivateAccessibility: () => void;
   onOpenLocationSettings?: () => void;
+  onDeactivateDeviceAdmin?: () => void;
 }
 
 export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> = ({
@@ -27,6 +28,7 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
   onOpenDeviceAdminSettings,
   onActivateAccessibility,
   onOpenLocationSettings,
+  onDeactivateDeviceAdmin,
 }) => {
   if (!isOpen) return null;
 
@@ -205,6 +207,25 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
                   'تمنح التطبيق صلاحية قفل شاشة الهاتف فوراً عند استلام أوامر السرقة وحماية التطبيق من الإلغاء.'
                 )}
               </p>
+              {deviceAdminActive && (
+                <div className="mt-3 pt-2.5 border-t border-slate-700/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+                  <span className="text-slate-400 text-[11px] leading-relaxed">
+                    {translateInline(
+                      lang,
+                      'To uninstall the app from your phone, tap here to deactivate Device Admin first:',
+                      'إذا أردت حذف التطبيق من هاتفك، اضغط هنا لإلغاء تنشيط مسؤول الجهاز أولاً:'
+                    )}
+                  </span>
+                  <button
+                    id="btn-modal-deactivate-admin"
+                    type="button"
+                    onClick={onDeactivateDeviceAdmin}
+                    className="w-full sm:w-auto px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition cursor-pointer shrink-0 flex items-center justify-center gap-1"
+                  >
+                    <span>{translateInline(lang, 'Deactivate to Uninstall', 'إلغاء التفعيل لحذف التطبيق ✕')}</span>
+                  </button>
+                </div>
+              )}
               {!deviceAdminActive && (
                 <div className="mt-3 flex flex-col sm:flex-row gap-2">
                   <button

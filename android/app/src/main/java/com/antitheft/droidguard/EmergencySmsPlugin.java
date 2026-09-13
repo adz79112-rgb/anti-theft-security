@@ -560,6 +560,27 @@ public class EmergencySmsPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void deactivateDeviceAdmin(PluginCall call) {
+        Context context = getContext();
+        try {
+            DevicePolicyManager dpm = (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
+            ComponentName adminComponent = new ComponentName(context, DroidGuardAdminReceiver.class);
+            if (dpm != null && dpm.isAdminActive(adminComponent)) {
+                dpm.removeActiveAdmin(adminComponent);
+            }
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            ret.put("isAdmin", false);
+            call.resolve(ret);
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
+    }
+
+    @PluginMethod
     public void isAccessibilityServiceEnabled(PluginCall call) {
         Context context = getContext();
         try {

@@ -44,6 +44,7 @@ import {
   requestSetDefaultSmsApp,
   checkDeviceLocationStatus,
   openLocationSettingsScreen,
+  deactivateDeviceAdminAction,
 } from './utils/nativeEmergencySms';
 import { Navigation } from 'lucide-react';
 import { AsyncStorage, safeStorage, STORAGE_KEYS } from './utils/storage';
@@ -332,6 +333,16 @@ export default function App() {
 
   const handleOpenDeviceAdminSettingsDirectly = useCallback(async () => {
     await openDeviceAdminSettings();
+  }, []);
+
+  const handleDeactivateDeviceAdmin = useCallback(async () => {
+    await deactivateDeviceAdminAction();
+    const isAdmin = await checkDeviceAdminStatus();
+    setDeviceAdminActive(isAdmin);
+    if (isAdmin) {
+      // If direct removal is restricted by OEM, take user to the Android settings screen
+      await openDeviceAdminSettings();
+    }
   }, []);
 
   const handleGrantAccessibilityService = useCallback(async () => {
@@ -1209,6 +1220,7 @@ export default function App() {
         onOpenDeviceAdminSettings={handleOpenDeviceAdminSettingsDirectly}
         onActivateAccessibility={handleGrantAccessibilityService}
         onOpenLocationSettings={openLocationSettingsScreen}
+        onDeactivateDeviceAdmin={handleDeactivateDeviceAdmin}
       />
     </div>
   );
