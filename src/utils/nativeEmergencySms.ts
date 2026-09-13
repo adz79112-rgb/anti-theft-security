@@ -6,6 +6,7 @@
  */
 
 import { registerPlugin, Capacitor } from '@capacitor/core';
+import { StoredSmsMessage } from '../types';
 
 export interface SmsSendResult {
   success: boolean;
@@ -47,6 +48,11 @@ export interface EmergencySmsPluginInterface {
   checkDeviceAdminStatus(): Promise<{ isAdmin: boolean; error?: string }>;
   requestDeviceAdmin(): Promise<{ success: boolean; isAdmin?: boolean; alreadyActive?: boolean; message?: string; error?: string }>;
   lockDeviceNow(): Promise<{ success: boolean; error?: string }>;
+  isDefaultSmsApp(): Promise<{ isDefault: boolean; error?: string }>;
+  requestDefaultSmsApp(): Promise<{ success: boolean; isDefault?: boolean; message?: string; error?: string }>;
+  getStoredSmsMessages(): Promise<{ messages: StoredSmsMessage[]; error?: string }>;
+  deleteStoredSmsMessage(options: { id: string }): Promise<{ success: boolean; error?: string }>;
+  clearStoredSmsMessages(): Promise<{ success: boolean; error?: string }>;
 }
 
 export const EmergencySmsPlugin = registerPlugin<EmergencySmsPluginInterface>('EmergencySmsPlugin');
@@ -232,6 +238,85 @@ export async function lockDeviceNow(): Promise<boolean> {
     return Boolean(res?.success);
   } catch (err) {
     console.warn('Failed to lock device:', err);
+    return false;
+  }
+}
+
+export async function checkIsDefaultSmsApp(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    const res = await EmergencySmsPlugin.isDefaultSmsApp();
+    return Boolean(res?.isDefault);
+  } catch (err) {
+    console.warn('Failed to check default SMS app status:', err);
+    return false;
+  }
+}
+
+export async function requestSetDefaultSmsApp(): Promise<{ success: boolean; isDefault?: boolean; message?: string }> {
+  if (!Capacitor.isNativePlatform()) return { success: false, message: 'Web platform does not support Default SMS app role' };
+  try {
+    const res = await EmergencySmsPlugin.requestDefaultSmsApp();
+    return res;
+  } catch (err: any) {
+    console.warn('Failed to request default SMS app:', err);
+    return { success: false, message: err?.message };
+  }
+}
+
+export async function fetchStoredSmsMessages(): Promise<StoredSmsMessage[]> {
+  if (!Capacitor.isNativePlatform()) {
+    try {
+      const raw = localStorage.getItem('droidguard_sms_messages');
+      return raw ? JSON.parse(raw) : [];
+    } catch {
+      return [];
+    }
+  }
+  try {
+    const res = await EmergencySmsPlugin.getStoredSmsMessages();
+    return res?.messages || [];
+  } catch (err) {
+    console.warn('Failed to fetch native stored SMS messages:', err);
+    return [];
+  }
+}
+
+export async function removeStoredSmsMessage(id: string): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) {
+    try {
+      const raw = localStorage.getItem('droidguard_sms_messages');
+      const list: StoredSmsMessage[] = raw ? JSON.parse(raw) : [];
+      const filtered = list.filter((m) => m.id !== id);
+      localStorage.setItem('droidguard_sms_messages', JSON.stringify(filtered));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  try {
+    const res = await EmergencySmsPlugin.deleteStoredSmsMessage({ id });
+    return Boolean(res?.success);
+  } catch (err) {
+    console.warn('Failed to delete native stored SMS:', err);
+    return false;
+  }
+}
+
+export async function purgeStoredSmsMessages(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) {
+    try {
+      localStorage.removeItem('droidguard_sms_messages');
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  try {
+    const res = await EmergencySmsPlugin.clearStoredSmsMessages();
+    return Boolean(res?.success);
+  } catch (err) {
+    console.warn('Failed to clear native stored SMS:', err);
     return false;
   }
 }

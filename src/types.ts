@@ -69,6 +69,17 @@ export interface DispatchEvent {
   status: 'sent' | 'delivered' | 'failed';
 }
 
+export interface StoredSmsMessage {
+  id: string;
+  sender: string;
+  body: string;
+  timestamp: number;
+  type: 'inbox' | 'sent';
+  read?: boolean;
+}
+
+export type NavTabId = 'home' | 'messages' | 'sms' | 'telegram' | 'gmail';
+
 export type Language =
   // Section 1: Pinned Top Primary Languages
   | 'en' // English (US 🇺🇸)

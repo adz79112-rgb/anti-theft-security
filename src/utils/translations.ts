@@ -75,6 +75,8 @@ export interface TranslationSchema {
   // Navigation & Common UI
   navDashboard: string;
   navDashboardSub: string;
+  navMessages: string;
+  navMessagesSub: string;
   navSms: string;
   navSmsSub: string;
   navTelegram: string;
@@ -155,7 +157,9 @@ const en: TranslationSchema = {
   dynamicSenderDesc: 'The system automatically captures incoming sender phone numbers and replies with coordinates directly to that number.',
   navDashboard: 'Dashboard',
   navDashboardSub: 'Security State',
-  navSms: 'SMS & Emergency',
+  navMessages: 'Messages',
+  navMessagesSub: 'Google SMS App',
+  navSms: 'Emergency SOS',
   navSmsSub: 'Dual SMS & Numbers',
   navTelegram: 'Telegram Bot',
   navTelegramSub: 'Alerts Channel',
@@ -245,7 +249,9 @@ const ar: TranslationSchema = {
   dynamicSenderDesc: 'النظام يلتقط رقم الهاتف المرسل لرسالة التفعيل ويرسل إحداثيات GPS وصور المتسلل مباشرة لنفس الرقم.',
   navDashboard: 'الرئيسية',
   navDashboardSub: 'حالة الأمان',
-  navSms: 'الرسائل والطوارئ',
+  navMessages: 'الرسائل',
+  navMessagesSub: 'تطبيق رسائل Google',
+  navSms: 'طوارئ SOS',
   navSmsSub: 'أرقام الطوارئ والشرائح',
   navTelegram: 'تيليجرام',
   navTelegramSub: 'قناة التنبيهات',

@@ -20,6 +20,7 @@ import { DispatchHistory } from './components/DispatchHistory';
 import { TelegramConfigCard } from './components/TelegramConfigCard';
 import { CyberpunkConsole } from './components/CyberpunkConsole';
 import { BottomNavBar, NavTabId } from './components/BottomNavBar';
+import { GoogleMessagesScreen } from './components/GoogleMessagesScreen';
 import { SmsEmergencyTabScreen } from './components/SmsEmergencyTabScreen';
 import { TelegramTabScreen } from './components/TelegramTabScreen';
 import { GmailTabScreen } from './components/GmailTabScreen';
@@ -821,6 +822,17 @@ export default function App() {
     );
   }, [activeTab, config, lang, captures, dispatchEvents, handleLogDispatch, handleSaveCapture, handleTriggerTheft, handleTriggerCamera, handleDeleteCapture, handleClearCaptures, handleClearDispatches]);
 
+  const messagesTabContent = React.useMemo(() => {
+    return (
+      <div className={`space-y-4 ${activeTab === 'messages' ? 'block' : 'hidden'}`}>
+        <GoogleMessagesScreen
+          lang={lang}
+          onOpenSmsConfig={() => setActiveTab('sms')}
+        />
+      </div>
+    );
+  }, [activeTab, lang]);
+
   const smsTabContent = React.useMemo(() => {
     return (
       <div className={`space-y-8 ${activeTab === 'sms' ? 'block' : 'hidden'}`}>
@@ -928,6 +940,7 @@ export default function App() {
         )}
 
         {homeTabContent}
+        {messagesTabContent}
         {smsTabContent}
         {telegramTabContent}
         {gmailTabContent}

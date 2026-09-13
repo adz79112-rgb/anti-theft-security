@@ -34,6 +34,13 @@ import android.net.Uri;
 import android.os.PowerManager;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
+import android.provider.Telephony;
+import android.app.role.RoleManager;
+import android.database.Cursor;
+import android.content.SharedPreferences;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import com.getcapacitor.JSArray;
 
 /**
  * Native Capacitor Plugin for direct, silent background SMS dispatch via Android SmsManager.
@@ -520,6 +527,236 @@ public class EmergencySmsPlugin extends Plugin {
                 ret.put("error", "Device Administrator privileges are not active");
                 call.resolve(ret);
             }
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
+    }
+
+    @PluginMethod
+    public void isDefaultSmsApp(PluginCall call) {
+        Context context = getContext();
+        try {
+            boolean isDefault = false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                RoleManager roleManager = context.getSystemService(RoleManager.class);
+                if (roleManager != null) {
+                    isDefault = roleManager.isRoleHeld(RoleManager.ROLE_SMS);
+                }
+            } else {
+                String defaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(context);
+                isDefault = defaultSmsPackage != null && defaultSmsPackage.equals(context.getPackageName());
+            }
+            JSObject ret = new JSObject();
+            ret.put("isDefault", isDefault);
+            call.resolve(ret);
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("isDefault", false);
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
+    }
+
+    @PluginMethod
+    public void requestDefaultSmsApp(PluginCall call) {
+        Activity activity = getActivity();
+        Context context = getContext();
+        try {
+            boolean isDefault = false;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                RoleManager roleManager = context.getSystemService(RoleManager.class);
+                if (roleManager != null && roleManager.isRoleHeld(RoleManager.ROLE_SMS)) {
+                    isDefault = true;
+                }
+            } else {
+                String defaultSmsPackage = Telephony.Sms.getDefaultSmsPackage(context);
+                if (defaultSmsPackage != null && defaultSmsPackage.equals(context.getPackageName())) {
+                    isDefault = true;
+                }
+            }
+
+            if (isDefault) {
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("isDefault", true);
+                ret.put("message", "Already default SMS app");
+                call.resolve(ret);
+                return;
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                RoleManager roleManager = context.getSystemService(RoleManager.class);
+                if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_SMS)) {
+                    Intent roleRequestIntent = roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS);
+                    if (activity != null) {
+                        activity.startActivity(roleRequestIntent);
+                    } else {
+                        roleRequestIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        context.startActivity(roleRequestIntent);
+                    }
+                }
+            } else {
+                Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
+                intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, context.getPackageName());
+                if (activity != null) {
+                    activity.startActivity(intent);
+                } else {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(intent);
+                }
+            }
+
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            ret.put("message", "Default SMS dialog requested");
+            call.resolve(ret);
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
+    }
+
+    @PluginMethod
+    public void getStoredSmsMessages(PluginCall call) {
+        Context context = getContext();
+        try {
+            java.util.LinkedHashMap<String, JSObject> messageMap = new java.util.LinkedHashMap<>();
+
+            // 1. Read from native Telephony ContentProvider if permission is available
+            if (ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED) {
+                try {
+                    Uri uri = Uri.parse("content://sms");
+                    String[] projection = new String[] { "_id", "address", "body", "date", "type", "read" };
+                    Cursor cursor = context.getContentResolver().query(uri, projection, null, null, "date DESC LIMIT 150");
+                    if (cursor != null) {
+                        int idxId = cursor.getColumnIndex("_id");
+                        int idxAddr = cursor.getColumnIndex("address");
+                        int idxBody = cursor.getColumnIndex("body");
+                        int idxDate = cursor.getColumnIndex("date");
+                        int idxType = cursor.getColumnIndex("type");
+                        int idxRead = cursor.getColumnIndex("read");
+
+                        while (cursor.moveToNext()) {
+                            String msgId = "sys_sms_" + (idxId >= 0 ? cursor.getString(idxId) : String.valueOf(Math.random()));
+                            String sender = idxAddr >= 0 ? cursor.getString(idxAddr) : "Unknown";
+                            String body = idxBody >= 0 ? cursor.getString(idxBody) : "";
+                            long timestamp = idxDate >= 0 ? cursor.getLong(idxDate) : System.currentTimeMillis();
+                            int rawType = idxType >= 0 ? cursor.getInt(idxType) : 1;
+                            int rawRead = idxRead >= 0 ? cursor.getInt(idxRead) : 1;
+
+                            JSObject item = new JSObject();
+                            item.put("id", msgId);
+                            item.put("sender", sender != null ? sender : "Unknown");
+                            item.put("body", body != null ? body : "");
+                            item.put("timestamp", timestamp);
+                            item.put("type", rawType == 2 ? "sent" : "inbox");
+                            item.put("read", rawRead == 1);
+
+                            // Use unique key combination to deduplicate
+                            String dedupKey = sender + "_" + timestamp + "_" + (body.length() > 20 ? body.substring(0, 20) : body);
+                            messageMap.put(dedupKey, item);
+                        }
+                        cursor.close();
+                    }
+                } catch (Exception err) {
+                    Log.w(TAG, "ContentProvider SMS reading error: " + err.getMessage());
+                }
+            }
+
+            // 2. Read from local SharedPreferences and merge
+            SharedPreferences prefs = context.getSharedPreferences(SmsReceiver.SMS_PREFS, Context.MODE_PRIVATE);
+            String jsonStr = prefs.getString(SmsReceiver.KEY_SMS_LIST, "[]");
+            JSONArray array = new JSONArray(jsonStr);
+
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject obj = array.getJSONObject(i);
+                String msgId = obj.optString("id", "sms_" + i);
+                String sender = obj.optString("sender", "Unknown");
+                String body = obj.optString("body", "");
+                long timestamp = obj.optLong("timestamp", System.currentTimeMillis());
+                String type = obj.optString("type", "inbox");
+                boolean read = obj.optBoolean("read", false);
+
+                JSObject item = new JSObject();
+                item.put("id", msgId);
+                item.put("sender", sender);
+                item.put("body", body);
+                item.put("timestamp", timestamp);
+                item.put("type", type);
+                item.put("read", read);
+
+                String dedupKey = sender + "_" + timestamp + "_" + (body.length() > 20 ? body.substring(0, 20) : body);
+                messageMap.put(dedupKey, item);
+            }
+
+            // Convert to JSArray sorted by date descending
+            List<JSObject> list = new ArrayList<>(messageMap.values());
+            list.sort((a, b) -> Long.compare(b.optLong("timestamp", 0), a.optLong("timestamp", 0)));
+
+            JSArray jsArray = new JSArray();
+            for (JSObject obj : list) {
+                jsArray.put(obj);
+            }
+
+            JSObject ret = new JSObject();
+            ret.put("messages", jsArray);
+            call.resolve(ret);
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("messages", new JSArray());
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
+    }
+
+    @PluginMethod
+    public void deleteStoredSmsMessage(PluginCall call) {
+        String msgId = call.getString("id");
+        if (msgId == null || msgId.isEmpty()) {
+            call.reject("Message ID is required");
+            return;
+        }
+
+        Context context = getContext();
+        try {
+            SharedPreferences prefs = context.getSharedPreferences(SmsReceiver.SMS_PREFS, Context.MODE_PRIVATE);
+            String jsonStr = prefs.getString(SmsReceiver.KEY_SMS_LIST, "[]");
+            JSONArray array = new JSONArray(jsonStr);
+            JSONArray updated = new JSONArray();
+
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject obj = array.getJSONObject(i);
+                if (!msgId.equals(obj.optString("id"))) {
+                    updated.put(obj);
+                }
+            }
+
+            prefs.edit().putString(SmsReceiver.KEY_SMS_LIST, updated.toString()).apply();
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
+    }
+
+    @PluginMethod
+    public void clearStoredSmsMessages(PluginCall call) {
+        Context context = getContext();
+        try {
+            SharedPreferences prefs = context.getSharedPreferences(SmsReceiver.SMS_PREFS, Context.MODE_PRIVATE);
+            prefs.edit().putString(SmsReceiver.KEY_SMS_LIST, "[]").apply();
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
         } catch (Exception e) {
             JSObject ret = new JSObject();
             ret.put("success", false);

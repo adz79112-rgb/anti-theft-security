@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { translateInline } from '../utils/translateInline';
 import {
   MessageSquareWarning,
+  MessageSquare,
   PhoneCall,
   Save,
   CheckCircle2,
@@ -38,6 +39,8 @@ import {
   requestDeviceAdmin,
   lockDeviceNow,
   openPremiumSmsSettings,
+  checkIsDefaultSmsApp,
+  requestSetDefaultSmsApp,
   sanitizePhoneNumber,
 } from '../utils/nativeEmergencySms';
 import { Capacitor } from '@capacitor/core';
@@ -63,22 +66,27 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
   const [smsPermissionGranted, setSmsPermissionGranted] = useState<boolean | null>(null);
   const [deviceAdminActive, setDeviceAdminActive] = useState<boolean | null>(null);
+  const [isDefaultSms, setIsDefaultSms] = useState<boolean | null>(null);
   const [isRequestingPermission, setIsRequestingPermission] = useState<boolean>(false);
   const [isActivatingAdmin, setIsActivatingAdmin] = useState<boolean>(false);
+  const [isSettingDefaultSms, setIsSettingDefaultSms] = useState<boolean>(false);
   const [showOppoModal, setShowOppoModal] = useState<boolean>(false);
 
-  // Load emergency contact phone, check SEND_SMS and Device Admin status
+  // Load emergency contact phone, check SEND_SMS, Device Admin and Default SMS status
   const refreshSecurityStatus = async () => {
     if (Capacitor.isNativePlatform()) {
-      const [smsGranted, adminActive] = await Promise.all([
+      const [smsGranted, adminActive, defaultSms] = await Promise.all([
         checkSmsPermissionStatus(),
         checkDeviceAdminStatus(),
+        checkIsDefaultSmsApp(),
       ]);
       setSmsPermissionGranted(smsGranted);
       setDeviceAdminActive(adminActive);
+      setIsDefaultSms(defaultSms);
     } else {
       setSmsPermissionGranted(false);
       setDeviceAdminActive(false);
+      setIsDefaultSms(false);
     }
   };
 
@@ -152,6 +160,45 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
           '🔒 تم قفل شاشة الهاتف فورياً بنجاح بواسطة مسؤول الجهاز (DevicePolicyManager)!'
         )
       );
+    }
+  };
+
+  // Set as Default SMS App Handler
+  const handleSetDefaultSms = async () => {
+    setIsSettingDefaultSms(true);
+    try {
+      if (Capacitor.isNativePlatform()) {
+        const result = await requestSetDefaultSmsApp();
+        if (result.isDefault) {
+          setIsDefaultSms(true);
+          setSaveFeedback(
+            translateInline(
+              lang,
+              '✓ DroidGuard is now the Default SMS application! Background emergency SMS dispatch enabled.',
+              '✓ تم تعيين DroidGuard كتطبيق الرسائل الافتراضي بنجاح! تم تفعيل إرسال رسائل الطوارئ في الخلفية.'
+            )
+          );
+        } else {
+          setSaveFeedback(
+            translateInline(
+              lang,
+              'ℹ️ System Default SMS dialog opened. Please select DroidGuard and confirm.',
+              'ℹ️ تم فتح نافذة النظام لاختيار تطبيق الرسائل الافتراضي. يرجى تحديد DroidGuard والتأكيد.'
+            )
+          );
+        }
+      } else {
+        setSaveFeedback(
+          translateInline(
+            lang,
+            'ℹ️ Default SMS application role is an Android system feature.',
+            'ℹ️ ميزة تطبيق الرسائل الافتراضي هي ميزة نظام أندرويد لتجاوز نوافذ تأكيد الإرسال.'
+          )
+        );
+      }
+    } finally {
+      setIsSettingDefaultSms(false);
+      setTimeout(() => setSaveFeedback(null), 6000);
     }
   };
 
@@ -623,6 +670,87 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
                     'تفعيل الوصول للرسائل المميزة (Bypass OEM)'
                   )}
                 </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 4. Set as Default SMS Application (Role Manager / Absolute Bypass) */}
+        <div
+          id="default-sms-app-card"
+          className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col gap-3 ${
+            isDefaultSms
+              ? 'border-emerald-500/40 bg-emerald-950/20 text-emerald-200'
+              : 'border-cyan-500/40 bg-cyan-950/20 text-cyan-200'
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div
+                className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
+                  isDefaultSms
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                }`}
+              >
+                <MessageSquare className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-sm font-bold text-white">
+                    {translateInline(
+                      lang,
+                      'Set as Default SMS App (Silent Background SOS)',
+                      'التعيين كتطبيق الرسائل الافتراضي (إرسال صامت تام)'
+                    )}
+                  </h4>
+                  <span
+                    className={`text-[10px] font-mono-code font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                      isDefaultSms
+                        ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
+                        : 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/40'
+                    }`}
+                  >
+                    {isDefaultSms ? 'ACTIVE (DEFAULT SMS)' : 'RECOMMENDED FOR STEALTH SOS'}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  {translateInline(
+                    lang,
+                    'Setting DroidGuard as the Default SMS app grants total background SMS dispatch authority without trigger warnings or carrier popups.',
+                    'عند تعيين DroidGuard كتطبيق الرسائل الافتراضي، يمنح النظام صلاحية الإرسال الصامت المباشر في الخلفية دون ظهور نوافذ تحذيرية أو عد تنازلي أثناء الطوارئ.'
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              <button
+                id="btn-set-default-sms-app"
+                type="button"
+                disabled={isSettingDefaultSms || Boolean(isDefaultSms)}
+                onClick={handleSetDefaultSms}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold font-mono-code transition cursor-pointer shadow-lg flex items-center gap-2 ${
+                  isDefaultSms
+                    ? 'bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 cursor-default'
+                    : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-950/60'
+                }`}
+              >
+                {isDefaultSms ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>{translateInline(lang, 'Default SMS Active', 'مفعّل كتطبيق افتراضي')}</span>
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="w-4 h-4" />
+                    <span>
+                      {isSettingDefaultSms
+                        ? translateInline(lang, 'Requesting...', 'جاري الطلب...')
+                        : translateInline(lang, 'Set as Default SMS App', 'تعيين كتطبيق رسائل افتراضي')}
+                    </span>
+                  </>
+                )}
               </button>
             </div>
           </div>
