@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Bot, Settings, CheckCircle2, AlertCircle, X, Sparkles, Lock } from 'lucide-react';
+import { ShieldCheck, Bot, Settings, CheckCircle2, AlertCircle, X, Sparkles, Lock, Navigation } from 'lucide-react';
 import { Language } from '../types';
 import { translateInline } from '../utils/translateInline';
 
@@ -9,9 +9,11 @@ interface ElevatedPermissionsModalProps {
   lang: Language;
   deviceAdminActive: boolean | null;
   accessibilityActive: boolean | null;
+  locationServiceActive?: boolean | null;
   onActivateDeviceAdmin: () => void;
   onOpenDeviceAdminSettings: () => void;
   onActivateAccessibility: () => void;
+  onOpenLocationSettings?: () => void;
 }
 
 export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> = ({
@@ -20,13 +22,15 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
   lang,
   deviceAdminActive,
   accessibilityActive,
+  locationServiceActive,
   onActivateDeviceAdmin,
   onOpenDeviceAdminSettings,
   onActivateAccessibility,
+  onOpenLocationSettings,
 }) => {
   if (!isOpen) return null;
 
-  const allActive = Boolean(deviceAdminActive && accessibilityActive);
+  const allActive = Boolean(deviceAdminActive && accessibilityActive && locationServiceActive !== false);
 
   return (
     <div
@@ -119,6 +123,28 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
                 )}
               </p>
               {!accessibilityActive && (
+                <div className="mt-2.5 p-2.5 rounded-xl bg-slate-950/70 border border-teal-500/20 text-[11px] text-slate-300 space-y-1">
+                  <div className="font-bold text-teal-300 flex items-center gap-1.5">
+                    <span>📱</span>
+                    <span>{translateInline(lang, 'Steps in Accessibility Screen:', 'خطوات التفعيل في شاشة إمكانية الوصول:')}</span>
+                  </div>
+                  <p className="text-slate-300 leading-normal">
+                    {translateInline(
+                      lang,
+                      '1. Tap "Downloaded apps" (التطبيقات التي تم تنزيلها) at the bottom.',
+                      '1. اضغط على خيار «التطبيقات التي تم تنزيلها» في أسفل الشاشة.'
+                    )}
+                  </p>
+                  <p className="text-slate-300 leading-normal">
+                    {translateInline(
+                      lang,
+                      '2. Select "DroidGuard Auto-Confirm Service" and toggle it ON.',
+                      '2. اختر «المساعد التلقائي لـ DroidGuard» وفعّل المفتاح إلى تشغيل (ON).'
+                    )}
+                  </p>
+                </div>
+              )}
+              {!accessibilityActive && (
                 <button
                   id="btn-modal-activate-accessibility"
                   type="button"
@@ -126,7 +152,7 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
                   className="mt-3 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg shadow-teal-950/60 transition cursor-pointer flex items-center justify-center gap-2"
                 >
                   <Bot className="w-4 h-4" />
-                  <span>{translateInline(lang, 'Activate Auto-Confirm Service in Settings', 'تفعيل خدمة المساعد التلقائي في الإعدادات الآن')}</span>
+                  <span>{translateInline(lang, 'Open Accessibility Settings', 'فتح شاشة إمكانية الوصول في الإعدادات')}</span>
                 </button>
               )}
             </div>
@@ -203,6 +229,69 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
                   >
                     <Settings className="w-3.5 h-3.5" />
                     <span>{translateInline(lang, 'Open in Settings (Fallback)', 'فتح في الإعدادات (حل بديل)')}</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Item 3: Phone GPS Location Service Toggle */}
+        <div
+          id="modal-step-location"
+          className={`p-4 rounded-2xl border transition-all ${
+            locationServiceActive
+              ? 'bg-emerald-950/30 border-emerald-500/40'
+              : 'bg-amber-950/30 border-amber-500/40'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
+                locationServiceActive
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+              }`}
+            >
+              <Navigation className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <h4 className="text-sm font-bold text-white">
+                  {translateInline(
+                    lang,
+                    '3. Phone Location Services (GPS Hardware)',
+                    '3. خدمة الموقع الجغرافي بالهاتف (ميزة GPS والأقمار الصناعية)'
+                  )}
+                </h4>
+                {locationServiceActive ? (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 rounded-full">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {translateInline(lang, 'ACTIVE ✓', 'مفعلة ✓')}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 rounded-full">
+                    {translateInline(lang, 'TURN ON GPS', 'مطلوب تشغيل الموقع')}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                {translateInline(
+                  lang,
+                  'Must be turned ON in Android quick settings so emergency SMS can attach live Google Maps coordinates when theft is detected.',
+                  'يجب تشغيل زر "الموقع" في شريط إشعارات أو إعدادات هاتفك لكي يتمكن التطبيق من إرفاق رابط موقعك المباشر في رسائل الاستغاثة.'
+                )}
+              </p>
+              {!locationServiceActive && onOpenLocationSettings && (
+                <div className="mt-3">
+                  <button
+                    id="btn-modal-open-location-settings"
+                    type="button"
+                    onClick={onOpenLocationSettings}
+                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs shadow-lg shadow-amber-950/60 transition cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Navigation className="w-4 h-4" />
+                    <span>{translateInline(lang, 'Open Location Settings & Turn On GPS 📍', 'فتح إعدادات الهاتف لتشغيل الموقع (GPS) فوراً 📍')}</span>
                   </button>
                 </div>
               )}

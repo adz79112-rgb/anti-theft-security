@@ -42,7 +42,10 @@ import {
   openPremiumSmsSettings,
   checkIsDefaultSmsApp,
   requestSetDefaultSmsApp,
+  checkDeviceLocationStatus,
+  openLocationSettingsScreen,
 } from './utils/nativeEmergencySms';
+import { Navigation } from 'lucide-react';
 import { AsyncStorage, safeStorage, STORAGE_KEYS } from './utils/storage';
 import { detectDeviceLanguage } from './utils/languagesRegistry';
 import { LanguageSelectorModal } from './components/LanguageSelectorModal';
@@ -300,11 +303,12 @@ export default function App() {
     }
   }, [config.userEmail]);
 
-  // SMS Permission, Device Administrator & Accessibility Startup Lifecycle
+  // SMS Permission, Device Administrator, Accessibility & Phone Location Startup Lifecycle
   const [smsPermissionGranted, setSmsPermissionGranted] = useState<boolean | null>(null);
   const [deviceAdminActive, setDeviceAdminActive] = useState<boolean | null>(null);
   const [isDefaultSmsAppActive, setIsDefaultSmsAppActive] = useState<boolean | null>(null);
   const [accessibilityServiceActive, setAccessibilityServiceActive] = useState<boolean | null>(null);
+  const [locationServiceActive, setLocationServiceActive] = useState<boolean | null>(null);
   const [isElevatedPermissionsModalOpen, setIsElevatedPermissionsModalOpen] = useState<boolean>(false);
 
   const handleGrantSmsPermission = useCallback(async () => {
@@ -343,19 +347,21 @@ export default function App() {
     setIsDefaultSmsAppActive(checkAgain);
   }, []);
 
-  // Check and sync security permissions, device admin and accessibility status
+  // Check and sync security permissions, device admin, accessibility and location service status
   const checkSecurityState = useCallback(async () => {
     if (Capacitor.isNativePlatform()) {
-      const [smsStatus, adminStatus, defaultSmsStatus, accessStatus] = await Promise.all([
+      const [smsStatus, adminStatus, defaultSmsStatus, accessStatus, locStatus] = await Promise.all([
         checkSmsPermissionStatus(),
         checkDeviceAdminStatus(),
         checkIsDefaultSmsApp(),
         checkAccessibilityServiceStatus(),
+        checkDeviceLocationStatus(),
       ]);
       setSmsPermissionGranted(smsStatus);
       setDeviceAdminActive(adminStatus);
       setIsDefaultSmsAppActive(defaultSmsStatus);
       setAccessibilityServiceActive(accessStatus);
+      setLocationServiceActive(locStatus.enabled);
     }
   }, []);
 
@@ -365,18 +371,20 @@ export default function App() {
       console.log('DroidGuard Security Permissions startup check:', result);
       setSmsPermissionGranted(Boolean(result.smsGranted || result.granted));
       
-      // Check Device Admin, Default SMS and Accessibility status
-      const [isAdmin, isDef, isAcc] = await Promise.all([
+      // Check Device Admin, Default SMS, Accessibility and Location Services status
+      const [isAdmin, isDef, isAcc, locStatus] = await Promise.all([
         checkDeviceAdminStatus(),
         checkIsDefaultSmsApp(),
         checkAccessibilityServiceStatus(),
+        checkDeviceLocationStatus(),
       ]);
       setDeviceAdminActive(isAdmin);
       setIsDefaultSmsAppActive(isDef);
       setAccessibilityServiceActive(isAcc);
+      setLocationServiceActive(locStatus.enabled);
 
-      // If running on Android and either Device Admin or Accessibility is missing, show guided setup
-      if (Capacitor.isNativePlatform() && (!isAdmin || !isAcc)) {
+      // If running on Android and either Device Admin, Accessibility or Location Services is missing, show guided setup
+      if (Capacitor.isNativePlatform() && (!isAdmin || !isAcc || !locStatus.enabled)) {
         setIsElevatedPermissionsModalOpen(true);
       }
 
@@ -862,8 +870,8 @@ export default function App() {
                 <p className="text-xs text-teal-200/90 mt-1 leading-relaxed">
                   {translateInline(
                     lang,
-                    'Allows DroidGuard to instantly auto-click "Send" when Android shows the SMS confirmation dialog, dispatching silent alerts with zero physical touch.',
-                    'تمنح التطبيق صلاحية الضغط التلقائي الفوري على زر "إرسال" فور ظهور نافذة "سيرسل رسالة SMS"، لتتمكن من إرسال رسائل الاستغاثة الصامتة بدون الحاجة للمس الشاشة أو الضغط على زر قبول نهائياً!'
+                    'Allows DroidGuard to instantly auto-click "Send" when Android shows the SMS confirmation dialog, dispatching silent alerts with zero physical touch. (Tap "Downloaded apps" -> Enable DroidGuard Auto-Confirm)',
+                    'تمنح التطبيق صلاحية الضغط التلقائي الفوري على زر "إرسال" فور ظهور نافذة "سيرسل رسالة SMS" بدون لمس الشاشة. (في شاشة الإعدادات: اضغط "التطبيقات التي تم تنزيلها" ثم فعّل DroidGuard)'
                   )}
                 </p>
               </div>
@@ -1062,13 +1070,51 @@ export default function App() {
           executeTheftTrigger(theftTriggerSender || config.emergencyContactPhone || '')
         }
         onOpenElevatedModal={() => setIsElevatedPermissionsModalOpen(true)}
-        hasElevatedIssues={Capacitor.isNativePlatform() && (!deviceAdminActive || !accessibilityServiceActive)}
+        hasElevatedIssues={Capacitor.isNativePlatform() && (!deviceAdminActive || !accessibilityServiceActive || locationServiceActive === false)}
       />
 
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8 pb-32">
         {/* PWA Install Banner */}
         <PWAInstallBanner lang={lang} />
+
+        {/* GPS Hardware Disabled Warning Banner */}
+        {Capacitor.isNativePlatform() && locationServiceActive === false && (
+          <div
+            id="banner-gps-disabled-alert"
+            className="p-4 rounded-2xl bg-amber-950/60 border border-amber-500/40 text-amber-200 text-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg shadow-amber-950/40 animate-fade-in"
+          >
+            <div className="flex items-center gap-3">
+              <span className="p-2 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+                <Navigation className="w-5 h-5 animate-pulse" />
+              </span>
+              <div>
+                <p className="font-bold text-amber-100">
+                  {translateInline(
+                    lang,
+                    'Phone Location (GPS) is turned OFF in Android Settings!',
+                    'خدمة الموقع (GPS) مغلقة في إعدادات الهاتف!'
+                  )}
+                </p>
+                <p className="text-xs text-amber-300/80 mt-0.5">
+                  {translateInline(
+                    lang,
+                    'Turn ON GPS so emergency SMS can attach live Google Maps coordinates.',
+                    'يرجى تشغيل ميزة الموقع في شريط إشعارات الهاتف لضمان إرسال إحداثيات موقعك ورابط الخرائط في رسائل الطوارئ.'
+                  )}
+                </p>
+              </div>
+            </div>
+            <button
+              id="btn-banner-open-gps"
+              type="button"
+              onClick={openLocationSettingsScreen}
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold shadow-md transition cursor-pointer flex items-center justify-center gap-1.5 shrink-0"
+            >
+              <span>{translateInline(lang, 'Turn On GPS Now 📍', 'تشغيل الموقع (GPS) الآن 📍')}</span>
+            </button>
+          </div>
+        )}
 
         {/* Offline Network Status Toast */}
         <OfflineIndicator lang={lang} />
@@ -1158,9 +1204,11 @@ export default function App() {
         lang={lang}
         deviceAdminActive={deviceAdminActive}
         accessibilityActive={accessibilityServiceActive}
+        locationServiceActive={locationServiceActive}
         onActivateDeviceAdmin={handleGrantDeviceAdmin}
         onOpenDeviceAdminSettings={handleOpenDeviceAdminSettingsDirectly}
         onActivateAccessibility={handleGrantAccessibilityService}
+        onOpenLocationSettings={openLocationSettingsScreen}
       />
     </div>
   );

@@ -32,6 +32,10 @@ import java.util.concurrent.Executors;
 import android.provider.Settings;
 import android.net.Uri;
 import android.os.PowerManager;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
+import android.os.Bundle;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.provider.Telephony;
@@ -853,5 +857,172 @@ public class EmergencySmsPlugin extends Plugin {
             ret.put("error", e.getMessage());
             call.resolve(ret);
         }
+    }
+
+    @PluginMethod
+    public void isLocationServiceEnabled(PluginCall call) {
+        Context context = getContext();
+        LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        boolean isGps = false;
+        boolean isNetwork = false;
+        boolean isLocationEnabled = false;
+
+        if (lm != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                try {
+                    isLocationEnabled = lm.isLocationEnabled();
+                } catch (Exception ignored) {}
+            }
+            try {
+                isGps = lm.isProviderEnabled(LocationManager.GPS_PROVIDER);
+            } catch (Exception ignored) {}
+            try {
+                isNetwork = lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+            } catch (Exception ignored) {}
+            if (!isLocationEnabled) {
+                isLocationEnabled = isGps || isNetwork;
+            }
+        }
+
+        JSObject ret = new JSObject();
+        ret.put("enabled", isLocationEnabled);
+        ret.put("gpsEnabled", isGps);
+        ret.put("networkEnabled", isNetwork);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void openLocationSettings(PluginCall call) {
+        try {
+            Context context = getContext();
+            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            JSObject ret = new JSObject();
+            ret.put("opened", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("opened", false);
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
+    }
+
+    @PluginMethod
+    public void getFreshDeviceLocation(PluginCall call) {
+        Context context = getContext();
+        final LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+
+        if (lm == null) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("error", "LocationManager unavailable");
+            call.resolve(ret);
+            return;
+        }
+
+        boolean fineGranted = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+        boolean coarseGranted = ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
+
+        if (!fineGranted && !coarseGranted) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("error", "Location permissions not granted");
+            call.resolve(ret);
+            return;
+        }
+
+        // Check best last known location across all providers
+        Location bestLoc = null;
+        String[] providers = new String[]{LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER, LocationManager.PASSIVE_PROVIDER};
+        for (String provider : providers) {
+            try {
+                if (lm.isProviderEnabled(provider)) {
+                    Location loc = lm.getLastKnownLocation(provider);
+                    if (loc != null) {
+                        if (bestLoc == null) {
+                            bestLoc = loc;
+                        } else {
+                            long timeDiff = Math.abs(loc.getTime() - bestLoc.getTime());
+                            if (loc.getTime() > bestLoc.getTime() || loc.getAccuracy() < bestLoc.getAccuracy()) {
+                                bestLoc = loc;
+                            }
+                        }
+                    }
+                }
+            } catch (SecurityException | IllegalArgumentException ignored) {}
+        }
+
+        final Location fallbackLoc = bestLoc;
+        final AtomicBoolean resolved = new AtomicBoolean(false);
+        final Handler timeoutHandler = new Handler(Looper.getMainLooper());
+
+        final LocationListener listener = new LocationListener() {
+            @Override
+            public void onLocationChanged(Location location) {
+                if (location != null && !resolved.getAndSet(true)) {
+                    timeoutHandler.removeCallbacksAndMessages(null);
+                    try {
+                        lm.removeUpdates(this);
+                    } catch (SecurityException ignored) {}
+                    resolveLocationSuccess(call, location, "hardware_live");
+                }
+            }
+            @Override public void onStatusChanged(String provider, int status, Bundle extras) {}
+            @Override public void onProviderEnabled(String provider) {}
+            @Override public void onProviderDisabled(String provider) {}
+        };
+
+        // Try to request quick single updates from available providers
+        boolean requested = false;
+        try {
+            if (lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+                lm.requestSingleUpdate(LocationManager.NETWORK_PROVIDER, listener, Looper.getMainLooper());
+                requested = true;
+            }
+        } catch (SecurityException | IllegalArgumentException ignored) {}
+
+        try {
+            if (lm.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+                lm.requestSingleUpdate(LocationManager.GPS_PROVIDER, listener, Looper.getMainLooper());
+                requested = true;
+            }
+        } catch (SecurityException | IllegalArgumentException ignored) {}
+
+        // Set timeout of 3500ms
+        timeoutHandler.postDelayed(() -> {
+            if (!resolved.getAndSet(true)) {
+                try {
+                    lm.removeUpdates(listener);
+                } catch (SecurityException ignored) {}
+                if (fallbackLoc != null) {
+                    resolveLocationSuccess(call, fallbackLoc, "cached_last_known");
+                } else {
+                    JSObject ret = new JSObject();
+                    ret.put("success", false);
+                    ret.put("error", "Timeout obtaining live location and no cached location exists");
+                    call.resolve(ret);
+                }
+            }
+        }, requested ? 3500 : 50);
+    }
+
+    private void resolveLocationSuccess(PluginCall call, Location loc, String source) {
+        double lat = Math.round(loc.getLatitude() * 1000000.0) / 1000000.0;
+        double lng = Math.round(loc.getLongitude() * 1000000.0) / 1000000.0;
+        float acc = loc.hasAccuracy() ? Math.round(loc.getAccuracy()) : 15;
+        String mapsUrl = "https://maps.google.com/?q=" + lat + "," + lng;
+
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        ret.put("latitude", lat);
+        ret.put("longitude", lng);
+        ret.put("accuracy", acc);
+        ret.put("mapsUrl", mapsUrl);
+        ret.put("provider", loc.getProvider() != null ? loc.getProvider() : "unknown");
+        ret.put("source", source);
+        ret.put("timestamp", new java.util.Date(loc.getTime()).toString());
+        call.resolve(ret);
     }
 }

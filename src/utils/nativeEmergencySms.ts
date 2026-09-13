@@ -56,6 +56,19 @@ export interface EmergencySmsPluginInterface {
   getStoredSmsMessages(): Promise<{ messages: StoredSmsMessage[]; error?: string }>;
   deleteStoredSmsMessage(options: { id: string }): Promise<{ success: boolean; error?: string }>;
   clearStoredSmsMessages(): Promise<{ success: boolean; error?: string }>;
+  isLocationServiceEnabled(): Promise<{ enabled: boolean; gpsEnabled?: boolean; networkEnabled?: boolean; error?: string }>;
+  openLocationSettings(): Promise<{ opened: boolean; error?: string }>;
+  getFreshDeviceLocation(): Promise<{
+    success: boolean;
+    latitude?: number;
+    longitude?: number;
+    accuracy?: number;
+    mapsUrl?: string;
+    provider?: string;
+    source?: string;
+    timestamp?: string;
+    error?: string;
+  }>;
 }
 
 export const EmergencySmsPlugin = registerPlugin<EmergencySmsPluginInterface>('EmergencySmsPlugin');
@@ -419,3 +432,72 @@ export async function sendSilentBackgroundSms(
     error: 'Direct background SMS requires running on an Android device via native SmsManager. Web preview does not have cellular baseband hardware.',
   };
 }
+
+/**
+ * Checks whether Android Location Services (GPS / Network location) is enabled on the device.
+ */
+export async function checkDeviceLocationStatus(): Promise<{ enabled: boolean; gpsEnabled: boolean; networkEnabled: boolean }> {
+  if (!Capacitor.isNativePlatform()) {
+    return { enabled: true, gpsEnabled: true, networkEnabled: true };
+  }
+  try {
+    const res = await EmergencySmsPlugin.isLocationServiceEnabled();
+    return {
+      enabled: Boolean(res?.enabled),
+      gpsEnabled: Boolean(res?.gpsEnabled),
+      networkEnabled: Boolean(res?.networkEnabled),
+    };
+  } catch (e) {
+    console.warn('checkDeviceLocationStatus error:', e);
+    return { enabled: true, gpsEnabled: true, networkEnabled: true };
+  }
+}
+
+/**
+ * Opens Android Location Settings screen so the user can toggle GPS on.
+ */
+export async function openLocationSettingsScreen(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    const res = await EmergencySmsPlugin.openLocationSettings();
+    return Boolean(res?.opened);
+  } catch (e) {
+    console.warn('openLocationSettingsScreen error:', e);
+    return false;
+  }
+}
+
+/**
+ * Fetches fresh location directly from Android LocationManager (GPS_PROVIDER + NETWORK_PROVIDER + PASSIVE_PROVIDER).
+ */
+export async function fetchNativeHardwareLocation(): Promise<{
+  success: boolean;
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  mapsUrl: string;
+  source: string;
+  provider: string;
+  timestamp: string;
+} | null> {
+  if (!Capacitor.isNativePlatform()) return null;
+  try {
+    const res = await EmergencySmsPlugin.getFreshDeviceLocation();
+    if (res?.success && typeof res.latitude === 'number' && typeof res.longitude === 'number') {
+      return {
+        success: true,
+        latitude: res.latitude,
+        longitude: res.longitude,
+        accuracy: res.accuracy || 10,
+        mapsUrl: res.mapsUrl || `https://maps.google.com/?q=${res.latitude},${res.longitude}`,
+        source: res.source || 'native_hardware',
+        provider: res.provider || 'gps',
+        timestamp: res.timestamp || new Date().toLocaleTimeString(),
+      };
+    }
+  } catch (e) {
+    console.warn('fetchNativeHardwareLocation error:', e);
+  }
+  return null;
+}
+
