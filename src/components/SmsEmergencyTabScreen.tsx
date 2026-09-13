@@ -21,6 +21,7 @@ import {
   Settings,
   ExternalLink,
   X,
+  Send,
 } from 'lucide-react';
 import { Language, DispatchEvent, SecurityConfig } from '../types';
 import {
@@ -41,6 +42,7 @@ import {
   openPremiumSmsSettings,
   checkIsDefaultSmsApp,
   requestSetDefaultSmsApp,
+  sendSilentBackgroundSms,
   sanitizePhoneNumber,
 } from '../utils/nativeEmergencySms';
 import { Capacitor } from '@capacitor/core';
@@ -70,6 +72,7 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
   const [isRequestingPermission, setIsRequestingPermission] = useState<boolean>(false);
   const [isActivatingAdmin, setIsActivatingAdmin] = useState<boolean>(false);
   const [isSettingDefaultSms, setIsSettingDefaultSms] = useState<boolean>(false);
+  const [isSendingTestSms, setIsSendingTestSms] = useState<boolean>(false);
   const [showOppoModal, setShowOppoModal] = useState<boolean>(false);
 
   // Load emergency contact phone, check SEND_SMS, Device Admin and Default SMS status
@@ -199,6 +202,79 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
     } finally {
       setIsSettingDefaultSms(false);
       setTimeout(() => setSaveFeedback(null), 6000);
+    }
+  };
+
+  // Instant Silent Background SMS Dispatch (No user interaction / No send button click required)
+  const handleSendInstantSilentTest = async () => {
+    const targetPhone = emergencyPhone && emergencyPhone.trim() ? emergencyPhone.trim() : '0563752023';
+    setIsSendingTestSms(true);
+    setSaveFeedback(null);
+
+    try {
+      const now = new Date().toLocaleTimeString();
+      const testMessage = `🚨 [اختبار إرسال صامت DroidGuard]\nتم إرسال هذه الرسالة في الخلفية فوراً وبصمت تام دون فتح تطبيق الرسائل الافتراضي.\nالتوقيت: ${now}`;
+
+      if (Capacitor.isNativePlatform()) {
+        const sendResult = await sendSilentBackgroundSms(targetPhone, testMessage);
+        if (sendResult.success) {
+          setSaveFeedback(
+            translateInline(
+              lang,
+              `✓ Silent background SMS dispatched immediately to ${targetPhone} via Android native SmsManager!`,
+              `✓ تم إرسال رسالة SMS في الخلفية فوراً وبصمت تام إلى ${targetPhone} دون أي تفاعل!`
+            )
+          );
+          onLogDispatch({
+            recipient: targetPhone,
+            type: 'emergency_sms',
+            content: `[إرسال صامت فوري في الخلفية] تم الإرسال بنجاح إلى ${targetPhone} عبر SmsManager`,
+            status: 'delivered',
+            timestamp: now,
+          });
+        } else {
+          setSaveFeedback(
+            translateInline(
+              lang,
+              `⚠️ Failed to send silent SMS: ${sendResult.error || 'Check SEND_SMS permission or default app status.'}`,
+              `⚠️ تعذر الإرسال في الخلفية: ${sendResult.error || 'يرجى التأكد من منح إذن SEND_SMS أو تعيين التطبيق كافتراضي.'}`
+            )
+          );
+          onLogDispatch({
+            recipient: targetPhone,
+            type: 'emergency_sms',
+            content: `[فشل الإرسال الصامت] ${sendResult.error || 'Unknown error'}`,
+            status: 'failed',
+            timestamp: now,
+          });
+        }
+      } else {
+        setSaveFeedback(
+          translateInline(
+            lang,
+            `ℹ️ Web Preview Simulation: Background SMS payload prepared for ${targetPhone}. On native Android, this executes instantly without user click.`,
+            `ℹ️ محاكاة معاينة الويب: كود الإرسال في الخلفية جاهز لـ ${targetPhone}. على هاتف أندرويد الحقيقي، يتم الإرسال الصامت فوراً في الخلفية دون أي نافذة.`
+          )
+        );
+        onLogDispatch({
+          recipient: targetPhone,
+          type: 'emergency_sms',
+          content: `[محاكاة إرسال صامت في الخلفية] الإرسال التلقائي جاهز لـ ${targetPhone}`,
+          status: 'delivered',
+          timestamp: now,
+        });
+      }
+    } catch (err: any) {
+      setSaveFeedback(
+        translateInline(
+          lang,
+          `❌ Error during silent dispatch: ${err?.message || 'Unknown error'}`,
+          `❌ خطأ أثناء الإرسال الصامت: ${err?.message || 'خطأ غير معروف'}`
+        )
+      );
+    } finally {
+      setIsSendingTestSms(false);
+      setTimeout(() => setSaveFeedback(null), 8000);
     }
   };
 
@@ -753,6 +829,42 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
                 )}
               </button>
             </div>
+          </div>
+
+          {/* Sub-card: Immediate Background SMS Test Dispatch (No user click required) */}
+          <div className="pt-3 mt-1 border-t border-cyan-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-950/40 p-3 rounded-xl">
+            <div className="flex items-center gap-2.5">
+              <span className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300">
+                <Send className="w-4 h-4" />
+              </span>
+              <div>
+                <p className="text-xs font-bold text-white">
+                  {translateInline(lang, 'Direct Background SMS Dispatch (Stealth Execution)', 'إرسال الرسالة في الخلفية فوراً دون الحاجة لضغط زر إرسال')}
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  {translateInline(
+                    lang,
+                    `Dispatches directly to ${emergencyPhone || '0563752023'} via SmsManager with zero countdowns.`,
+                    `يرسل فوراً إلى ${emergencyPhone || '0563752023'} عبر Android SmsManager مباشرة دون الحاجة لضغط زر إرسال في النظام.`
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <button
+              id="btn-test-silent-background-sms"
+              type="button"
+              disabled={isSendingTestSms}
+              onClick={handleSendInstantSilentTest}
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs font-mono-code transition cursor-pointer shadow-md shadow-emerald-950/50 flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>
+                {isSendingTestSms
+                  ? translateInline(lang, 'Dispatching in background...', 'جاري الإرسال في الخلفية...')
+                  : translateInline(lang, 'Test Silent Background SMS', 'تجربة الإرسال الصامت في الخلفية')}
+              </span>
+            </button>
           </div>
         </div>
 

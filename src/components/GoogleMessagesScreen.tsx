@@ -454,7 +454,41 @@ export const GoogleMessagesScreen: React.FC<GoogleMessagesScreenProps> = ({
       <main className="flex-1 max-w-2xl w-full mx-auto px-2 sm:px-4 py-2">
         {!selectedConversation ? (
           /* List of Conversations */
-          <div className="divide-y divide-white/5 space-y-0.5">
+          <div className="space-y-3">
+            {/* Default SMS App System Role Action Banner */}
+            {!isDefaultSms && (
+              <div className="p-3.5 rounded-2xl bg-[#1E293B] border border-blue-500/40 text-blue-100 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">
+                <div className="flex items-center gap-3">
+                  <span className="p-2 rounded-xl bg-blue-500/20 text-blue-400 text-lg font-bold">💬</span>
+                  <div>
+                    <p className="text-xs font-bold text-white">
+                      {translateInline(lang, 'Set DroidGuard as your default SMS app', 'تعيين DroidGuard كتطبيق الرسائل الافتراضي')}
+                    </p>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      {translateInline(
+                        lang,
+                        'Enables seamless background SMS sending without confirmation popups.',
+                        'يتيح إرسال رسائل الاستغاثة في الخلفية بصمت تام دون الحاجة لضغط زر إرسال.'
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  id="btn-google-messages-set-default"
+                  type="button"
+                  onClick={async () => {
+                    await requestSetDefaultSmsApp();
+                    const state = await checkIsDefaultSmsApp();
+                    setIsDefaultSms(state);
+                  }}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs whitespace-nowrap transition cursor-pointer shadow-md flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  <span>{translateInline(lang, 'Set as Default App', 'تعيين كتطبيق افتراضي')}</span>
+                </button>
+              </div>
+            )}
+
+            <div className="divide-y divide-white/5 space-y-0.5">
             {filteredMessages.length === 0 ? (
               <div className="py-20 text-center flex flex-col items-center justify-center text-[#8E918F]">
                 <MessageSquare className="w-12 h-12 mb-3 text-white/20" />
@@ -546,6 +580,7 @@ export const GoogleMessagesScreen: React.FC<GoogleMessagesScreenProps> = ({
                 );
               })
             )}
+            </div>
           </div>
         ) : (
           /* Active Chat Thread */

@@ -37,6 +37,8 @@ import {
   checkDeviceAdminStatus,
   requestDeviceAdmin,
   openPremiumSmsSettings,
+  checkIsDefaultSmsApp,
+  requestSetDefaultSmsApp,
 } from './utils/nativeEmergencySms';
 import { AsyncStorage, safeStorage, STORAGE_KEYS } from './utils/storage';
 import { detectDeviceLanguage } from './utils/languagesRegistry';
@@ -297,6 +299,7 @@ export default function App() {
   // SMS Permission & Device Administrator Startup Lifecycle
   const [smsPermissionGranted, setSmsPermissionGranted] = useState<boolean | null>(null);
   const [deviceAdminActive, setDeviceAdminActive] = useState<boolean | null>(null);
+  const [isDefaultSmsAppActive, setIsDefaultSmsAppActive] = useState<boolean | null>(null);
 
   const handleGrantSmsPermission = useCallback(async () => {
     const granted = await requestDirectSmsPermission();
@@ -310,15 +313,26 @@ export default function App() {
     }
   }, []);
 
+  const handleSetDefaultSmsApp = useCallback(async () => {
+    const res = await requestSetDefaultSmsApp();
+    if (res.isDefault) {
+      setIsDefaultSmsAppActive(true);
+    }
+    const checkAgain = await checkIsDefaultSmsApp();
+    setIsDefaultSmsAppActive(checkAgain);
+  }, []);
+
   // Check and sync security permissions and device admin status
   const checkSecurityState = useCallback(async () => {
     if (Capacitor.isNativePlatform()) {
-      const [smsStatus, adminStatus] = await Promise.all([
+      const [smsStatus, adminStatus, defaultSmsStatus] = await Promise.all([
         checkSmsPermissionStatus(),
         checkDeviceAdminStatus(),
+        checkIsDefaultSmsApp(),
       ]);
       setSmsPermissionGranted(smsStatus);
       setDeviceAdminActive(adminStatus);
+      setIsDefaultSmsAppActive(defaultSmsStatus);
     }
   }, []);
 
@@ -328,9 +342,12 @@ export default function App() {
       console.log('DroidGuard Security Permissions startup check:', result);
       setSmsPermissionGranted(Boolean(result.smsGranted || result.granted));
       
-      // Check Device Admin status
+      // Check Device Admin and Default SMS status
       checkDeviceAdminStatus().then((isAdmin) => {
         setDeviceAdminActive(isAdmin);
+      });
+      checkIsDefaultSmsApp().then((isDef) => {
+        setIsDefaultSmsAppActive(isDef);
       });
 
       // Now that location permissions are requested/checked, start the silent GPS watcher
@@ -686,6 +703,41 @@ export default function App() {
   const homeTabContent = React.useMemo(() => {
     return (
       <div className={`space-y-8 ${activeTab === 'home' ? 'block' : 'hidden'}`}>
+        {/* Native Android Default SMS App Role Banner (RoleManager / ACTION_CHANGE_DEFAULT) */}
+        {Capacitor.isNativePlatform() && isDefaultSmsAppActive === false && (
+          <div className="bg-gradient-to-r from-blue-950/80 via-cyan-950/70 to-slate-900/90 border-2 border-cyan-500/70 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-cyan-200 backdrop-blur-md shadow-xl shadow-cyan-950/80">
+            <div className="flex items-start sm:items-center gap-3.5 w-full sm:w-auto">
+              <span className="p-3 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-2xl text-xl font-bold shrink-0">💬</span>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-extrabold text-sm sm:text-base text-white">
+                    {translateInline(lang, 'تعيين تطبيق DroidGuard كتطبيق الرسائل الافتراضي (Default SMS App)', 'Set DroidGuard as Default SMS App')}
+                  </p>
+                  <span className="px-2.5 py-0.5 bg-cyan-500/30 text-cyan-300 border border-cyan-500/50 text-[10px] rounded-full uppercase tracking-wider font-mono font-black animate-pulse">
+                    HIGH PRIORITY
+                  </span>
+                </div>
+                <p className="text-xs text-cyan-200/90 mt-1 leading-relaxed">
+                  {translateInline(
+                    lang,
+                    'اضغط هنا لفتح نافذة النظام الرسمية وتعيين التطبيق كمدير الرسائل الافتراضي للهاتف. هذا الإجراء يمنح صلاحية إرسال واستقبال رسائل الطوارئ في الخلفية فوراً وبصمت تام دون قيود أو نوافذ تحذيرية.',
+                    'Tap here to open the official Android system dialog (RoleManager) to make DroidGuard your Default SMS app for instant, silent background SOS dispatch without carrier countdowns.'
+                  )}
+                </p>
+              </div>
+            </div>
+            <button
+              id="btn-app-home-set-default-sms"
+              type="button"
+              onClick={handleSetDefaultSmsApp}
+              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold text-xs sm:text-sm rounded-xl whitespace-nowrap shadow-lg shadow-cyan-500/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
+            >
+              <span>{translateInline(lang, 'تعيين كتطبيق رسائل افتراضي الآن', 'Set as Default SMS App Now')}</span>
+              <span className="text-base">🚀</span>
+            </button>
+          </div>
+        )}
+
         {/* Native Android SEND_SMS Permission Status Indicator & One-Tap Grant Trigger */}
         {Capacitor.isNativePlatform() && smsPermissionGranted === false && (
           <div className="bg-red-950/40 border border-red-500/50 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-red-200 backdrop-blur-md shadow-lg shadow-red-950/50 animate-pulse">
@@ -820,7 +872,26 @@ export default function App() {
         />
       </div>
     );
-  }, [activeTab, config, lang, captures, dispatchEvents, handleLogDispatch, handleSaveCapture, handleTriggerTheft, handleTriggerCamera, handleDeleteCapture, handleClearCaptures, handleClearDispatches]);
+  }, [
+    activeTab,
+    config,
+    lang,
+    captures,
+    dispatchEvents,
+    smsPermissionGranted,
+    deviceAdminActive,
+    isDefaultSmsAppActive,
+    handleSetDefaultSmsApp,
+    handleGrantSmsPermission,
+    handleGrantDeviceAdmin,
+    handleLogDispatch,
+    handleSaveCapture,
+    handleTriggerTheft,
+    handleTriggerCamera,
+    handleDeleteCapture,
+    handleClearCaptures,
+    handleClearDispatches,
+  ]);
 
   const messagesTabContent = React.useMemo(() => {
     return (

@@ -127,15 +127,30 @@ public class EmergencySmsDispatchService extends Service {
 
             if (smsManager == null) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                    int defSub = SubscriptionManager.getDefaultSubscriptionId();
-                    if (defSub >= 0) {
-                        smsManager = SmsManager.getSmsManagerForSubscriptionId(defSub);
-                    }
+                    try {
+                        int defSub = SubscriptionManager.getDefaultSubscriptionId();
+                        if (defSub >= 0) {
+                            smsManager = SmsManager.getSmsManagerForSubscriptionId(defSub);
+                        }
+                    } catch (Exception ignored) {}
                 }
             }
 
             if (smsManager == null) {
-                Log.e(TAG, "Could not resolve a subscription-bound SmsManager. Aborting to avoid default interception.");
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        smsManager = appContext.getSystemService(SmsManager.class);
+                    }
+                    if (smsManager == null) {
+                        smsManager = SmsManager.getDefault();
+                    }
+                } catch (Exception e) {
+                    Log.w(TAG, "Fallback to default SmsManager failed: " + e.getMessage());
+                }
+            }
+
+            if (smsManager == null) {
+                Log.e(TAG, "Could not resolve any SmsManager instance. Aborting.");
                 return false;
             }
 
