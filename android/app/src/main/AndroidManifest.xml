@@ -67,7 +67,7 @@
 
         <!-- Fallback SMS Received Broadcast (for receiving messages even if not currently set as default) -->
         <receiver
-            android:name=".SmsReceiver"
+            android:name=".FallbackSmsReceiver"
             android:exported="true">
             <intent-filter android:priority="999">
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />

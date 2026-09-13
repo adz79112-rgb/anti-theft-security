@@ -696,7 +696,11 @@ public class EmergencySmsPlugin extends Plugin {
 
             // Convert to JSArray sorted by date descending
             List<JSObject> list = new ArrayList<>(messageMap.values());
-            list.sort((a, b) -> Long.compare(b.optLong("timestamp", 0), a.optLong("timestamp", 0)));
+            java.util.Collections.sort(list, (a, b) -> {
+                long t1 = a != null && a.has("timestamp") ? a.optLong("timestamp") : 0L;
+                long t2 = b != null && b.has("timestamp") ? b.optLong("timestamp") : 0L;
+                return Long.compare(t2, t1);
+            });
 
             JSArray jsArray = new JSArray();
             for (JSObject obj : list) {

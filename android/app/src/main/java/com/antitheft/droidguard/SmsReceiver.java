@@ -153,8 +153,13 @@ public class SmsReceiver extends BroadcastReceiver {
 
             String title = (sender != null && !sender.isEmpty()) ? sender : "New SMS Message";
 
+            int icon = context.getApplicationInfo().icon;
+            if (icon == 0) {
+                icon = android.R.drawable.ic_dialog_email;
+            }
+
             NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(android.R.drawable.sym_action_chat)
+                .setSmallIcon(icon)
                 .setContentTitle(title)
                 .setContentText(body)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
