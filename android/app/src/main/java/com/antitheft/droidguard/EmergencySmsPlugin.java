@@ -488,18 +488,104 @@ public class EmergencySmsPlugin extends Plugin {
             Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
             intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
             intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-                "Activate Device Administrator to allow DroidGuard to protect your device with high-priority background protection, offline SMS security dispatch, and anti-tamper lockdown.");
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            
+                "تفعيل مسؤول الجهاز لتمكين الحماية ضد السرقة وقفل الشاشة تلقائياً وحماية التطبيق من الإلغاء.");
+
+            boolean launched = false;
             if (activity != null) {
-                activity.startActivity(intent);
-            } else {
-                context.startActivity(intent);
+                try {
+                    // Do NOT use FLAG_ACTIVITY_NEW_TASK with startActivityForResult as it breaks DeviceAdminAdd
+                    activity.startActivityForResult(intent, 4477);
+                    launched = true;
+                } catch (Exception e) {
+                    Log.w(TAG, "startActivityForResult failed: " + e.getMessage());
+                }
+            }
+
+            if (!launched) {
+                try {
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(intent);
+                    launched = true;
+                } catch (Exception e2) {
+                    Log.w(TAG, "Direct add intent failed, falling back to DEVICE_ADMIN_SETTINGS: " + e2.getMessage());
+                    Intent settingsIntent = new Intent("android.settings.DEVICE_ADMIN_SETTINGS");
+                    settingsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(settingsIntent);
+                    launched = true;
+                }
             }
 
             JSObject ret = new JSObject();
             ret.put("success", true);
             ret.put("message", "Device admin activation prompt displayed");
+            call.resolve(ret);
+        } catch (Exception e) {
+            Log.e(TAG, "Error requesting device admin: " + e.getMessage(), e);
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
+    }
+
+    @PluginMethod
+    public void openDeviceAdminSettings(PluginCall call) {
+        Context context = getContext();
+        try {
+            Intent intent = new Intent("android.settings.DEVICE_ADMIN_SETTINGS");
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            try {
+                Intent fallback = new Intent(Settings.ACTION_SECURITY_SETTINGS);
+                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(fallback);
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                call.resolve(ret);
+            } catch (Exception e2) {
+                JSObject ret = new JSObject();
+                ret.put("success", false);
+                ret.put("error", e2.getMessage());
+                call.resolve(ret);
+            }
+        }
+    }
+
+    @PluginMethod
+    public void isAccessibilityServiceEnabled(PluginCall call) {
+        Context context = getContext();
+        try {
+            boolean isEnabled = false;
+            String prefString = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (prefString != null) {
+                String expected = context.getPackageName() + "/" + AutoConfirmService.class.getName();
+                String expectedShort = context.getPackageName() + "/.AutoConfirmService";
+                isEnabled = prefString.contains(expected) || prefString.contains(expectedShort) || prefString.contains("AutoConfirmService");
+            }
+            JSObject ret = new JSObject();
+            ret.put("isEnabled", isEnabled);
+            call.resolve(ret);
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("isEnabled", false);
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
+    }
+
+    @PluginMethod
+    public void openAccessibilitySettings(PluginCall call) {
+        Context context = getContext();
+        try {
+            Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            JSObject ret = new JSObject();
+            ret.put("success", true);
             call.resolve(ret);
         } catch (Exception e) {
             JSObject ret = new JSObject();

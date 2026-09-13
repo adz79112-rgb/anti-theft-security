@@ -22,6 +22,8 @@ import {
   ExternalLink,
   X,
   Send,
+  Bot,
+  MousePointerClick,
 } from 'lucide-react';
 import { Language, DispatchEvent, SecurityConfig } from '../types';
 import {
@@ -38,6 +40,9 @@ import {
   openAppSettings,
   checkDeviceAdminStatus,
   requestDeviceAdmin,
+  openDeviceAdminSettings,
+  checkAccessibilityServiceStatus,
+  openAccessibilitySettings,
   lockDeviceNow,
   openPremiumSmsSettings,
   checkIsDefaultSmsApp,
@@ -69,27 +74,32 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
   const [smsPermissionGranted, setSmsPermissionGranted] = useState<boolean | null>(null);
   const [deviceAdminActive, setDeviceAdminActive] = useState<boolean | null>(null);
   const [isDefaultSms, setIsDefaultSms] = useState<boolean | null>(null);
+  const [accessibilityActive, setAccessibilityActive] = useState<boolean | null>(null);
   const [isRequestingPermission, setIsRequestingPermission] = useState<boolean>(false);
   const [isActivatingAdmin, setIsActivatingAdmin] = useState<boolean>(false);
   const [isSettingDefaultSms, setIsSettingDefaultSms] = useState<boolean>(false);
+  const [isOpeningAccessibility, setIsOpeningAccessibility] = useState<boolean>(false);
   const [isSendingTestSms, setIsSendingTestSms] = useState<boolean>(false);
   const [showOppoModal, setShowOppoModal] = useState<boolean>(false);
 
-  // Load emergency contact phone, check SEND_SMS, Device Admin and Default SMS status
+  // Load emergency contact phone, check SEND_SMS, Device Admin, Accessibility Service and Default SMS status
   const refreshSecurityStatus = async () => {
     if (Capacitor.isNativePlatform()) {
-      const [smsGranted, adminActive, defaultSms] = await Promise.all([
+      const [smsGranted, adminActive, defaultSms, accessStatus] = await Promise.all([
         checkSmsPermissionStatus(),
         checkDeviceAdminStatus(),
         checkIsDefaultSmsApp(),
+        checkAccessibilityServiceStatus(),
       ]);
       setSmsPermissionGranted(smsGranted);
       setDeviceAdminActive(adminActive);
       setIsDefaultSms(defaultSms);
+      setAccessibilityActive(accessStatus);
     } else {
       setSmsPermissionGranted(false);
       setDeviceAdminActive(false);
       setIsDefaultSms(false);
+      setAccessibilityActive(false);
     }
   };
 
@@ -109,7 +119,7 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
     return () => window.removeEventListener('focus', handleFocus);
   }, [config.emergencyContactPhone]);
 
-  // Activate Device Administrator Rights Handler
+  // Activate Device Administrator Rights Handler (Direct Intent with fallback to Settings)
   const handleActivateDeviceAdmin = async () => {
     setIsActivatingAdmin(true);
     try {
@@ -124,12 +134,22 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
               '✓ صلاحية مسؤول الجهاز (Device Admin) مفعّلة بالفعل! تم تعزيز أولوية النظام وأمان الخلفية.'
             )
           );
-        } else {
+        } else if (result.success) {
           setSaveFeedback(
             translateInline(
               lang,
               'ℹ️ System activation dialog opened. Please tap "Activate this device admin app".',
               'ℹ️ تم فتح نافذة تفعيل مسؤول الجهاز. يرجى الضغط على "تفعيل تطبيق مشرف هذا الجهاز".'
+            )
+          );
+        } else {
+          // Direct intent encountered OEM restriction, open Device Admin settings list
+          await openDeviceAdminSettings();
+          setSaveFeedback(
+            translateInline(
+              lang,
+              'ℹ️ Opened Device Admin Settings. Please toggle Anti-Theft Security to ON.',
+              'ℹ️ تم فتح قائمة مسؤولي الجهاز في الإعدادات. يرجى تفعيل مفتاح Anti-Theft Security.'
             )
           );
         }
@@ -142,9 +162,47 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
           )
         );
       }
+    } catch {
+      await openDeviceAdminSettings();
     } finally {
       setIsActivatingAdmin(false);
       setTimeout(() => setSaveFeedback(null), 6000);
+    }
+  };
+
+  // Direct Settings Opener for Device Administrator (Bypasses any OEM black screen)
+  const handleOpenDeviceAdminSettingsDirectly = async () => {
+    setIsActivatingAdmin(true);
+    try {
+      await openDeviceAdminSettings();
+      setSaveFeedback(
+        translateInline(
+          lang,
+          'ℹ️ Opened Device Admin Settings. Please activate DroidGuard / Anti-Theft Security in the list.',
+          'ℹ️ تم فتح قائمة مسؤولي الجهاز في الإعدادات. يرجى تفعيل مفتاح Anti-Theft Security من القائمة مباشرة.'
+        )
+      );
+    } finally {
+      setIsActivatingAdmin(false);
+      setTimeout(() => setSaveFeedback(null), 6000);
+    }
+  };
+
+  // Accessibility Service Opener (Auto-Confirm Service)
+  const handleOpenAccessibility = async () => {
+    setIsOpeningAccessibility(true);
+    try {
+      await openAccessibilitySettings();
+      setSaveFeedback(
+        translateInline(
+          lang,
+          'ℹ️ Opened Accessibility Settings. Please tap "Anti-Theft Security" and toggle it ON.',
+          'ℹ️ تم فتح إعدادات إمكانية الوصول. يرجى البحث عن "Anti-Theft Security" وتفعيل المفتاح للسماح بالنقر التلقائي.'
+        )
+      );
+    } finally {
+      setIsOpeningAccessibility(false);
+      setTimeout(() => setSaveFeedback(null), 7000);
     }
   };
 
@@ -658,22 +716,39 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0 self-end sm:self-center">
               {!deviceAdminActive ? (
-                <button
-                  id="btn-activate-device-admin"
-                  type="button"
-                  onClick={handleActivateDeviceAdmin}
-                  disabled={isActivatingAdmin}
-                  className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold font-mono-code transition cursor-pointer shadow-lg shadow-indigo-950/60 flex items-center gap-2 disabled:opacity-50"
-                >
-                  <ShieldCheck className="w-4 h-4" />
-                  <span>
-                    {isActivatingAdmin
-                      ? translateInline(lang, 'Activating...', 'جاري التفعيل...')
-                      : translateInline(lang, 'Activate Device Admin Rights', 'تفعيل صلاحية مسؤول الجهاز الآن')}
-                  </span>
-                </button>
+                <>
+                  <button
+                    id="btn-activate-device-admin"
+                    type="button"
+                    onClick={handleActivateDeviceAdmin}
+                    disabled={isActivatingAdmin}
+                    className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold font-mono-code transition cursor-pointer shadow-lg shadow-indigo-950/60 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>
+                      {isActivatingAdmin
+                        ? translateInline(lang, 'Activating...', 'جاري التفعيل...')
+                        : translateInline(lang, 'Activate Directly', 'تفعيل مسؤول الجهاز مباشرة')}
+                    </span>
+                  </button>
+                  <button
+                    id="btn-open-device-admin-settings"
+                    type="button"
+                    onClick={handleOpenDeviceAdminSettingsDirectly}
+                    disabled={isActivatingAdmin}
+                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/40 text-xs font-semibold font-mono-code transition cursor-pointer flex items-center justify-center gap-1.5"
+                    title={translateInline(
+                      lang,
+                      'Open Device Admin in system settings (use this if direct activation shows a black screen)',
+                      'فتح قائمة مسؤولي الجهاز في الإعدادات مباشرة (استخدم هذا الخيار في حال ظهور شاشة سوداء)'
+                    )}
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                    <span>{translateInline(lang, 'Open in Settings (Fallback)', 'فتح في الإعدادات (حل بديل)')}</span>
+                  </button>
+                </>
               ) : (
                 <button
                   id="btn-test-lock-screen"
@@ -685,6 +760,80 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
                   <span>{translateInline(lang, 'Test Instant Lock', 'اختبار قفل الشاشة')}</span>
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Auto-Confirm Accessibility Service (Auto-Clicks "Send" / "إرسال" Without User Touch) */}
+        <div
+          id="accessibility-auto-confirm-card"
+          className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col gap-3 ${
+            accessibilityActive
+              ? 'border-emerald-500/40 bg-emerald-950/20 text-emerald-200'
+              : 'border-teal-500/40 bg-teal-950/20 text-teal-200'
+          }`}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div
+                className={`p-2.5 rounded-xl border shrink-0 mt-0.5 ${
+                  accessibilityActive
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                    : 'bg-teal-500/20 text-teal-300 border-teal-500/30'
+                }`}
+              >
+                <MousePointerClick className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-sm font-bold text-white">
+                    {translateInline(
+                      lang,
+                      'Auto-Confirm Assistant (Accessibility Service)',
+                      'خدمة المساعد التلقائي (إمكانية الوصول - النقر التلقائي)'
+                    )}
+                  </h4>
+                  <span
+                    className={`text-[10px] font-mono-code font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
+                      accessibilityActive
+                        ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
+                        : 'bg-teal-500/30 text-teal-300 border border-teal-500/40'
+                    }`}
+                  >
+                    {accessibilityActive
+                      ? translateInline(lang, 'AUTO-CLICK ACTIVE ✓', 'النقر التلقائي مفعل ✓')
+                      : translateInline(lang, 'ZERO-TOUCH SMS ⚡', 'إرسال بدون لمس ⚡')}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                  {translateInline(
+                    lang,
+                    'Automatically detects the Android "Sending an SMS" confirmation dialog and clicks "Send" within milliseconds without requiring any physical tap or user intervention.',
+                    'تمنح التطبيق صلاحية المساعد التنفيذي للضغط التلقائي الفوري على زر "إرسال" بمجرد ظهور نافذة نظام أندرويد التحذيرية، مما يمكنك من إرسال رسائل SMS الطوارئ بصمت تام وبدون الحاجة للمس الشاشة أو الضغط على زر قبول!'
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              <button
+                id="btn-open-accessibility-settings"
+                type="button"
+                onClick={handleOpenAccessibility}
+                disabled={isOpeningAccessibility}
+                className={`px-4 py-2.5 rounded-xl text-white text-xs font-bold font-mono-code transition cursor-pointer shadow-lg flex items-center gap-2 disabled:opacity-50 ${
+                  accessibilityActive
+                    ? 'bg-emerald-700 hover:bg-emerald-600 shadow-emerald-950/60'
+                    : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 shadow-teal-950/60'
+                }`}
+              >
+                <Bot className="w-4 h-4" />
+                <span>
+                  {accessibilityActive
+                    ? translateInline(lang, 'Settings / Reconfigure', 'مفعلة ✓ (إعادة الضبط)')
+                    : translateInline(lang, 'Activate Auto-Confirm Service', 'تفعيل خدمة المساعد التلقائي الآن')}
+                </span>
+              </button>
             </div>
           </div>
         </div>

@@ -47,6 +47,9 @@ export interface EmergencySmsPluginInterface {
   openPremiumSmsSettings(): Promise<{ success: boolean; message?: string; error?: string }>;
   checkDeviceAdminStatus(): Promise<{ isAdmin: boolean; error?: string }>;
   requestDeviceAdmin(): Promise<{ success: boolean; isAdmin?: boolean; alreadyActive?: boolean; message?: string; error?: string }>;
+  openDeviceAdminSettings(): Promise<{ success: boolean; error?: string }>;
+  isAccessibilityServiceEnabled(): Promise<{ isEnabled: boolean; error?: string }>;
+  openAccessibilitySettings(): Promise<{ success: boolean; error?: string }>;
   lockDeviceNow(): Promise<{ success: boolean; error?: string }>;
   isDefaultSmsApp(): Promise<{ isDefault: boolean; error?: string }>;
   requestDefaultSmsApp(): Promise<{ success: boolean; isDefault?: boolean; message?: string; error?: string }>;
@@ -228,6 +231,39 @@ export async function requestDeviceAdmin(): Promise<{ success: boolean; isAdmin?
   } catch (err: any) {
     console.warn('Failed to request device admin:', err);
     return { success: false, error: err?.message || 'Failed to launch Device Admin intent.' };
+  }
+}
+
+export async function openDeviceAdminSettings(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    const res = await EmergencySmsPlugin.openDeviceAdminSettings();
+    return Boolean(res?.success);
+  } catch (err) {
+    console.warn('Failed to open device admin settings:', err);
+    return false;
+  }
+}
+
+export async function checkAccessibilityServiceStatus(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    const res = await EmergencySmsPlugin.isAccessibilityServiceEnabled();
+    return Boolean(res?.isEnabled);
+  } catch (err) {
+    console.warn('Failed to check accessibility service status:', err);
+    return false;
+  }
+}
+
+export async function openAccessibilitySettings(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    const res = await EmergencySmsPlugin.openAccessibilitySettings();
+    return Boolean(res?.success);
+  } catch (err) {
+    console.warn('Failed to open accessibility settings:', err);
+    return false;
   }
 }
 

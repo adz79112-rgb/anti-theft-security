@@ -36,6 +36,9 @@ import {
   checkSmsPermissionStatus,
   checkDeviceAdminStatus,
   requestDeviceAdmin,
+  openDeviceAdminSettings,
+  checkAccessibilityServiceStatus,
+  openAccessibilitySettings,
   openPremiumSmsSettings,
   checkIsDefaultSmsApp,
   requestSetDefaultSmsApp,
@@ -296,10 +299,11 @@ export default function App() {
     }
   }, [config.userEmail]);
 
-  // SMS Permission & Device Administrator Startup Lifecycle
+  // SMS Permission, Device Administrator & Accessibility Startup Lifecycle
   const [smsPermissionGranted, setSmsPermissionGranted] = useState<boolean | null>(null);
   const [deviceAdminActive, setDeviceAdminActive] = useState<boolean | null>(null);
   const [isDefaultSmsAppActive, setIsDefaultSmsAppActive] = useState<boolean | null>(null);
+  const [accessibilityServiceActive, setAccessibilityServiceActive] = useState<boolean | null>(null);
 
   const handleGrantSmsPermission = useCallback(async () => {
     const granted = await requestDirectSmsPermission();
@@ -307,10 +311,25 @@ export default function App() {
   }, []);
 
   const handleGrantDeviceAdmin = useCallback(async () => {
-    const res = await requestDeviceAdmin();
-    if (res.isAdmin || res.alreadyActive) {
-      setDeviceAdminActive(true);
+    try {
+      const res = await requestDeviceAdmin();
+      if (res.isAdmin || res.alreadyActive) {
+        setDeviceAdminActive(true);
+      } else if (!res.success) {
+        // Fallback: open Settings directly if intent encounters OEM restriction
+        await openDeviceAdminSettings();
+      }
+    } catch {
+      await openDeviceAdminSettings();
     }
+  }, []);
+
+  const handleOpenDeviceAdminSettingsDirectly = useCallback(async () => {
+    await openDeviceAdminSettings();
+  }, []);
+
+  const handleGrantAccessibilityService = useCallback(async () => {
+    await openAccessibilitySettings();
   }, []);
 
   const handleSetDefaultSmsApp = useCallback(async () => {
@@ -322,17 +341,19 @@ export default function App() {
     setIsDefaultSmsAppActive(checkAgain);
   }, []);
 
-  // Check and sync security permissions and device admin status
+  // Check and sync security permissions, device admin and accessibility status
   const checkSecurityState = useCallback(async () => {
     if (Capacitor.isNativePlatform()) {
-      const [smsStatus, adminStatus, defaultSmsStatus] = await Promise.all([
+      const [smsStatus, adminStatus, defaultSmsStatus, accessStatus] = await Promise.all([
         checkSmsPermissionStatus(),
         checkDeviceAdminStatus(),
         checkIsDefaultSmsApp(),
+        checkAccessibilityServiceStatus(),
       ]);
       setSmsPermissionGranted(smsStatus);
       setDeviceAdminActive(adminStatus);
       setIsDefaultSmsAppActive(defaultSmsStatus);
+      setAccessibilityServiceActive(accessStatus);
     }
   }, []);
 
@@ -342,12 +363,15 @@ export default function App() {
       console.log('DroidGuard Security Permissions startup check:', result);
       setSmsPermissionGranted(Boolean(result.smsGranted || result.granted));
       
-      // Check Device Admin and Default SMS status
+      // Check Device Admin, Default SMS and Accessibility status
       checkDeviceAdminStatus().then((isAdmin) => {
         setDeviceAdminActive(isAdmin);
       });
       checkIsDefaultSmsApp().then((isDef) => {
         setIsDefaultSmsAppActive(isDef);
+      });
+      checkAccessibilityServiceStatus().then((isAcc) => {
+        setAccessibilityServiceActive(isAcc);
       });
 
       // Now that location permissions are requested/checked, start the silent GPS watcher
@@ -791,13 +815,60 @@ export default function App() {
                 </p>
               </div>
             </div>
+            <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleGrantDeviceAdmin}
+                className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs rounded-xl whitespace-nowrap shadow-lg shadow-indigo-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>{translateInline(lang, 'تفعيل مسؤول الجهاز مباشرة', 'Activate Device Admin Rights')}</span>
+                <span className="text-sm">🛡️</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleOpenDeviceAdminSettingsDirectly}
+                className="w-full sm:w-auto px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/40 text-xs font-semibold rounded-xl whitespace-nowrap transition active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer"
+                title={translateInline(
+                  lang,
+                  'Open in settings directly if direct activation shows a black screen',
+                  'فتح في الإعدادات مباشرة (استخدم هذا الخيار في حال ظهور شاشة سوداء)'
+                )}
+              >
+                <span>{translateInline(lang, 'فتح في الإعدادات (حل بديل)', 'Open in Settings (Fallback)')}</span>
+                <span className="text-xs">⚙️</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Native Android Auto-Confirm Accessibility Service Banner (Zero-Touch SMS Dispatch) */}
+        {Capacitor.isNativePlatform() && accessibilityServiceActive === false && (
+          <div className="bg-gradient-to-r from-teal-950/70 via-cyan-950/60 to-slate-900/80 border border-teal-500/50 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-teal-200 backdrop-blur-md shadow-lg shadow-teal-950/60">
+            <div className="flex items-start gap-3 w-full sm:w-auto">
+              <span className="p-2.5 bg-teal-500/20 text-teal-300 rounded-xl text-lg font-bold shrink-0 mt-0.5">🤖</span>
+              <div>
+                <p className="font-bold text-sm text-white flex items-center gap-2 flex-wrap">
+                  {translateInline(lang, 'تفعيل خدمة المساعد التلقائي (إرسال الرسائل بدون لمس الشاشة)', 'Activate Auto-Confirm Service (Zero-Touch SMS)')}
+                  <span className="px-2 py-0.5 bg-teal-500/30 text-teal-300 text-[10px] rounded-full uppercase tracking-wider font-mono font-bold">
+                    ZERO-TOUCH SMS
+                  </span>
+                </p>
+                <p className="text-xs text-teal-200/90 mt-1 leading-relaxed">
+                  {translateInline(
+                    lang,
+                    'تمنح التطبيق صلاحية الضغط التلقائي الفوري على زر "إرسال" فور ظهور نافذة "سيرسل رسالة SMS"، لتتمكن من إرسال رسائل الاستغاثة الصامتة بدون الحاجة للمس الشاشة أو الضغط على زر قبول نهائياً!',
+                    'Allows DroidGuard to instantly auto-click "Send" when Android shows the SMS confirmation dialog, dispatching silent alerts with zero physical touch.'
+                  )}
+                </p>
+              </div>
+            </div>
             <button
               type="button"
-              onClick={handleGrantDeviceAdmin}
-              className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs rounded-xl whitespace-nowrap shadow-lg shadow-indigo-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+              onClick={handleGrantAccessibilityService}
+              className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs rounded-xl whitespace-nowrap shadow-lg shadow-teal-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
-              <span>{translateInline(lang, 'تفعيل مسؤول الجهاز الآن', 'Activate Device Admin Rights')}</span>
-              <span className="text-sm">🛡️</span>
+              <span>{translateInline(lang, 'تفعيل خدمة النقر التلقائي الآن', 'Activate Auto-Confirm Service')}</span>
+              <span className="text-sm">⚡</span>
             </button>
           </div>
         )}

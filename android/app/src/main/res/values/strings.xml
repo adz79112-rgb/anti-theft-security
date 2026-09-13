@@ -5,4 +5,6 @@
     <string name="package_name">com.antitheft.droidguard</string>
     <string name="custom_url_scheme">com.antitheft.droidguard</string>
     <string name="accessibility_service_description">DroidGuard Security Auto-Confirm Service for Automated Protection and Emergency SMS dispatch</string>
+    <string name="device_admin_label">DroidGuard Anti-Theft Protection</string>
+    <string name="device_admin_description">صلاحية مسؤول الجهاز لقفل الهاتف وحمايته ضد السرقة ومنع العبث به.</string>
 </resources>
