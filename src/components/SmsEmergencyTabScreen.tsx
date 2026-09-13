@@ -37,6 +37,7 @@ import {
   checkDeviceAdminStatus,
   requestDeviceAdmin,
   lockDeviceNow,
+  openPremiumSmsSettings,
   sanitizePhoneNumber,
 } from '../utils/nativeEmergencySms';
 import { Capacitor } from '@capacitor/core';
@@ -561,6 +562,68 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
                   <span>{translateInline(lang, 'Test Instant Lock', 'اختبار قفل الشاشة')}</span>
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* 3. Premium SMS Access (Bypass OEM Restrictions / ColorOS / MIUI / Samsung) */}
+        <div
+          id="premium-sms-access-card"
+          className="p-4 sm:p-5 rounded-2xl border border-amber-500/40 bg-amber-950/20 text-amber-200 transition-all flex flex-col gap-3"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0 mt-0.5">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-sm font-bold text-white">
+                    {translateInline(
+                      lang,
+                      'Enable Premium SMS Access (Bypass OEM Restrictions)',
+                      'الوصول إلى الرسائل المميزة (تجاوز قيود الشركات المصنعة)'
+                    )}
+                  </h4>
+                  <span className="text-[10px] font-mono-code font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-amber-500/30 text-amber-300 border border-amber-500/40">
+                    ANTI-POPUP BYPASS
+                  </span>
+                </div>
+                <div className="text-xs text-slate-300 mt-2 space-y-1.5 leading-relaxed">
+                  <p className="font-semibold text-amber-300">
+                    {translateInline(
+                      lang,
+                      "⚠️ On-Screen Step-by-Step Instructions:",
+                      "⚠️ تعليمات الضبط لتخطي نافذة العد التنازلي:"
+                    )}
+                  </p>
+                  <p className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800 text-slate-200 font-medium">
+                    {translateInline(
+                      lang,
+                      "Please scroll down to 'Premium SMS access' (الوصول إلى الرسائل المميزة) and change it from 'Ask' to 'Always Allow' to ensure silent background SOS delivery.",
+                      "يرجى التمرير للأسفل في صفحة التطبيق والضغط على 'الوصول إلى الرسائل المميزة' (Premium SMS access) وتغيير الخيار من 'سؤال' (Ask) إلى 'السماح دائماً' (Always Allow) لضمان إرسال رسائل الاستغاثة الصامتة في الخلفية دون نوافذ تأكيد أو عد تنازلي."
+                    )}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              <button
+                id="btn-enable-premium-sms-access"
+                type="button"
+                onClick={() => openPremiumSmsSettings()}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-slate-950 text-xs font-bold font-mono-code transition cursor-pointer shadow-lg shadow-amber-950/60 flex items-center gap-2"
+              >
+                <Settings className="w-4 h-4" />
+                <span>
+                  {translateInline(
+                    lang,
+                    'Enable Premium SMS Access (Bypass OEM Restrictions)',
+                    'تفعيل الوصول للرسائل المميزة (Bypass OEM)'
+                  )}
+                </span>
+              </button>
             </div>
           </div>
         </div>

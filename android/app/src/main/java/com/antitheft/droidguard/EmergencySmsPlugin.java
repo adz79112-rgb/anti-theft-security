@@ -382,6 +382,36 @@ public class EmergencySmsPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void openPremiumSmsSettings(PluginCall call) {
+        Context context = getContext();
+        try {
+            // Try standard Application Details settings for package
+            Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+            intent.setData(Uri.parse("package:" + context.getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            ret.put("message", "Application settings opened for Premium SMS access configuration");
+            call.resolve(ret);
+        } catch (Exception e) {
+            try {
+                Intent fallback = new Intent(Settings.ACTION_MANAGE_APPLICATIONS_SETTINGS);
+                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(fallback);
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                call.resolve(ret);
+            } catch (Exception e2) {
+                JSObject ret = new JSObject();
+                ret.put("success", false);
+                ret.put("error", e2.getMessage());
+                call.resolve(ret);
+            }
+        }
+    }
+
+    @PluginMethod
     public void requestBackgroundActivityPermission(PluginCall call) {
         Context context = getContext();
         try {

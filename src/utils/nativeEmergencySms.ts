@@ -43,6 +43,7 @@ export interface EmergencySmsPluginInterface {
   requestBackgroundActivityPermission(): Promise<{ success: boolean; message?: string; error?: string }>;
   openDeveloperSettings(): Promise<{ success: boolean; error?: string }>;
   openAppSettings(): Promise<{ success: boolean; error?: string }>;
+  openPremiumSmsSettings(): Promise<{ success: boolean; message?: string; error?: string }>;
   checkDeviceAdminStatus(): Promise<{ isAdmin: boolean; error?: string }>;
   requestDeviceAdmin(): Promise<{ success: boolean; isAdmin?: boolean; alreadyActive?: boolean; message?: string; error?: string }>;
   lockDeviceNow(): Promise<{ success: boolean; error?: string }>;
@@ -186,6 +187,17 @@ export async function openAppSettings(): Promise<boolean> {
     return res.success;
   } catch (err) {
     console.warn('Failed to open app settings:', err);
+    return false;
+  }
+}
+
+export async function openPremiumSmsSettings(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    const res = await EmergencySmsPlugin.openPremiumSmsSettings();
+    return res.success;
+  } catch (err) {
+    console.warn('Failed to open premium SMS settings:', err);
     return false;
   }
 }

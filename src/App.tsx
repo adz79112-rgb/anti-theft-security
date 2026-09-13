@@ -35,6 +35,7 @@ import {
   checkSmsPermissionStatus,
   checkDeviceAdminStatus,
   requestDeviceAdmin,
+  openPremiumSmsSettings,
 } from './utils/nativeEmergencySms';
 import { AsyncStorage, safeStorage, STORAGE_KEYS } from './utils/storage';
 import { detectDeviceLanguage } from './utils/languagesRegistry';
@@ -744,6 +745,38 @@ export default function App() {
             >
               <span>{translateInline(lang, 'تفعيل مسؤول الجهاز الآن', 'Activate Device Admin Rights')}</span>
               <span className="text-sm">🛡️</span>
+            </button>
+          </div>
+        )}
+
+        {/* Native Android Premium SMS Access Bypass Banner */}
+        {Capacitor.isNativePlatform() && (
+          <div className="bg-amber-950/40 border border-amber-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-amber-200 backdrop-blur-md shadow-lg shadow-amber-950/60">
+            <div className="flex items-start gap-3 w-full sm:w-auto">
+              <span className="p-2.5 bg-amber-500/20 text-amber-300 rounded-xl text-lg font-bold shrink-0 mt-0.5">⚡</span>
+              <div>
+                <p className="font-bold text-sm text-white flex items-center gap-2 flex-wrap">
+                  {translateInline(lang, 'تفعيل الوصول إلى الرسائل المميزة (تجاوز قيود الشركات المصنعة)', 'Enable Premium SMS Access (Bypass OEM Restrictions)')}
+                  <span className="px-2 py-0.5 bg-amber-500/30 text-amber-300 text-[10px] rounded-full uppercase tracking-wider font-mono font-bold">
+                    OEM BYPASS
+                  </span>
+                </p>
+                <p className="text-xs text-amber-200/90 mt-1 leading-relaxed">
+                  {translateInline(
+                    lang,
+                    "يرجى التمرير للأسفل داخل صفحة معلومات التطبيق واختيار 'الوصول إلى الرسائل المميزة' (Premium SMS access) وتغييرها من 'سؤال' (Ask) إلى 'السماح دائماً' (Always Allow) لضمان إرسال رسائل الطوارئ في الخلفية بصمت تام دون نوافذ عد تنازلي.",
+                    "Please scroll down to 'Premium SMS access' (الوصول إلى الرسائل المميزة) and change it from 'Ask' to 'Always Allow' to ensure silent background SOS delivery without countdown popups."
+                  )}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => openPremiumSmsSettings()}
+              className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-bold text-xs rounded-xl whitespace-nowrap shadow-lg shadow-amber-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
+            >
+              <span>{translateInline(lang, 'تفعيل الوصول إلى الرسائل المميزة', 'Enable Premium SMS Access (Bypass OEM Restrictions)')}</span>
+              <span className="text-sm">⚙️</span>
             </button>
           </div>
         )}
