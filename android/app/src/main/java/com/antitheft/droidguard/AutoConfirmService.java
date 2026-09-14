@@ -212,6 +212,10 @@ public class AutoConfirmService extends AccessibilityService {
         } catch (Exception ignored) {}
     }
 
+    public static void armEmergencyWindow(Context context, long durationMs) {
+        armEmergencyAutoConfirm(context, durationMs);
+    }
+
     public static boolean isEmergencyWindowActive(Context context) {
         long now = System.currentTimeMillis();
         if (now < emergencyArmedUntilMemory) {
