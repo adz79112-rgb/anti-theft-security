@@ -68,28 +68,25 @@ public class EmergencySmsDispatchService extends Service {
             return false;
         }
 
-        Context appContext = context.getApplicationContext() != null ? context.getApplicationContext() : context;
-
         // Arm AutoConfirmService for 60 seconds specifically for this emergency dispatch event
         try {
-            AutoConfirmService.armEmergencyWindow(appContext, 60_000L);
+            AutoConfirmService.armEmergencyWindow(context, 60_000L);
         } catch (Exception ignored) {}
 
         // Verify SEND_SMS permission
-        if (ActivityCompat.checkSelfPermission(appContext, android.Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
             Log.e(TAG, "SEND_SMS permission not granted.");
             return false;
         }
 
         try {
             int targetSubId = -1;
-
             // 1. Query SubscriptionManager dynamically to find active SIM subscription IDs
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1) {
-                SubscriptionManager sm = (SubscriptionManager) appContext.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+                SubscriptionManager sm = (SubscriptionManager) context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
                 if (sm != null) {
                     try {
-                        if (ActivityCompat.checkSelfPermission(appContext, android.Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
+                        if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.READ_PHONE_STATE) == PackageManager.PERMISSION_GRANTED) {
                             List<SubscriptionInfo> subList = sm.getActiveSubscriptionInfoList();
                             if (subList != null && !subList.isEmpty()) {
                                 if (slot == 1 || slot == 2) {
@@ -121,7 +118,7 @@ public class EmergencySmsDispatchService extends Service {
             if (targetSubId >= 0) {
                 try {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        smsManager = appContext.getSystemService(SmsManager.class).createForSubscriptionId(targetSubId);
+                        smsManager = context.getSystemService(SmsManager.class).createForSubscriptionId(targetSubId);
                     } else {
                         smsManager = SmsManager.getSmsManagerForSubscriptionId(targetSubId);
                     }
@@ -144,7 +141,7 @@ public class EmergencySmsDispatchService extends Service {
             if (smsManager == null) {
                 try {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                        smsManager = appContext.getSystemService(SmsManager.class);
+                        smsManager = context.getSystemService(SmsManager.class);
                     }
                     if (smsManager == null) {
                         smsManager = SmsManager.getDefault();

