@@ -140,8 +140,8 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
                   <p className="text-slate-300 leading-normal">
                     {translateInline(
                       lang,
-                      '2. Select "DroidGuard Auto-Confirm Service" and toggle it ON.',
-                      '2. اختر «المساعد التلقائي لـ DroidGuard» وفعّل المفتاح إلى تشغيل (ON).'
+                      '2. Select "Phone Security App (DroidGuard)" and toggle it ON.',
+                      '2. اختر «تطبيق حماية الهاتف (DroidGuard)» وفعّل المفتاح إلى تشغيل (ON).'
                     )}
                   </p>
                   <p className="text-amber-300 text-[10px] leading-normal pt-0.5 border-t border-slate-800">
