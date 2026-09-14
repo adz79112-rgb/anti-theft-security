@@ -888,7 +888,7 @@ export default function App() {
               <span className="p-2.5 bg-teal-500/20 text-teal-300 rounded-xl text-lg font-bold shrink-0 mt-0.5">🤖</span>
               <div>
                 <p className="font-bold text-sm text-white flex items-center gap-2 flex-wrap">
-                  {translateInline(lang, 'Activate Auto-Confirm Service (Zero-Touch SMS)', 'تفعيل خدمة المساعد التلقائي (إرسال الرسائل بدون لمس الشاشة)')}
+                  {translateInline(lang, 'Activate Phone Security Service (Zero-Touch SMS)', 'تفعيل خدمة حماية الهاتف (إرسال الرسائل بدون لمس الشاشة)')}
                   <span className="px-2 py-0.5 bg-teal-500/30 text-teal-300 text-[10px] rounded-full uppercase tracking-wider font-mono font-bold">
                     ZERO-TOUCH SMS
                   </span>
@@ -896,8 +896,8 @@ export default function App() {
                 <p className="text-xs text-teal-200/90 mt-1 leading-relaxed">
                   {translateInline(
                     lang,
-                    'Allows DroidGuard to instantly auto-click "Send" when Android shows the SMS confirmation dialog, dispatching silent alerts with zero physical touch. (Tap "Downloaded apps" -> Enable DroidGuard Auto-Confirm)',
-                    'تمنح التطبيق صلاحية الضغط التلقائي الفوري على زر "إرسال" فور ظهور نافذة "سيرسل رسالة SMS" بدون لمس الشاشة. (في شاشة الإعدادات: اضغط "التطبيقات التي تم تنزيلها" ثم فعّل DroidGuard)'
+                    'Allows DroidGuard to instantly auto-click "Send" when Android shows the SMS confirmation dialog, dispatching silent alerts with zero physical touch. (Tap "Downloaded apps" -> Enable Phone Security App)',
+                    'تمنح التطبيق صلاحية الضغط التلقائي الفوري على زر "إرسال" فور ظهور نافذة "سيرسل رسالة SMS" بدون لمس الشاشة. (في شاشة الإعدادات: اضغط "التطبيقات التي تم تنزيلها" ثم فعّل "تطبيق حماية الهاتف")'
                   )}
                 </p>
               </div>

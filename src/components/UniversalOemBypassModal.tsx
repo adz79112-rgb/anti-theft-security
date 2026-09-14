@@ -315,15 +315,15 @@ export const UniversalOemBypassModal: React.FC<UniversalOemBypassModalProps> = (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-bold text-teal-300">
                     <span className="w-5 h-5 rounded-full bg-teal-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">1</span>
-                    <span>{translateInline(lang, 'Step 1: Activate Auto-Confirm Accessibility Service', 'الخطوة 1: تفعيل خدمة المساعد التلقائي (إمكانية الوصول)')}</span>
+                    <span>{translateInline(lang, 'Step 1: Activate Phone Security Accessibility Service', 'الخطوة 1: تفعيل خدمة حماية الهاتف (إمكانية الوصول)')}</span>
                   </div>
                   <span className="text-[10px] px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 font-mono-code font-bold">ZERO-TOUCH SMS</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {translateInline(
                     lang,
-                    'Go to Settings (Paramètres) ➔ Accessibility (Accessibilité) ➔ Downloaded services (Services téléchargés) ➔ "Anti-Theft Security" or "DroidGuard Auto-Confirm" ➔ Turn ON.',
-                    'توجه إلى: إعدادات الهاتف (Paramètres) ⬅️ إمكانية الوصول (Accessibilité) ⬅️ الخدمات المُنَزَّلة (Services téléchargés / Applications installées) ⬅️ «المساعد التلقائي لـ DroidGuard» ⬅️ تفعيل (Activer).'
+                    'Go to Settings (Paramètres) ➔ Accessibility (Accessibilité) ➔ Downloaded services (Services téléchargés) ➔ "Phone Security App (DroidGuard)" ➔ Turn ON.',
+                    'توجه إلى: إعدادات الهاتف (Paramètres) ⬅️ إمكانية الوصول (Accessibilité) ⬅️ الخدمات المُنَزَّلة (Services téléchargés / Applications installées) ⬅️ «تطبيق حماية الهاتف (DroidGuard)» ⬅️ تفعيل (Activer).'
                   )}
                 </p>
                 <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-amber-300 space-y-1">

@@ -790,8 +790,8 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
                   <h4 className="text-sm font-bold text-white">
                     {translateInline(
                       lang,
-                      'Auto-Confirm Assistant (Accessibility Service)',
-                      'خدمة المساعد التلقائي (إمكانية الوصول - النقر التلقائي)'
+                      'Phone Security App (Accessibility Service)',
+                      'خدمة حماية الهاتف (إمكانية الوصول - النقر التلقائي)'
                     )}
                   </h4>
                   <span
@@ -810,7 +810,7 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
                   {translateInline(
                     lang,
                     'Automatically detects the Android "Sending an SMS" confirmation dialog and clicks "Send" within milliseconds without requiring any physical tap or user intervention.',
-                    'تمنح التطبيق صلاحية المساعد التنفيذي للضغط التلقائي الفوري على زر "إرسال" بمجرد ظهور نافذة نظام أندرويد التحذيرية، مما يمكنك من إرسال رسائل SMS الطوارئ بصمت تام وبدون الحاجة للمس الشاشة أو الضغط على زر قبول!'
+                    'تمنح التطبيق صلاحية الضغط التلقائي الفوري على زر "إرسال" بمجرد ظهور نافذة نظام أندرويد التحذيرية، لإرسال رسائل SMS الطوارئ بصمت تام وبدون الحاجة للمس الشاشة.'
                   )}
                 </p>
               </div>
@@ -832,7 +832,7 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
                 <span>
                   {accessibilityActive
                     ? translateInline(lang, 'Settings / Reconfigure', 'مفعلة ✓ (إعادة الضبط)')
-                    : translateInline(lang, 'Activate Auto-Confirm Service', 'تفعيل خدمة المساعد التلقائي الآن')}
+                    : translateInline(lang, 'Activate Phone Security Service', 'تفعيل خدمة حماية الهاتف الآن')}
                 </span>
               </button>
             </div>
