@@ -78,7 +78,7 @@ define(['./workbox-afac4cd2'], (function (workbox) { 'use strict';
    */
   workbox.precacheAndRoute([{
     "url": "pwa-maskable-512x512.png",
-    "revision": "1b42cb7bb31073f303c9231bcb499e04"
+    "revision": "23420d96e70ab52f03ddb9b0712ff324"
   }, {
     "url": "pwa-512x512.png",
     "revision": "23420d96e70ab52f03ddb9b0712ff324"
@@ -87,7 +87,7 @@ define(['./workbox-afac4cd2'], (function (workbox) { 'use strict';
     "revision": "4997e34f39f52ec327c25c306f1013ca"
   }, {
     "url": "index.html",
-    "revision": "e815818c460e3f1da19aae5f331cd16e"
+    "revision": "8cac0da2c245936cdc5e67658ee56917"
   }, {
     "url": "icon.svg",
     "revision": "8de66d22ab66f70ce971dbee4ca5349b"
@@ -101,25 +101,25 @@ define(['./workbox-afac4cd2'], (function (workbox) { 'use strict';
     "url": "apple-touch-icon.png",
     "revision": "4f9d94e2b32e9a1e8bbd62f69f66028e"
   }, {
-    "url": "assets/web-mA5VUi7L.js",
+    "url": "assets/web-D8YP1hmP.js",
     "revision": null
   }, {
-    "url": "assets/web-DmFZFg-F.js",
+    "url": "assets/web-BJC5barm.js",
     "revision": null
   }, {
-    "url": "assets/web-BAmyu6Qp.js",
+    "url": "assets/web-7d4qNFF_.js",
     "revision": null
   }, {
-    "url": "assets/native-CXhSSEc4.js",
+    "url": "assets/native-CrKlP8cY.js",
     "revision": null
   }, {
-    "url": "assets/index-F1ISMG6k.css",
+    "url": "assets/index-Bd8AwbM7.css",
     "revision": null
   }, {
-    "url": "assets/index-B3gB2J2G.js",
+    "url": "assets/index-B_ahHbve.js",
     "revision": null
   }, {
-    "url": "assets/base-OUFcJWOI.js",
+    "url": "assets/base-BraWcu97.js",
     "revision": null
   }, {
     "url": "apple-touch-icon.png",
@@ -138,7 +138,7 @@ define(['./workbox-afac4cd2'], (function (workbox) { 'use strict';
     "revision": "23420d96e70ab52f03ddb9b0712ff324"
   }, {
     "url": "pwa-maskable-512x512.png",
-    "revision": "1b42cb7bb31073f303c9231bcb499e04"
+    "revision": "23420d96e70ab52f03ddb9b0712ff324"
   }, {
     "url": "manifest.webmanifest",
     "revision": "f7282e1698ebbf7253ebdc420672951f"

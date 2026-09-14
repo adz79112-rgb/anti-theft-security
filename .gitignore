@@ -9,7 +9,7 @@ coverage/
 .gradle/
 android/.gradle/
 android/app/build/
-*.png
+test_*.png
 *.txt
 fix_*.cjs
 fix_*.js
