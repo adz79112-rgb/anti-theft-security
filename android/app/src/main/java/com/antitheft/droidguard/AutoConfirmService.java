@@ -16,71 +16,86 @@ import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * DroidGuard High-Precision Security & Auto-Confirm Accessibility Service
+ * DroidGuard Ironclad High-Precision Security & Auto-Confirm Accessibility Service
  * 
- * Safety Guarantees:
- * 1. STRICT BLACKLIST: Under no circumstances does this service interact with user apps
- *    (Facebook Messenger, WhatsApp, Telegram, TikTok, Instagram, Twitter, etc.).
- * 2. STRICT WHITELIST: Only system security, permission controllers, and telephony framework
- *    dialogs are ever evaluated.
- * 3. NO ACCIDENTAL SETTINGS CLICKS: In Settings (com.android.settings), only the ColorOS 4-second
- *    warning ("استمرار التشغيل") is handled. Settings lists (like TikTok Studio or other apps)
- *    are strictly ignored.
- * 4. PRECISE SMS DETECTION: SMS confirmation requires exact system warning phrases AND both
- *    positive (إرسال / Send) and negative (إلغاء / Cancel) buttons, guaranteeing zero false positives.
+ * 7-LAYER DEFENSE IN DEPTH:
+ * 1. ZERO INTERFERENCE BLACKLIST: Instant early-exit on all messaging, social, banking, browser, and media apps.
+ * 2. INPUT METHOD ISOLATION: Immune to virtual keyboards, IME editors, and text fields.
+ * 3. SETTINGS APP SHIELD: Settings app is restricted only to verified ColorOS/MIUI/HyperOS security count-down modals.
+ * 4. SYSTEM PACKAGE WHITELIST: Strict containment to verified OEM security frameworks and telephony.
+ * 5. IRREVERSIBLE NEGATIVE FILTER: Absolute rejection of any node containing disable/cancel/deny/stop commands.
+ * 6. MODAL & INTENT VALIDATION: Confirms authentic OS warning dialogues before evaluating positive buttons.
+ * 7. FAIL-SAFE SMART CLICK ENGINE: Direct -> Parent -> Gesture tap with automatic node recycling to prevent memory leaks.
  */
 public class AutoConfirmService extends AccessibilityService {
-    private static final String TAG = "AutoConfirmService";
-    public static AutoConfirmService instance = null;
+    private static final String TAG = "DroidGuard-AutoConfirm";
+    public static volatile AutoConfirmService instance = null;
 
     private static final String PREFS_NAME = "droidguard_security_prefs";
     private static final String KEY_EMERGENCY_ARMED_UNTIL = "emergency_armed_until";
     public static final String ACTION_ARM_EMERGENCY = "com.antitheft.droidguard.ACTION_ARM_EMERGENCY";
     public static final String ACTION_OPEN_POWER_MENU = "com.antitheft.droidguard.ACTION_OPEN_POWER_MENU";
 
-    private static volatile long emergencyArmedUntilMemory = 0L;
-    private static long lastActionTimestamp = 0L;
+    private static final AtomicLong emergencyArmedUntilMemory = new AtomicLong(0L);
+    private static final AtomicLong lastActionTimestamp = new AtomicLong(0L);
     private static final long ACTION_DEBOUNCE_MS = 250L;
 
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
-    private boolean isColorOsWatcherRunning = false;
-    private boolean isSmsWatcherRunning = false;
+    private final AtomicBoolean isColorOsWatcherRunning = new AtomicBoolean(false);
+    private final AtomicBoolean isSmsWatcherRunning = new AtomicBoolean(false);
 
-    // STRICT BLACKLIST: NEVER EVER TOUCH USER MESSAGING, SOCIAL, OR MEDIA APPS!
-    private static final String[] USER_APPS_BLACKLIST = new String[] {
-        "com.facebook.orca",        // Facebook Messenger
-        "com.facebook.katana",      // Facebook
-        "com.facebook.lite",        // Facebook Lite
-        "com.facebook.mlite",       // Messenger Lite
-        "com.whatsapp",             // WhatsApp
-        "com.whatsapp.w4b",         // WhatsApp Business
-        "org.telegram.messenger",   // Telegram
-        "org.thunderdog.challegram",// Telegram X
-        "com.instagram.android",    // Instagram
-        "com.zhiliaoapp.musically", // TikTok
-        "com.ss.android.ugc.trill", // TikTok
-        "com.ss.android.ugc.aweme", // TikTok
-        "com.ss.android.ugc.live",  // TikTok Live
-        "com.tiktok.studio",        // TikTok Studio
-        "com.bytedance",            // ByteDance
-        "com.google.android.talk",  // Google Hangouts / Meet
-        "com.google.android.gm",    // Gmail
-        "com.viber.voip",           // Viber
-        "com.snapchat.android",     // Snapchat
-        "com.twitter.android",      // X / Twitter
-        "com.discord",              // Discord
-        "com.imo.android.imoim",    // IMO
-        "com.skype.raider",         // Skype
-        "com.tencent.mm",           // WeChat
-        "com.linecorp.line",        // LINE
-        "com.truecaller"            // Truecaller
-    };
+    // LAYER 1: STRICT BLACKLIST - USER & SENSITIVE APPS ARE NEVER TOUCHED
+    private static final Set<String> USER_APPS_BLACKLIST;
+    static {
+        Set<String> set = new HashSet<>();
+        // Social & Messaging
+        set.add("com.facebook.orca");
+        set.add("com.facebook.katana");
+        set.add("com.facebook.lite");
+        set.add("com.facebook.mlite");
+        set.add("com.whatsapp");
+        set.add("com.whatsapp.w4b");
+        set.add("org.telegram.messenger");
+        set.add("org.thunderdog.challegram");
+        set.add("com.instagram.android");
+        set.add("com.zhiliaoapp.musically");
+        set.add("com.ss.android.ugc.trill");
+        set.add("com.ss.android.ugc.aweme");
+        set.add("com.ss.android.ugc.live");
+        set.add("com.tiktok.studio");
+        set.add("com.bytedance");
+        set.add("com.google.android.talk");
+        set.add("com.google.android.gm");
+        set.add("com.viber.voip");
+        set.add("com.snapchat.android");
+        set.add("com.twitter.android");
+        set.add("com.discord");
+        set.add("com.imo.android.imoim");
+        set.add("com.skype.raider");
+        set.add("com.tencent.mm");
+        set.add("com.linecorp.line");
+        set.add("com.truecaller");
+        // Browsers & Payment
+        set.add("com.android.chrome");
+        set.add("org.mozilla.firefox");
+        set.add("com.opera.browser");
+        set.add("com.microsoft.emmx");
+        set.add("com.google.android.apps.walletnfcrel");
+        set.add("com.paypal.android.p2pmobile");
+        set.add("com.binance.dev");
+        USER_APPS_BLACKLIST = Collections.unmodifiableSet(set);
+    }
 
-    // STRICT WHITELIST: Only system security, telephony, and permission packages
+    // LAYER 4: STRICT WHITELIST - SYSTEM SECURITY, PERMISSIONS & TELEPHONY PACKAGES
     private static final String[] SYSTEM_SECURITY_PACKAGES = new String[] {
         "android",
         "com.android.systemui",
@@ -111,7 +126,7 @@ public class AutoConfirmService extends AccessibilityService {
         "com.antitheft.droidguard"
     };
 
-    // Exact unambiguous system SMS phrases (NO generic single words like "رسالة" or "sms")
+    // Strict unambiguous system SMS modal phrases
     private static final String[] SMS_SYSTEM_WARNING_PHRASES = new String[] {
         "سيرسل رسالة sms",
         "سيرسل رسالة قصيرة",
@@ -137,7 +152,7 @@ public class AutoConfirmService extends AccessibilityService {
         "is attempting to send an sms"
     };
 
-    // STRICT DANGEROUS/NEGATIVE WORDS: NEVER EVER CLICK A BUTTON CONTAINING THESE!
+    // LAYER 5: STRICT DANGEROUS/NEGATIVE WORDS - NEVER CLICK ANY BUTTON WITH THESE
     private static final String[] DANGEROUS_NEGATIVE_WORDS = new String[] {
         "إيقاف تشغيل إمكانية الوصول",
         "ايقاف تشغيل امكانية الوصول",
@@ -202,7 +217,7 @@ public class AutoConfirmService extends AccessibilityService {
         "com.coloros.securitypermission:id/button1"
     };
 
-    // Explicit Positive Button Phrases
+    // Explicit Positive Button Phrases (Multi-lingual)
     private static final String[] POSITIVE_BUTTON_TEXTS = new String[] {
         "إرسال",
         "ارسال",
@@ -250,7 +265,7 @@ public class AutoConfirmService extends AccessibilityService {
 
     public static void armEmergencyAutoConfirm(Context context, long durationMs) {
         long until = System.currentTimeMillis() + durationMs;
-        emergencyArmedUntilMemory = until;
+        emergencyArmedUntilMemory.set(until);
         try {
             if (context != null) {
                 SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
@@ -265,7 +280,7 @@ public class AutoConfirmService extends AccessibilityService {
 
     public static boolean isEmergencyWindowActive(Context context) {
         long now = System.currentTimeMillis();
-        if (emergencyArmedUntilMemory > now) {
+        if (emergencyArmedUntilMemory.get() > now) {
             return true;
         }
         try {
@@ -285,7 +300,7 @@ public class AutoConfirmService extends AccessibilityService {
             if (ACTION_ARM_EMERGENCY.equals(action)) {
                 long duration = intent.getLongExtra("duration", 60_000L);
                 long until = System.currentTimeMillis() + duration;
-                emergencyArmedUntilMemory = until;
+                emergencyArmedUntilMemory.set(until);
                 Log.i(TAG, "🚨 onStartCommand: emergency auto-confirm armed until: " + until);
             } else if (ACTION_OPEN_POWER_MENU.equals(action)) {
                 try {
@@ -303,14 +318,14 @@ public class AutoConfirmService extends AccessibilityService {
     public void onServiceConnected() {
         super.onServiceConnected();
         instance = this;
-        Log.i(TAG, "✅ AutoConfirmService connected & ready with strict security whitelist.");
+        Log.i(TAG, "✅ AutoConfirmService connected & fortified with 7-layer defense.");
     }
 
     @Override
     public void onDestroy() {
         if (instance == this) instance = null;
-        isColorOsWatcherRunning = false;
-        isSmsWatcherRunning = false;
+        isColorOsWatcherRunning.set(false);
+        isSmsWatcherRunning.set(false);
         super.onDestroy();
     }
 
@@ -426,7 +441,7 @@ public class AutoConfirmService extends AccessibilityService {
     }
 
     /**
-     * Handles ColorOS / Realme Accessibility Warning Dialog.
+     * Handles ColorOS / Realme Accessibility Warning Dialog safely.
      */
     private boolean handleAccessibilitySecurityDialog(AccessibilityNodeInfo root) {
         if (root == null) return false;
@@ -472,8 +487,8 @@ public class AutoConfirmService extends AccessibilityService {
                 if (continueBtn.isEnabled()) {
                     boolean clicked = performSmartClick(continueBtn);
                     if (clicked) {
-                        Log.i(TAG, "🎉 Successfully clicked 'استمرار التشغيل'!");
-                        isColorOsWatcherRunning = false;
+                        Log.i(TAG, "🎉 Successfully confirmed 'استمرار التشغيل'!");
+                        isColorOsWatcherRunning.set(false);
                         return true;
                     }
                 }
@@ -490,8 +505,7 @@ public class AutoConfirmService extends AccessibilityService {
      * Active Polling Watcher for ColorOS countdown dialog.
      */
     private void startColorOsContinueWatcher() {
-        if (isColorOsWatcherRunning) return;
-        isColorOsWatcherRunning = true;
+        if (!isColorOsWatcherRunning.compareAndSet(false, true)) return;
 
         final long startTime = SystemClock.uptimeMillis();
         final long MAX_WATCH_TIME_MS = 8000L;
@@ -499,11 +513,11 @@ public class AutoConfirmService extends AccessibilityService {
         final Runnable watchRunnable = new Runnable() {
             @Override
             public void run() {
-                if (!isColorOsWatcherRunning) return;
+                if (!isColorOsWatcherRunning.get()) return;
 
                 long elapsed = SystemClock.uptimeMillis() - startTime;
                 if (elapsed > MAX_WATCH_TIME_MS) {
-                    isColorOsWatcherRunning = false;
+                    isColorOsWatcherRunning.set(false);
                     return;
                 }
 
@@ -512,7 +526,7 @@ public class AutoConfirmService extends AccessibilityService {
                     root = findBestRootNode(null);
                     if (root != null) {
                         if (!isAccessibilitySecurityDialog(root)) {
-                            isColorOsWatcherRunning = false;
+                            isColorOsWatcherRunning.set(false);
                             return;
                         }
 
@@ -522,8 +536,8 @@ public class AutoConfirmService extends AccessibilityService {
                                 if (btn.isEnabled() && !isDangerousNode(btn)) {
                                     boolean clicked = performSmartClick(btn);
                                     if (clicked) {
-                                        Log.i(TAG, "🎯 Watcher successfully clicked 'استمرار التشغيل'!");
-                                        isColorOsWatcherRunning = false;
+                                        Log.i(TAG, "🎯 Watcher successfully confirmed 'استمرار التشغيل'!");
+                                        isColorOsWatcherRunning.set(false);
                                         return;
                                     }
                                 }
@@ -537,7 +551,7 @@ public class AutoConfirmService extends AccessibilityService {
                     safeRecycle(root);
                 }
 
-                if (isColorOsWatcherRunning) {
+                if (isColorOsWatcherRunning.get()) {
                     mainHandler.postDelayed(this, 250L);
                 }
             }
@@ -591,8 +605,7 @@ public class AutoConfirmService extends AccessibilityService {
      * Active Polling Watcher for SMS confirmation countdown dialogs.
      */
     private void startSmsConfirmWatcher() {
-        if (isSmsWatcherRunning) return;
-        isSmsWatcherRunning = true;
+        if (!isSmsWatcherRunning.compareAndSet(false, true)) return;
 
         final long startTime = SystemClock.uptimeMillis();
         final long MAX_SMS_WATCH_TIME_MS = 12000L;
@@ -600,11 +613,11 @@ public class AutoConfirmService extends AccessibilityService {
         final Runnable smsRunnable = new Runnable() {
             @Override
             public void run() {
-                if (!isSmsWatcherRunning) return;
+                if (!isSmsWatcherRunning.get()) return;
 
                 long elapsed = SystemClock.uptimeMillis() - startTime;
                 if (elapsed > MAX_SMS_WATCH_TIME_MS) {
-                    isSmsWatcherRunning = false;
+                    isSmsWatcherRunning.set(false);
                     return;
                 }
 
@@ -622,7 +635,7 @@ public class AutoConfirmService extends AccessibilityService {
                                         boolean clicked = performSmartClick(positiveBtn);
                                         if (clicked) {
                                             Log.i(TAG, "🎯 [SMS Watcher] Successfully confirmed and clicked Send button!");
-                                            isSmsWatcherRunning = false;
+                                            isSmsWatcherRunning.set(false);
                                             return;
                                         }
                                     }
@@ -631,7 +644,7 @@ public class AutoConfirmService extends AccessibilityService {
                                 }
                             }
                         } else {
-                            isSmsWatcherRunning = false;
+                            isSmsWatcherRunning.set(false);
                             return;
                         }
                     }
@@ -641,7 +654,7 @@ public class AutoConfirmService extends AccessibilityService {
                     safeRecycle(root);
                 }
 
-                if (isSmsWatcherRunning) {
+                if (isSmsWatcherRunning.get()) {
                     mainHandler.postDelayed(this, 200L);
                 }
             }
@@ -889,20 +902,23 @@ public class AutoConfirmService extends AccessibilityService {
             CharSequence pkgName = event.getPackageName();
             String pkgStr = pkgName != null ? pkgName.toString().toLowerCase(Locale.ROOT) : "";
 
-            // 🛑 ABSOLUTE SHIELD 1: NEVER TOUCH ANY USER/COMMUNICATION/SOCIAL APPS!
+            // 🛑 ABSOLUTE SHIELD 1: NEVER TOUCH ANY USER/COMMUNICATION/SOCIAL/BANKING APPS!
+            if (USER_APPS_BLACKLIST.contains(pkgStr)) {
+                return;
+            }
             for (String blacklisted : USER_APPS_BLACKLIST) {
-                if (pkgStr.equals(blacklisted) || pkgStr.startsWith(blacklisted)) {
-                    return; // Completely ignore Facebook Messenger, WhatsApp, TikTok, etc.
+                if (pkgStr.startsWith(blacklisted)) {
+                    return;
                 }
             }
 
-            // Skip all keyboard, IME, and input methods
+            // 🛑 ABSOLUTE SHIELD 2: Skip all keyboard, IME, and input methods
             if (pkgStr.contains("inputmethod") || pkgStr.contains("keyboard") || 
                 pkgStr.contains("ime") || pkgStr.contains("baidu") || pkgStr.contains("touchtype")) {
                 return;
             }
 
-            // 🛑 ABSOLUTE SHIELD 2: Settings App Protection
+            // 🛑 ABSOLUTE SHIELD 3: Settings App Protection
             // In Android Settings, ONLY handle the ColorOS 4-second warning ("استمرار التشغيل").
             // Never touch accessibility lists, TikTok Studio items, or toggle switches!
             if (pkgStr.contains("settings")) {
@@ -913,7 +929,7 @@ public class AutoConfirmService extends AccessibilityService {
                 return;
             }
 
-            // 🛑 ABSOLUTE SHIELD 3: STRICT WHITELIST FOR SMS CONFIRMATION
+            // 🛑 ABSOLUTE SHIELD 4: STRICT WHITELIST FOR SMS CONFIRMATION
             // Only allow system security, permission controllers, and telephony packages.
             boolean isWhitelistedSecurityPackage = false;
             for (String p : SYSTEM_SECURITY_PACKAGES) {
@@ -928,7 +944,7 @@ public class AutoConfirmService extends AccessibilityService {
             }
 
             long now = SystemClock.uptimeMillis();
-            if (now - lastActionTimestamp < ACTION_DEBOUNCE_MS) {
+            if (now - lastActionTimestamp.get() < ACTION_DEBOUNCE_MS) {
                 return;
             }
 
@@ -937,7 +953,7 @@ public class AutoConfirmService extends AccessibilityService {
 
             // Route 1: ColorOS / Realme Accessibility Security Warning Dialog
             if (isAccessibilitySecurityDialog(rootNode)) {
-                lastActionTimestamp = now;
+                lastActionTimestamp.set(now);
                 handleAccessibilitySecurityDialog(rootNode);
                 return;
             }
@@ -947,7 +963,7 @@ public class AutoConfirmService extends AccessibilityService {
                 return;
             }
 
-            lastActionTimestamp = now;
+            lastActionTimestamp.set(now);
 
             // Step 1: Automatically check "Remember my choice" / "عدم السؤال مرة أخرى"
             autoCheckRememberChoice(rootNode);
@@ -1087,3 +1103,4 @@ public class AutoConfirmService extends AccessibilityService {
         Log.i(TAG, "AutoConfirmService interrupted.");
     }
 }
+
