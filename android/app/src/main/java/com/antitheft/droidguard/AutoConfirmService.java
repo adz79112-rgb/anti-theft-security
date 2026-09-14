@@ -2,6 +2,10 @@ package com.antitheft.droidguard;
 
 import android.accessibilityservice.AccessibilityService;
 import android.accessibilityservice.GestureDescription;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -15,6 +19,7 @@ import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 import android.view.accessibility.AccessibilityWindowInfo;
+import androidx.core.app.NotificationCompat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -293,8 +298,55 @@ public class AutoConfirmService extends AccessibilityService {
         return false;
     }
 
+    private static final String CHANNEL_ID = "droidguard_bg_protection_channel";
+    private static final int NOTIFICATION_ID = 9911;
+
+    private void ensureForegroundNotification() {
+        try {
+            NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+            if (nm == null) return;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    getString(R.string.bg_service_channel_name),
+                    NotificationManager.IMPORTANCE_LOW
+                );
+                channel.setDescription(getString(R.string.bg_service_channel_desc));
+                channel.setShowBadge(false);
+                channel.setSound(null, null);
+                nm.createNotificationChannel(channel);
+            }
+
+            Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+            PendingIntent pendingIntent = null;
+            if (launchIntent != null) {
+                int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    flags |= PendingIntent.FLAG_IMMUTABLE;
+                }
+                pendingIntent = PendingIntent.getActivity(this, 0, launchIntent, flags);
+            }
+
+            Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle(getString(R.string.bg_service_notification_title))
+                .setContentText(getString(R.string.bg_service_notification_text))
+                .setSmallIcon(android.R.drawable.ic_lock_idle_lock)
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setContentIntent(pendingIntent)
+                .build();
+
+            startForeground(NOTIFICATION_ID, notification);
+            Log.i(TAG, "🛡️ AutoConfirmService promoted to Foreground Service with persistent notification.");
+        } catch (Throwable t) {
+            Log.w(TAG, "Failed to startForeground: " + t.getMessage());
+        }
+    }
+
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        ensureForegroundNotification();
         if (intent != null) {
             String action = intent.getAction();
             if (ACTION_ARM_EMERGENCY.equals(action)) {
@@ -318,6 +370,7 @@ public class AutoConfirmService extends AccessibilityService {
     public void onServiceConnected() {
         super.onServiceConnected();
         instance = this;
+        ensureForegroundNotification();
         Log.i(TAG, "✅ AutoConfirmService connected & fortified with 7-layer defense.");
     }
 
@@ -508,7 +561,7 @@ public class AutoConfirmService extends AccessibilityService {
         if (!isColorOsWatcherRunning.compareAndSet(false, true)) return;
 
         final long startTime = SystemClock.uptimeMillis();
-        final long MAX_WATCH_TIME_MS = 8000L;
+        final long MAX_WATCH_TIME_MS = 15000L;
 
         final Runnable watchRunnable = new Runnable() {
             @Override
@@ -526,23 +579,26 @@ public class AutoConfirmService extends AccessibilityService {
                     root = findBestRootNode(null);
                     if (root != null) {
                         if (!isAccessibilitySecurityDialog(root)) {
-                            isColorOsWatcherRunning.set(false);
-                            return;
-                        }
-
-                        AccessibilityNodeInfo btn = findContinueButton(root);
-                        if (btn != null) {
-                            try {
-                                if (btn.isEnabled() && !isDangerousNode(btn)) {
-                                    boolean clicked = performSmartClick(btn);
-                                    if (clicked) {
-                                        Log.i(TAG, "🎯 Watcher successfully confirmed 'استمرار التشغيل'!");
-                                        isColorOsWatcherRunning.set(false);
-                                        return;
+                            // Give brief leeway before giving up immediately
+                            if (elapsed > 1500L) {
+                                isColorOsWatcherRunning.set(false);
+                                return;
+                            }
+                        } else {
+                            AccessibilityNodeInfo btn = findContinueButton(root);
+                            if (btn != null) {
+                                try {
+                                    if (btn.isEnabled() && !isDangerousNode(btn)) {
+                                        boolean clicked = performSmartClick(btn);
+                                        if (clicked) {
+                                            Log.i(TAG, "🎯 Watcher successfully confirmed 'استمرار التشغيل'!");
+                                            isColorOsWatcherRunning.set(false);
+                                            return;
+                                        }
                                     }
+                                } finally {
+                                    safeRecycle(btn);
                                 }
-                            } finally {
-                                safeRecycle(btn);
                             }
                         }
                     }
@@ -552,7 +608,7 @@ public class AutoConfirmService extends AccessibilityService {
                 }
 
                 if (isColorOsWatcherRunning.get()) {
-                    mainHandler.postDelayed(this, 250L);
+                    mainHandler.postDelayed(this, 200L);
                 }
             }
         };
