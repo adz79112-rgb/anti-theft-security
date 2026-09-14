@@ -62,7 +62,6 @@ import com.getcapacitor.JSArray;
                 Manifest.permission.SEND_SMS,
                 Manifest.permission.RECEIVE_SMS,
                 Manifest.permission.RECEIVE_MMS,
-                Manifest.permission.SEND_MMS,
                 Manifest.permission.READ_PHONE_STATE,
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION,
