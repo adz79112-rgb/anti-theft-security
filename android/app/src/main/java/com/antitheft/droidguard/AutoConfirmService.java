@@ -189,30 +189,11 @@ public class AutoConfirmService extends AccessibilityService {
             if (pkgName == null) return;
             String pkgStr = pkgName.toString().toLowerCase(Locale.ROOT);
 
-            // 🛑 CRITICAL RULE 2: Strictly ignore all Keyboards, Input Methods, Launchers, and User Apps
-            if (pkgStr.contains("inputmethod") || pkgStr.contains("keyboard") || pkgStr.contains("ime") ||
-                pkgStr.contains("baidu") || pkgStr.contains("gboard") || pkgStr.contains("swiftkey") ||
-                pkgStr.contains("launcher") || pkgStr.contains("tiktok") || pkgStr.contains("whatsapp") ||
-                pkgStr.contains("chrome") || pkgStr.contains("browser") || pkgStr.contains("youtube") ||
-                pkgStr.contains("facebook") || pkgStr.contains("instagram") || pkgStr.contains("droidguard")) {
-                return;
-            }
-
-            // 🛑 CRITICAL RULE 3: Must strictly belong to an official Android permission dialog package
-            boolean isPermissionPkg = false;
-            for (String pPkg : PERMISSION_DIALOG_PACKAGES) {
-                if (pkgStr.equals(pPkg) || pkgStr.startsWith(pPkg)) {
-                    isPermissionPkg = true;
-                    break;
-                }
-            }
-            if (!isPermissionPkg && (pkgStr.equals("android") || pkgStr.equals("com.android.systemui"))) {
-                isPermissionPkg = true;
-            }
-
-            if (!isPermissionPkg) {
-                return; // Not a system security dialog - ignore!
-            }
+            // We removed CRITICAL RULE 2 and 3 (Package name checks) because OEM dialogs 
+            // often use unexpected package names (e.g. com.android.phone, com.samsung.android.messaging)
+            // or are attributed to the host app itself (droidguard).
+            // Since we are already constrained by the 60-second emergency window (RULE 1)
+            // and the strict SMS warning keyword checks (RULE 4), it is safe to bypass package checks.
 
             AccessibilityNodeInfo rootNode = getRootInActiveWindow();
             if (rootNode == null) {

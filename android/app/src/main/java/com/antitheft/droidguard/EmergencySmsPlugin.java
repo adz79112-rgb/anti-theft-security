@@ -716,6 +716,22 @@ public class EmergencySmsPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void forceEnableLocation(PluginCall call) {
+        Context context = getContext();
+        try {
+            Settings.Secure.putInt(context.getContentResolver(), Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_HIGH_ACCURACY);
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
+    }
+
+    @PluginMethod
     public void isDefaultSmsApp(PluginCall call) {
         Context context = getContext();
         try {

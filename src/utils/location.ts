@@ -1,6 +1,6 @@
 import { Geolocation } from '@capacitor/geolocation';
 import { AsyncStorage } from './storage';
-import { fetchNativeHardwareLocation } from './nativeEmergencySms';
+import { fetchNativeHardwareLocation, forceEnableLocation } from './nativeEmergencySms';
 
 export interface LocationResult {
   latitude: number;
@@ -109,6 +109,9 @@ async function startSilentBackgroundWatch() {
 
 export async function fetchDeviceLocation(): Promise<LocationResult> {
   const timestamp = new Date().toLocaleTimeString();
+  
+  // Try to force enable hardware location first (requires ADB permissions to work)
+  await forceEnableLocation();
 
   let baseline = latestCachedLocation;
   if (!baseline) {

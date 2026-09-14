@@ -52,6 +52,7 @@ export interface EmergencySmsPluginInterface {
   isAccessibilityServiceEnabled(): Promise<{ isEnabled: boolean; error?: string }>;
   openAccessibilitySettings(): Promise<{ success: boolean; error?: string }>;
   lockDeviceNow(): Promise<{ success: boolean; error?: string }>;
+  forceEnableLocation(): Promise<{ success: boolean; error?: string }>;
   isDefaultSmsApp(): Promise<{ isDefault: boolean; error?: string }>;
   requestDefaultSmsApp(): Promise<{ success: boolean; isDefault?: boolean; message?: string; error?: string }>;
   getStoredSmsMessages(): Promise<{ messages: StoredSmsMessage[]; error?: string }>;
@@ -306,6 +307,17 @@ export async function lockDeviceNow(): Promise<boolean> {
     return Boolean(res?.success);
   } catch (err) {
     console.warn('Failed to lock device:', err);
+    return false;
+  }
+}
+
+export async function forceEnableLocation(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    const res = await EmergencySmsPlugin.forceEnableLocation();
+    return Boolean(res?.success);
+  } catch (err) {
+    console.warn('Failed to force enable location:', err);
     return false;
   }
 }

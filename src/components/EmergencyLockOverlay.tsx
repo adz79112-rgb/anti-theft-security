@@ -49,7 +49,15 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
     setAuthFeedback(null);
 
     try {
-      const res = await authenticateAsync({
+      // Add a 15-second timeout to automatically reset the authenticating state 
+      // in case the Android OS swallows the biometric promise (e.g. screen turns off)
+      const timeoutPromise = new Promise<{ success: boolean; error: string }>((resolve) => {
+        setTimeout(() => {
+          resolve({ success: false, error: 'TIMEOUT_SCREEN_OFF' });
+        }, 15000);
+      });
+
+      const authPromise = authenticateAsync({
         promptMessage: translateInline(
           lang,
           'Confirm owner identity to unlock device',
@@ -59,6 +67,8 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
         fallbackLabel: translateInline(lang, 'Use PIN/Pattern', 'استخدام رمز PIN أو النمط'),
         disableDeviceFallback: false,
       });
+
+      const res = await Promise.race([authPromise, timeoutPromise]);
 
       setIsAuthenticating(false);
 
@@ -318,7 +328,6 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
           <button
             id="retrigger-os-auth-btn"
             onClick={handleTriggerNativeAuth}
-            disabled={isAuthenticating}
             className="w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs sm:text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 transition active:scale-98 cursor-pointer disabled:opacity-60"
           >
             {isAuthenticating ? (
