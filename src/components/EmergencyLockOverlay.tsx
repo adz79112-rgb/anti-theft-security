@@ -75,6 +75,17 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
       if (res.success) {
         handleAuthSuccess();
       } else {
+        if (res.error === 'TIMEOUT_SCREEN_OFF') {
+          setAuthFeedback(
+            translateInline(
+              lang,
+              'Authentication timed out. Tap to try again.',
+              'انتهت مهلة انتظار المصادقة. انقر للمحاولة مجدداً.'
+            )
+          );
+          return;
+        }
+
         const isLockout = res.error && (
           res.error.toLowerCase().includes('lockout') ||
           res.error.toLowerCase().includes('too many')
