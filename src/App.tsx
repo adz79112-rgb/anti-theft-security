@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, startTransition } from 'react';
+import React, { useState, useEffect, useCallback, useRef, startTransition } from 'react';
 import { translateInline } from './utils/translateInline';
 import {
   SecurityConfig,
@@ -391,34 +391,42 @@ export default function App() {
     }
   }, []);
 
+  // Track if startup permissions were requested this session to prevent repeated prompts
+  const hasRequestedPermissionsRef = useRef(false);
+
   // Execute unified startup security permission request once, then prime background GPS and Device Admin
   useEffect(() => {
-    requestStartupSecurityPermissions().then(async (result) => {
-      console.log('DroidGuard Security Permissions startup check:', result);
-      setSmsPermissionGranted(Boolean(result.smsGranted || result.granted));
-      
-      // Check Device Admin, Default SMS, Accessibility and Location Services status
-      const [isAdmin, isDef, isAcc, locStatus] = await Promise.all([
-        checkDeviceAdminStatus(),
-        checkIsDefaultSmsApp(),
-        checkAccessibilityServiceStatus(),
-        checkDeviceLocationStatus(),
-      ]);
-      setDeviceAdminActive(isAdmin);
-      setIsDefaultSmsAppActive(isDef);
-      setAccessibilityServiceActive(isAcc);
-      setLocationServiceActive(locStatus.enabled);
+    if (!hasRequestedPermissionsRef.current) {
+      hasRequestedPermissionsRef.current = true;
+      requestStartupSecurityPermissions().then(async (result) => {
+        console.log('DroidGuard Security Permissions startup check:', result);
+        setSmsPermissionGranted(Boolean(result.smsGranted || result.granted));
+        
+        // Check Device Admin, Default SMS, Accessibility and Location Services status
+        const [isAdmin, isDef, isAcc, locStatus] = await Promise.all([
+          checkDeviceAdminStatus(),
+          checkIsDefaultSmsApp(),
+          checkAccessibilityServiceStatus(),
+          checkDeviceLocationStatus(),
+        ]);
+        setDeviceAdminActive(isAdmin);
+        setIsDefaultSmsAppActive(isDef);
+        setAccessibilityServiceActive(isAcc);
+        setLocationServiceActive(locStatus.enabled);
 
-      // If running on Android and either Device Admin, Accessibility or Location Services is missing, show guided setup
-      if (Capacitor.isNativePlatform() && (!isAdmin || !isAcc || !locStatus.enabled)) {
-        setIsElevatedPermissionsModalOpen(true);
-      }
+        // If running on Android and either Device Admin, Accessibility or Location Services is missing, show guided setup
+        if (Capacitor.isNativePlatform() && (!isAdmin || !isAcc || !locStatus.enabled)) {
+          setIsElevatedPermissionsModalOpen(true);
+        }
 
-      // Now that location permissions are requested/checked, start the silent GPS watcher
-      initializeBackgroundGPS().catch((err) => {
-        console.log('[App] Background GPS priming:', err);
+        // Now that location permissions are requested/checked, start the silent GPS watcher
+        initializeBackgroundGPS().catch((err) => {
+          console.log('[App] Background GPS priming:', err);
+        });
       });
-    });
+    } else {
+      checkSecurityState();
+    }
 
     const handleFocus = () => {
       checkSecurityState();

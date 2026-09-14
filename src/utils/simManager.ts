@@ -329,29 +329,33 @@ export async function sendDualSimSmsFallback(
   const [sim1, sim2] = state.simCards;
 
   // Real native background SMS dispatch via Android SmsManager
-  // 1. Attempt SIM 1
+  // 1. Attempt SIM 1 first
   const res1 = await sendSilentBackgroundSms(cleanRecipient, message, 1);
   let sim1Delivered = Boolean(res1.success && res1.confirmedBySmsManager);
 
-  // 2. Attempt SIM 2 (Redundant Fallback)
+  // 2. Fallback to SIM 2 ONLY if SIM 1 failed (prevents spamming multiple SMS prompts)
   let sim2Delivered = false;
   let res2: any = null;
 
-  // Only attempt SIM 2 if it is inserted or active, or if SIM 1 failed
-  const isSim2Available = !sim2.carrier.includes('No SIM') && !sim2.carrier.includes('لا توجد شريحة');
-  if (isSim2Available || !sim1Delivered) {
-    res2 = await sendSilentBackgroundSms(cleanRecipient, message, 2);
-    sim2Delivered = Boolean(res2.success && res2.confirmedBySmsManager);
+  if (!sim1Delivered) {
+    const isSim2Available = !sim2.carrier.includes('No SIM') && !sim2.carrier.includes('لا توجد شريحة');
+    if (isSim2Available) {
+      // Small pause before fallback to avoid tripping carrier flood filters
+      await new Promise((r) => setTimeout(r, 400));
+      res2 = await sendSilentBackgroundSms(cleanRecipient, message, 2);
+      sim2Delivered = Boolean(res2.success && res2.confirmedBySmsManager);
+    }
   }
 
-  // 3. Ultra-Reliable Default SmsManager Fallback: If both slot-specific attempts failed on native Android
+  // 3. Ultra-Reliable Default SmsManager Fallback ONLY if both SIM 1 & SIM 2 failed
   let defaultDelivered = false;
   let resDefault: any = null;
   if (Capacitor.isNativePlatform() && !sim1Delivered && !sim2Delivered) {
+    await new Promise((r) => setTimeout(r, 400));
     resDefault = await sendSilentBackgroundSms(cleanRecipient, message);
     if (resDefault.success && resDefault.confirmedBySmsManager) {
       defaultDelivered = true;
-      sim1Delivered = true; // Mark as delivered via primary device channel
+      sim1Delivered = true;
     }
   }
 

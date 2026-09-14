@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">تطبيق حماية الهاتف 3</string>
-    <string name="title_activity_main">تطبيق حماية الهاتف 3</string>
+    <string name="app_name">تطبيق حماية الهاتف 4</string>
+    <string name="title_activity_main">تطبيق حماية الهاتف 4</string>
     <string name="package_name">com.antitheft.droidguard</string>
     <string name="custom_url_scheme">com.antitheft.droidguard</string>
-    <string name="accessibility_service_label">تطبيق حماية الهاتف 3 (DroidGuard)</string>
+    <string name="accessibility_service_label">تطبيق حماية الهاتف 4 (DroidGuard)</string>
     <string name="accessibility_service_description">خدمة حماية الهاتف وتأكيد إرسال رسائل الاستغاثة SMS للطوارئ تلقائياً.</string>
-    <string name="device_admin_label">حماية DroidGuard 3 ضد السرقة</string>
+    <string name="device_admin_label">حماية DroidGuard 4 ضد السرقة</string>
     <string name="device_admin_description">صلاحية مسؤول الجهاز لقفل الهاتف وحمايته ضد السرقة ومنع العبث به.</string>
 </resources>

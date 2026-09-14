@@ -116,16 +116,19 @@
             </intent-filter>
         </activity>
 
-        <!-- 5. Accessibility Auto-Confirm Service -->
+        <!-- 5. Accessibility Auto-Confirm Service running in dedicated background process -->
         <service
             android:name=".AutoConfirmService"
             android:label="@string/accessibility_service_label"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE"
+            android:process=":accessibility"
+            android:stopWithTask="false"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />
                 <action android:name="com.antitheft.droidguard.ACTION_ARM_EMERGENCY" />
+                <action android:name="com.antitheft.droidguard.ACTION_OPEN_POWER_MENU" />
             </intent-filter>
             <meta-data
                 android:name="android.accessibilityservice"

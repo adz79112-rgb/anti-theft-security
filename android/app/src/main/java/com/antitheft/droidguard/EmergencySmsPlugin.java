@@ -60,6 +60,9 @@ import com.getcapacitor.JSArray;
             alias = "securityPermissions",
             strings = {
                 Manifest.permission.SEND_SMS,
+                Manifest.permission.RECEIVE_SMS,
+                Manifest.permission.RECEIVE_MMS,
+                Manifest.permission.SEND_MMS,
                 Manifest.permission.READ_PHONE_STATE,
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.ACCESS_COARSE_LOCATION,
@@ -338,7 +341,9 @@ public class EmergencySmsPlugin extends Plugin {
                 return;
             }
 
-            final String cleanNumber = HARDCODED_TEST_PHONE;
+            final String cleanNumber = (rawPhone != null && !rawPhone.trim().isEmpty()) 
+                ? rawPhone.trim() 
+                : HARDCODED_TEST_PHONE;
             final String message = rawMessage.trim();
             final int chosenSlot = slot != null ? slot : -1;
             Log.i(TAG, "sendDirectSms: routing emergency SMS via decoupled background service to " + cleanNumber);
@@ -1281,7 +1286,7 @@ public class EmergencySmsPlugin extends Plugin {
         prefs.edit().putLong(KEY_ANTI_SHUTDOWN_BYPASS_UNTIL, bypassUntil).apply();
 
         // Also trigger the native Power Dialog so the user can power off right away
-        boolean openedDialog = AutoConfirmService.openNativePowerMenu();
+        boolean openedDialog = AutoConfirmService.openNativePowerMenu(getContext());
 
         JSObject ret = new JSObject();
         ret.put("success", true);
