@@ -59,6 +59,8 @@ export interface EmergencySmsPluginInterface {
   clearStoredSmsMessages(): Promise<{ success: boolean; error?: string }>;
   isLocationServiceEnabled(): Promise<{ enabled: boolean; gpsEnabled?: boolean; networkEnabled?: boolean; error?: string }>;
   openLocationSettings(): Promise<{ opened: boolean; error?: string }>;
+  getDeviceBrandInfo(): Promise<DeviceBrandInfo>;
+  openManufacturerAutostartSettings(): Promise<{ success: boolean; target?: string; error?: string }>;
   getFreshDeviceLocation(): Promise<{
     success: boolean;
     latitude?: number;
@@ -70,6 +72,11 @@ export interface EmergencySmsPluginInterface {
     timestamp?: string;
     error?: string;
   }>;
+  setAntiShutdownProtection(options: { enabled: boolean; pin?: string }): Promise<{ success: boolean; enabled?: boolean; error?: string }>;
+  getAntiShutdownStatus(): Promise<{ enabled: boolean; isBypassed?: boolean; bypassRemainingSeconds?: number; error?: string }>;
+  grantPowerOffBypass(options: { seconds: number }): Promise<{ success: boolean; bypassUntil?: number; openedNativeDialog?: boolean; error?: string }>;
+  triggerPowerOffChallenge(): Promise<{ success: boolean; error?: string }>;
+  addListener(eventName: string, listenerFunc: (data: any) => void): Promise<any>;
 }
 
 export const EmergencySmsPlugin = registerPlugin<EmergencySmsPluginInterface>('EmergencySmsPlugin');
@@ -512,4 +519,190 @@ export async function fetchNativeHardwareLocation(): Promise<{
   }
   return null;
 }
+
+export interface DeviceBrandInfo {
+  manufacturer: string;
+  brand: string;
+  model: string;
+  sdkInt: number;
+  isCondor: boolean;
+  isSamsung: boolean;
+  isXiaomi: boolean;
+  isRealmeOrOppo: boolean;
+  isTranssion: boolean;
+  isHuawei: boolean;
+}
+
+/**
+ * Detects current device manufacturer and OEM brand (Samsung, Condor, Xiaomi, Realme/Oppo, etc.)
+ */
+export async function getDeviceBrandInfo(): Promise<DeviceBrandInfo> {
+  if (!Capacitor.isNativePlatform()) {
+    return {
+      manufacturer: 'Generic Browser',
+      brand: 'Web',
+      model: 'Desktop/Web Preview',
+      sdkInt: 34,
+      isCondor: false,
+      isSamsung: false,
+      isXiaomi: false,
+      isRealmeOrOppo: false,
+      isTranssion: false,
+      isHuawei: false,
+    };
+  }
+
+  try {
+    const res = await EmergencySmsPlugin.getDeviceBrandInfo();
+    return {
+      manufacturer: res.manufacturer || 'Android',
+      brand: res.brand || 'Device',
+      model: res.model || 'Phone',
+      sdkInt: res.sdkInt || 33,
+      isCondor: Boolean(res.isCondor),
+      isSamsung: Boolean(res.isSamsung),
+      isXiaomi: Boolean(res.isXiaomi),
+      isRealmeOrOppo: Boolean(res.isRealmeOrOppo),
+      isTranssion: Boolean(res.isTranssion),
+      isHuawei: Boolean(res.isHuawei),
+    };
+  } catch (e) {
+    console.warn('getDeviceBrandInfo error:', e);
+    return {
+      manufacturer: 'Android',
+      brand: 'Device',
+      model: 'Phone',
+      sdkInt: 33,
+      isCondor: false,
+      isSamsung: false,
+      isXiaomi: false,
+      isRealmeOrOppo: false,
+      isTranssion: false,
+      isHuawei: false,
+    };
+  }
+}
+
+/**
+ * Opens manufacturer-specific background manager or autostart screen
+ * Supports: Condor DuraSpeed, Samsung Device Care, Xiaomi Autostart, Realme/OPPO Startup Manager
+ */
+export async function openManufacturerAutostartSettings(): Promise<{ success: boolean; target?: string }> {
+  if (!Capacitor.isNativePlatform()) {
+    return { success: true, target: 'web_mock' };
+  }
+  try {
+    const res = await EmergencySmsPlugin.openManufacturerAutostartSettings();
+    return { success: Boolean(res?.success), target: res?.target };
+  } catch (e) {
+    console.warn('openManufacturerAutostartSettings error:', e);
+    return { success: false };
+  }
+}
+
+/**
+ * Configure Anti-Shutdown / Power-Off PIN protection on Android
+ */
+export async function setAntiShutdownProtection(enabled: boolean, pin?: string): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) {
+    localStorage.setItem('anti_shutdown_enabled', enabled ? 'true' : 'false');
+    if (pin) localStorage.setItem('anti_shutdown_pin', pin);
+    return true;
+  }
+  try {
+    const res = await EmergencySmsPlugin.setAntiShutdownProtection({ enabled, pin });
+    return Boolean(res?.success);
+  } catch (e) {
+    console.warn('setAntiShutdownProtection error:', e);
+    return false;
+  }
+}
+
+/**
+ * Get Anti-Shutdown status and check if temporary power off bypass is active
+ */
+export async function getAntiShutdownStatus(): Promise<{ enabled: boolean; isBypassed: boolean; bypassRemainingSeconds: number }> {
+  if (!Capacitor.isNativePlatform()) {
+    const enabled = localStorage.getItem('anti_shutdown_enabled') !== 'false';
+    return { enabled, isBypassed: false, bypassRemainingSeconds: 0 };
+  }
+  try {
+    const res = await EmergencySmsPlugin.getAntiShutdownStatus();
+    return {
+      enabled: Boolean(res?.enabled),
+      isBypassed: Boolean(res?.isBypassed),
+      bypassRemainingSeconds: Number(res?.bypassRemainingSeconds) || 0,
+    };
+  } catch (e) {
+    console.warn('getAntiShutdownStatus error:', e);
+    return { enabled: true, isBypassed: false, bypassRemainingSeconds: 0 };
+  }
+}
+
+/**
+ * Grant legitimate power off bypass for N seconds (default 60s) and open the native power dialog
+ */
+export async function grantPowerOffBypass(seconds: number = 60): Promise<{ success: boolean; openedNativeDialog?: boolean }> {
+  if (!Capacitor.isNativePlatform()) {
+    return { success: true, openedNativeDialog: false };
+  }
+  try {
+    const res = await EmergencySmsPlugin.grantPowerOffBypass({ seconds });
+    return {
+      success: Boolean(res?.success),
+      openedNativeDialog: Boolean(res?.openedNativeDialog),
+    };
+  } catch (e) {
+    console.warn('grantPowerOffBypass error:', e);
+    return { success: false };
+  }
+}
+
+/**
+ * Simulate or trigger the Power-Off Lock Challenge
+ */
+export async function triggerPowerOffChallenge(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) {
+    window.dispatchEvent(new CustomEvent('powerOffAttemptIntercepted'));
+    return true;
+  }
+  try {
+    const res = await EmergencySmsPlugin.triggerPowerOffChallenge();
+    return Boolean(res?.success);
+  } catch (e) {
+    console.warn('triggerPowerOffChallenge error:', e);
+    window.dispatchEvent(new CustomEvent('powerOffAttemptIntercepted'));
+    return false;
+  }
+}
+
+/**
+ * Listen for native Power-Off intercept events
+ */
+export function addPowerOffAttemptListener(callback: () => void): () => void {
+  if (Capacitor.isNativePlatform()) {
+    let handle: any = null;
+    EmergencySmsPlugin.addListener('powerOffAttemptIntercepted', () => {
+      callback();
+    }).then((h: any) => {
+      handle = h;
+    }).catch((err: any) => {
+      console.warn('Error adding powerOffAttemptIntercepted listener:', err);
+    });
+
+    return () => {
+      if (handle && typeof handle.remove === 'function') {
+        handle.remove();
+      }
+    };
+  } else {
+    const handler = () => callback();
+    window.addEventListener('powerOffAttemptIntercepted', handler);
+    return () => {
+      window.removeEventListener('powerOffAttemptIntercepted', handler);
+    };
+  }
+}
+
+
 

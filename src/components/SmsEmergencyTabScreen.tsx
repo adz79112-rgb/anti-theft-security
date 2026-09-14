@@ -52,6 +52,7 @@ import {
 } from '../utils/nativeEmergencySms';
 import { Capacitor } from '@capacitor/core';
 import { DualSimNetworkCard } from './DualSimNetworkCard';
+import { UniversalOemBypassModal } from './UniversalOemBypassModal';
 
 interface SmsEmergencyTabScreenProps {
   config: SecurityConfig;
@@ -80,7 +81,7 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
   const [isSettingDefaultSms, setIsSettingDefaultSms] = useState<boolean>(false);
   const [isOpeningAccessibility, setIsOpeningAccessibility] = useState<boolean>(false);
   const [isSendingTestSms, setIsSendingTestSms] = useState<boolean>(false);
-  const [showOppoModal, setShowOppoModal] = useState<boolean>(false);
+  const [showUniversalOemModal, setShowUniversalOemModal] = useState<boolean>(false);
 
   // Load emergency contact phone, check SEND_SMS, Device Admin, Accessibility Service and Default SMS status
   const refreshSecurityStatus = async () => {
@@ -379,7 +380,7 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
     try {
       const granted = await requestBackgroundActivityPermission();
       if (granted) {
-        setSaveFeedback(translateInline(lang, '✓ Opened battery optimization settings. Please grant unrestricted background activity (Recommended for ColorOS/Oppo).', '✓ تم فتح إعدادات تحسين البطارية. يرجى السماح بالعمل في الخلفية (ضروري لأجهزة Oppo/ColorOS).'));
+        setSaveFeedback(translateInline(lang, '✓ Opened battery optimization settings. Please grant unrestricted background activity (Essential for Condor, Samsung, Xiaomi & Realme).', '✓ تم فتح إعدادات تحسين البطارية. يرجى السماح بالعمل في الخلفية (ضروري لهواتف كوندور، سامسونج، شاومي، وريلمي).'));
       }
     } catch (e) {
       console.error(e);
@@ -838,6 +839,59 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
           </div>
         </div>
 
+        {/* Universal Multi-Brand OEM Stealth & Zero-Touch Guide Card (Condor, Samsung, Xiaomi, Realme) */}
+        <div
+          id="universal-oem-guide-card"
+          className="p-4 sm:p-5 rounded-2xl border border-teal-500/40 bg-teal-950/20 text-teal-200 transition-all flex flex-col gap-3"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <div className="p-2.5 rounded-xl bg-teal-500/20 text-teal-300 border border-teal-500/30 shrink-0 mt-0.5">
+                <Smartphone className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="text-sm font-bold text-white">
+                    {translateInline(
+                      lang,
+                      'Multi-Brand Zero-Touch Guide (Condor, Samsung, Xiaomi, Realme)',
+                      'دليل ضبط أجهزة كوندور 🇩🇿، سامسونج 🇰🇷، شاومي 🇨🇳، وريلمي 📱'
+                    )}
+                  </h4>
+                  <span className="text-[10px] font-mono-code font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-teal-500/30 text-teal-300 border border-teal-500/40">
+                    ALL PHONES SUPPORTED
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                  {translateInline(
+                    lang,
+                    'Specific step-by-step instructions for Algerian Condor phones (DuraSpeed & Restricted Settings), Samsung One UI, Xiaomi HyperOS/MIUI, and Realme UI to ensure 100% silent background SMS without any countdown popups.',
+                    'إرشادات مخصصة ومفصلة لهواتف كوندور الجزائرية (حل مشكلة الإعداد المقيد و DuraSpeed)، سامسونج (تطبيقات لا تنام)، شاومي (البدء التلقائي)، وريلمي لتأكيد إرسال رسائل الاستغاثة فوراً وبصمت تام في الخلفية.'
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+              <button
+                id="btn-open-universal-oem-guide"
+                type="button"
+                onClick={() => setShowUniversalOemModal(true)}
+                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white text-xs font-bold font-mono-code transition cursor-pointer shadow-lg shadow-teal-950/60 flex items-center gap-2"
+              >
+                <Wrench className="w-4 h-4" />
+                <span>
+                  {translateInline(
+                    lang,
+                    'Open Brand Setup Guide 📱',
+                    'فتح دليل ضبط جهازك 📱'
+                  )}
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* 3. Premium SMS Access (Bypass OEM Restrictions / ColorOS / MIUI / Samsung) */}
         <div
           id="premium-sms-access-card"
@@ -1108,107 +1162,14 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
         />
       </div>
 
-      {/* Oppo / ColorOS / Realme Stealth Configuration Modal */}
-      {showOppoModal && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-lg rounded-3xl bg-slate-900 border border-amber-500/40 shadow-2xl p-5 sm:p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                  <Wrench className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-slate-100">
-                    {translateInline(lang, 'ColorOS / Oppo Stealth Bypass Guide', 'دليل إلغاء نافذة العد التنازلي لهواتف Oppo و Realme')}
-                  </h3>
-                  <p className="text-xs text-amber-400">
-                    {translateInline(lang, 'Remove the 5-second SMS confirmation popup permanently', 'إيقاف نافذة تأكيد الإرسال المنبثقة بشكل نهائي')}
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowOppoModal(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <p className="text-xs text-slate-300 leading-relaxed">
-              {translateInline(
-                lang,
-                'Oppo (ColorOS) and Realme devices include a system-level security hook that intercepts background SMS dispatch and shows a 5-second countdown dialog. Follow these quick steps to disable it permanently:',
-                'تتضمن هواتف Oppo و Realme طبقة أمان مدمجة في النظام تقوم باعتراض رسائل الطوارئ في الخلفية وتظهر نافذة عد تنازلي (5 ثوانٍ). لإلغائها نهائياً وضمان إرسال الرسالة سراً وبصمت تام، اتبع الخطوات التالية:'
-              )}
-            </p>
-
-            {/* Step 1 */}
-            <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-amber-300">
-                <span className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">1</span>
-                <span>{translateInline(lang, 'Step 1: Disable Permission Monitoring in Developer Options', 'الخطوة 1: تعطيل مراقبة الأذونات في خيارات المطور')}</span>
-              </div>
-              <p className="text-[11px] text-slate-300 leading-normal">
-                {translateInline(
-                  lang,
-                  'Open Developer Options, scroll down to the bottom, and enable "Disable permission monitoring" (or "Disable system optimization"). Then restart your phone.',
-                  'انقر على الزر بالأسفل لفتح خيارات المطور، ثم انزل لأسفل الصفحة وفعل خيار "تعطيل مراقبة الأذونات" (Disable permission monitoring) أو (تعطيل تحسين النظام)، ثم أعد تشغيل الهاتف.'
-                )}
-              </p>
-              <button
-                type="button"
-                onClick={handleOpenDevOptions}
-                className="w-full py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
-              >
-                <ExternalLink className="w-4 h-4" />
-                <span>{translateInline(lang, 'Open Developer Options Now', 'فتح خيارات المطور الآن (Developer Options)')}</span>
-              </button>
-            </div>
-
-            {/* Step 2 */}
-            <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
-              <div className="flex items-center gap-2 text-xs font-bold text-cyan-300">
-                <span className="w-5 h-5 rounded-full bg-cyan-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">2</span>
-                <span>{translateInline(lang, 'Step 2: Allow Unrestricted Background Activity', 'الخطوة 2: السماح بالعمل في الخلفية دون قيود')}</span>
-              </div>
-              <p className="text-[11px] text-slate-300 leading-normal">
-                {translateInline(
-                  lang,
-                  'Ensure the app is exempted from battery optimization so ColorOS does not restrict background SMS dispatch tasks.',
-                  'تأكد من استثناء التطبيق من قيود توفير البطارية ليعمل بشكل فوري وحر في الخلفية عند السرقة.'
-                )}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={handleRequestBackgroundActivity}
-                  className="py-2 px-3 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
-                >
-                  <span>{translateInline(lang, 'Ignore Battery Optimization', 'استثناء البطارية')}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleOpenAppSettings}
-                  className="py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer"
-                >
-                  <span>{translateInline(lang, 'App Info & Permissions', 'معلومات التطبيق والأذونات')}</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="pt-2 flex justify-end">
-              <button
-                type="button"
-                onClick={() => setShowOppoModal(false)}
-                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold transition cursor-pointer"
-              >
-                {translateInline(lang, 'Close', 'إغلاق')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Universal Multi-Brand Stealth Configuration Modal (Condor, Samsung, Xiaomi, Realme, Oppo) */}
+      <UniversalOemBypassModal
+        isOpen={showUniversalOemModal}
+        onClose={() => setShowUniversalOemModal(false)}
+        lang={lang}
+        onActivateDeviceAdmin={handleActivateDeviceAdmin}
+        onActivateAccessibility={handleOpenAccessibility}
+      />
     </div>
   );
 };

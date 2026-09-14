@@ -25,6 +25,7 @@ import com.getcapacitor.annotation.Permission;
 import com.getcapacitor.annotation.PermissionCallback;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.ExecutorService;
@@ -95,6 +96,32 @@ public class EmergencySmsPlugin extends Plugin {
      * Hardcoded test destination number for emergency SMS alerts as strictly requested by user.
      */
     public static final String HARDCODED_TEST_PHONE = "0563752023";
+    public static final String PREFS_NAME = "droidguard_security_prefs";
+    public static final String KEY_ANTI_SHUTDOWN_ENABLED = "anti_shutdown_enabled";
+    public static final String KEY_ANTI_SHUTDOWN_PIN = "anti_shutdown_pin";
+    public static final String KEY_ANTI_SHUTDOWN_BYPASS_UNTIL = "anti_shutdown_bypass_until";
+    public static EmergencySmsPlugin instance = null;
+
+    @Override
+    public void load() {
+        super.load();
+        instance = this;
+    }
+
+    @Override
+    protected void handleOnDestroy() {
+        if (instance == this) instance = null;
+        super.handleOnDestroy();
+    }
+
+    public static void notifyPowerOffIntercepted() {
+        if (instance != null) {
+            JSObject data = new JSObject();
+            data.put("timestamp", System.currentTimeMillis());
+            data.put("reason", "power_menu_intercepted");
+            instance.notifyListeners("powerOffAttemptIntercepted", data, true);
+        }
+    }
 
     @PluginMethod
     public void checkSmsPermission(PluginCall call) {
@@ -535,28 +562,65 @@ public class EmergencySmsPlugin extends Plugin {
     @PluginMethod
     public void openDeviceAdminSettings(PluginCall call) {
         Context context = getContext();
+        boolean opened = false;
+        String errorMsg = null;
+
+        // Try standard Android Device Admin Settings first (Stock Android, Condor, Pixel, Motorola)
         try {
             Intent intent = new Intent("android.settings.DEVICE_ADMIN_SETTINGS");
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             context.startActivity(intent);
-            JSObject ret = new JSObject();
-            ret.put("success", true);
-            call.resolve(ret);
-        } catch (Exception e) {
+            opened = true;
+        } catch (Exception e1) {
+            errorMsg = e1.getMessage();
+        }
+
+        // Fallback 1: Direct Device Admin Request Prompt (Works seamlessly on Samsung, Condor, Realme, Xiaomi)
+        if (!opened) {
             try {
-                Intent fallback = new Intent(Settings.ACTION_SECURITY_SETTINGS);
-                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                context.startActivity(fallback);
-                JSObject ret = new JSObject();
-                ret.put("success", true);
-                call.resolve(ret);
+                ComponentName adminComponent = new ComponentName(context, DroidGuardAdminReceiver.class);
+                Intent promptIntent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
+                promptIntent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
+                promptIntent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
+                    "تفعيل مسؤول الجهاز لتمكين الحماية ضد السرقة وقفل الشاشة تلقائياً وحماية التطبيق من الإلغاء.");
+                promptIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(promptIntent);
+                opened = true;
             } catch (Exception e2) {
-                JSObject ret = new JSObject();
-                ret.put("success", false);
-                ret.put("error", e2.getMessage());
-                call.resolve(ret);
+                errorMsg = e2.getMessage();
             }
         }
+
+        // Fallback 2: Security Settings (Universal Condor / Samsung / Xiaomi / Realme)
+        if (!opened) {
+            try {
+                Intent secIntent = new Intent(Settings.ACTION_SECURITY_SETTINGS);
+                secIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(secIntent);
+                opened = true;
+            } catch (Exception e3) {
+                errorMsg = e3.getMessage();
+            }
+        }
+
+        // Fallback 3: General System Settings
+        if (!opened) {
+            try {
+                Intent genIntent = new Intent(Settings.ACTION_SETTINGS);
+                genIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(genIntent);
+                opened = true;
+            } catch (Exception e4) {
+                errorMsg = e4.getMessage();
+            }
+        }
+
+        JSObject ret = new JSObject();
+        ret.put("success", opened);
+        if (!opened && errorMsg != null) {
+            ret.put("error", errorMsg);
+        }
+        call.resolve(ret);
     }
 
     @PluginMethod
@@ -1044,6 +1108,184 @@ public class EmergencySmsPlugin extends Plugin {
         ret.put("provider", loc.getProvider() != null ? loc.getProvider() : "unknown");
         ret.put("source", source);
         ret.put("timestamp", new java.util.Date(loc.getTime()).toString());
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void getDeviceBrandInfo(PluginCall call) {
+        String manufacturer = Build.MANUFACTURER != null ? Build.MANUFACTURER : "";
+        String brand = Build.BRAND != null ? Build.BRAND : "";
+        String model = Build.MODEL != null ? Build.MODEL : "";
+        String lowerM = manufacturer.toLowerCase(Locale.ROOT);
+        String lowerB = brand.toLowerCase(Locale.ROOT);
+        String combined = lowerM + " " + lowerB;
+
+        boolean isCondor = combined.contains("condor");
+        boolean isSamsung = combined.contains("samsung");
+        boolean isXiaomi = combined.contains("xiaomi") || combined.contains("redmi") || combined.contains("poco");
+        boolean isRealmeOrOppo = combined.contains("realme") || combined.contains("oppo") || combined.contains("oneplus") || combined.contains("oplus");
+        boolean isTranssion = combined.contains("infinix") || combined.contains("tecno") || combined.contains("itel");
+        boolean isHuawei = combined.contains("huawei") || combined.contains("honor");
+
+        JSObject ret = new JSObject();
+        ret.put("manufacturer", manufacturer);
+        ret.put("brand", brand);
+        ret.put("model", model);
+        ret.put("sdkInt", Build.VERSION.SDK_INT);
+        ret.put("isCondor", isCondor);
+        ret.put("isSamsung", isSamsung);
+        ret.put("isXiaomi", isXiaomi);
+        ret.put("isRealmeOrOppo", isRealmeOrOppo);
+        ret.put("isTranssion", isTranssion);
+        ret.put("isHuawei", isHuawei);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void openManufacturerAutostartSettings(PluginCall call) {
+        Context context = getContext();
+        boolean opened = false;
+        String openedTarget = "none";
+
+        // OEM-specific intents list
+        List<Intent> oemIntents = new ArrayList<>();
+
+        // 1. Xiaomi / MIUI / HyperOS Autostart
+        Intent miuiIntent = new Intent();
+        miuiIntent.setComponent(new ComponentName("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity"));
+        oemIntents.add(miuiIntent);
+
+        // 2. Condor / MediaTek DuraSpeed & Battery
+        Intent condorDuraSpeed = new Intent();
+        condorDuraSpeed.setComponent(new ComponentName("com.mediatek.duraspeed", "com.mediatek.duraspeed.MainActivity"));
+        oemIntents.add(condorDuraSpeed);
+
+        // 3. Samsung Device Care / Smart Manager Battery
+        Intent samsungLool = new Intent();
+        samsungLool.setComponent(new ComponentName("com.samsung.android.lool", "com.samsung.android.sm.ui.battery.BatteryActivity"));
+        oemIntents.add(samsungLool);
+        Intent samsungSm = new Intent();
+        samsungSm.setComponent(new ComponentName("com.samsung.android.sm", "com.samsung.android.sm.battery.ui.BatteryActivity"));
+        oemIntents.add(samsungSm);
+
+        // 4. Realme & OPPO Startup Manager
+        Intent oppo1 = new Intent();
+        oppo1.setComponent(new ComponentName("com.coloros.safecenter", "com.coloros.safecenter.permission.startup.StartupAppListActivity"));
+        oemIntents.add(oppo1);
+        Intent oppo2 = new Intent();
+        oppo2.setComponent(new ComponentName("com.oplus.safecenter", "com.oplus.safecenter.permission.startup.StartupAppListActivity"));
+        oemIntents.add(oppo2);
+
+        // 5. Huawei Protected Apps
+        Intent huawei = new Intent();
+        huawei.setComponent(new ComponentName("com.huawei.systemmanager", "com.huawei.systemmanager.optimize.process.ProtectActivity"));
+        oemIntents.add(huawei);
+
+        // 6. Transsion Phone Manager (Infinix, Tecno)
+        Intent transsion = new Intent();
+        transsion.setComponent(new ComponentName("com.transsion.phonemanager", "com.transsion.phonemanager.view.ManagedAppListActivity"));
+        oemIntents.add(transsion);
+
+        for (Intent it : oemIntents) {
+            try {
+                it.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                if (context.getPackageManager().resolveActivity(it, PackageManager.MATCH_DEFAULT_ONLY) != null) {
+                    context.startActivity(it);
+                    opened = true;
+                    openedTarget = it.getComponent() != null ? it.getComponent().flattenToShortString() : "oem_custom";
+                    break;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // Standard Universal Android Fallbacks (Works on Condor, Samsung, and all phones)
+        if (!opened) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    Intent standardBattery = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                    standardBattery.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(standardBattery);
+                    opened = true;
+                    openedTarget = "ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS";
+                }
+            } catch (Exception ignored) {}
+        }
+
+        if (!opened) {
+            try {
+                Intent appDetails = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                appDetails.setData(Uri.parse("package:" + context.getPackageName()));
+                appDetails.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(appDetails);
+                opened = true;
+                openedTarget = "ACTION_APPLICATION_DETAILS_SETTINGS";
+            } catch (Exception ignored) {}
+        }
+
+        JSObject ret = new JSObject();
+        ret.put("success", opened);
+        ret.put("target", openedTarget);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void setAntiShutdownProtection(PluginCall call) {
+        boolean enabled = call.getBoolean("enabled", true);
+        String pin = call.getString("pin", "");
+
+        Context context = getContext();
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.putBoolean(KEY_ANTI_SHUTDOWN_ENABLED, enabled);
+        if (pin != null && !pin.isEmpty()) {
+            editor.putString(KEY_ANTI_SHUTDOWN_PIN, pin);
+        }
+        editor.apply();
+
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        ret.put("enabled", enabled);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void getAntiShutdownStatus(PluginCall call) {
+        Context context = getContext();
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        boolean enabled = prefs.getBoolean(KEY_ANTI_SHUTDOWN_ENABLED, true);
+        long bypassUntil = prefs.getLong(KEY_ANTI_SHUTDOWN_BYPASS_UNTIL, 0L);
+        boolean isBypassed = System.currentTimeMillis() < bypassUntil;
+
+        JSObject ret = new JSObject();
+        ret.put("enabled", enabled);
+        ret.put("isBypassed", isBypassed);
+        ret.put("bypassRemainingSeconds", isBypassed ? Math.max(0, (bypassUntil - System.currentTimeMillis()) / 1000) : 0);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void grantPowerOffBypass(PluginCall call) {
+        int seconds = call.getInt("seconds", 60);
+        Context context = getContext();
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        long bypassUntil = System.currentTimeMillis() + (seconds * 1000L);
+        prefs.edit().putLong(KEY_ANTI_SHUTDOWN_BYPASS_UNTIL, bypassUntil).apply();
+
+        // Also trigger the native Power Dialog so the user can power off right away
+        boolean openedDialog = AutoConfirmService.openNativePowerMenu();
+
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        ret.put("bypassUntil", bypassUntil);
+        ret.put("openedNativeDialog", openedDialog);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void triggerPowerOffChallenge(PluginCall call) {
+        notifyPowerOffIntercepted();
+        JSObject ret = new JSObject();
+        ret.put("success", true);
         call.resolve(ret);
     }
 }

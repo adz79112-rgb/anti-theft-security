@@ -21,6 +21,7 @@ import { getTranslation } from '../utils/translations';
 import { AsyncStorage, STORAGE_KEYS } from '../utils/storage';
 import { GmailSecurityCard } from './GmailSecurityCard';
 import { ShieldCard } from './ShieldCard';
+import { PowerOffProtectionCard } from './PowerOffProtectionCard';
 
 interface DashboardProps {
   config: SecurityConfig;
@@ -28,6 +29,7 @@ interface DashboardProps {
   lang: Language;
   onTriggerTheft: () => void;
   onTriggerCamera: () => void;
+  onTriggerPowerChallenge?: () => void;
   onSecurityLog?: (event: DispatchEvent) => void;
 }
 
@@ -37,6 +39,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   lang,
   onTriggerTheft,
   onTriggerCamera,
+  onTriggerPowerChallenge,
   onSecurityLog,
 }) => {
   const t = getTranslation(lang);
@@ -147,6 +150,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Anti-Uninstall & Device Admin Policy Engine */}
       <ShieldCard lang={lang} onSecurityLog={onSecurityLog} />
+
+      {/* Anti-Shutdown / Power-Off PIN Protection Guard */}
+      <PowerOffProtectionCard
+        config={config}
+        lang={lang}
+        onUpdateConfig={onChangeConfig}
+        onTriggerTestModal={onTriggerPowerChallenge || (() => {})}
+      />
 
       {/* Grid: Credentials Settings & Protection Toggles */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

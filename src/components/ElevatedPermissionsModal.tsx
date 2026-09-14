@@ -125,16 +125,16 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
                 )}
               </p>
               {!accessibilityActive && (
-                <div className="mt-2.5 p-2.5 rounded-xl bg-slate-950/70 border border-teal-500/20 text-[11px] text-slate-300 space-y-1">
+                <div className="mt-2.5 p-2.5 rounded-xl bg-slate-950/70 border border-teal-500/20 text-[11px] text-slate-300 space-y-1.5">
                   <div className="font-bold text-teal-300 flex items-center gap-1.5">
                     <span>📱</span>
-                    <span>{translateInline(lang, 'Steps in Accessibility Screen:', 'خطوات التفعيل في شاشة إمكانية الوصول:')}</span>
+                    <span>{translateInline(lang, 'Universal OEM Steps (Condor, Samsung, Xiaomi, Realme):', 'خطوات التفعيل لكافة الأجهزة (كوندور، سامسونج، شاومي، ريلمي):')}</span>
                   </div>
                   <p className="text-slate-300 leading-normal">
                     {translateInline(
                       lang,
-                      '1. Tap "Downloaded apps" (التطبيقات التي تم تنزيلها) at the bottom.',
-                      '1. اضغط على خيار «التطبيقات التي تم تنزيلها» في أسفل الشاشة.'
+                      '1. Look for "Downloaded apps" or "Installed services" (Services téléchargés / التطبيقات المثبتة).',
+                      '1. ابحث عن «التطبيقات المثبتة» أو «Services téléchargés» (في كوندور وسامسونج وشاومي).'
                     )}
                   </p>
                   <p className="text-slate-300 leading-normal">
@@ -142,6 +142,13 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
                       lang,
                       '2. Select "DroidGuard Auto-Confirm Service" and toggle it ON.',
                       '2. اختر «المساعد التلقائي لـ DroidGuard» وفعّل المفتاح إلى تشغيل (ON).'
+                    )}
+                  </p>
+                  <p className="text-amber-300 text-[10px] leading-normal pt-0.5 border-t border-slate-800">
+                    {translateInline(
+                      lang,
+                      '💡 Condor/Android 13+ Note: If "Restricted setting" appears, open Settings ➔ Apps ➔ Anti-Theft ➔ Top 3 dots ➔ "Allow restricted settings".',
+                      '💡 ملاحظة لهواتف كوندور والأنظمة الحديثة: إذا ظهر «إعداد مقيد»، افتح إعدادات الهاتف ⬅️ التطبيقات ⬅️ التطبيق ⬅️ النقاط الثلاث ⬅️ السماح بالإعدادات المقيدة.'
                     )}
                   </p>
                 </div>

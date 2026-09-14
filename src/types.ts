@@ -17,6 +17,8 @@ export interface SecurityConfig {
   emergencyContactPhone?: string; // Primary verified emergency phone number for dual SMS dispatch
   stealthModeEnabled?: boolean; // Stealth Stolen Mode (Fake Off & Periodic Dispatch)
   dualSimDispatchEnabled?: boolean; // Dual-SIM SMS Fallback (SIM 1 + SIM 2)
+  antiShutdownProtectionActive?: boolean; // Power-Off PIN Protection (requires PIN/biometrics before powering off)
+  antiShutdownPin?: string; // Custom PIN for power off (or defaults to app code/device credential)
 }
 
 export type ActionKeyword = 'theft' | 'camera' | 'track' | 'unknown';

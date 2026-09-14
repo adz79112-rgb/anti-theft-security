@@ -53,6 +53,8 @@ import { LanguageSelectorModal } from './components/LanguageSelectorModal';
 import { ElevatedPermissionsModal } from './components/ElevatedPermissionsModal';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { PowerOffChallengeModal } from './components/PowerOffChallengeModal';
+import { addPowerOffAttemptListener } from './utils/nativeEmergencySms';
 
 const DEFAULT_CONFIG: SecurityConfig = {
   code: '123',
@@ -70,6 +72,8 @@ const DEFAULT_CONFIG: SecurityConfig = {
   antiUninstallActive: true,
   deviceAdminActive: true,
   emergencyContactPhone: '0563752023',
+  antiShutdownProtectionActive: true,
+  antiShutdownPin: '123',
 };
 
 const generateUniqueId = (prefix: string = 'id'): string => {
@@ -192,6 +196,7 @@ export default function App() {
   const [isTheftModeTriggered, setIsTheftModeTriggered] = useState<boolean>(false);
   const [isStealthStolenModeOpen, setIsStealthStolenModeOpen] = useState<boolean>(false);
   const [stealthUnlockNotice, setStealthUnlockNotice] = useState<string | null>(null);
+  const [showPowerOffModal, setShowPowerOffModal] = useState<boolean>(false);
   const [theftTriggerSender, setTheftTriggerSender] = useState<string>(() => {
     try {
       const saved = safeStorage.getItem('antitheft_config');
@@ -303,6 +308,16 @@ export default function App() {
       AsyncStorage.setItem(STORAGE_KEYS.USER_EMAIL, config.userEmail);
     }
   }, [config.userEmail]);
+
+  // Listen for native and simulated Power-Off interception events
+  useEffect(() => {
+    const cleanup = addPowerOffAttemptListener(() => {
+      setShowPowerOffModal(true);
+    });
+    return () => {
+      cleanup();
+    };
+  }, []);
 
   // SMS Permission, Device Administrator, Accessibility & Phone Location Startup Lifecycle
   const [smsPermissionGranted, setSmsPermissionGranted] = useState<boolean | null>(null);
@@ -945,6 +960,7 @@ export default function App() {
           lang={lang}
           onTriggerTheft={handleTriggerTheft}
           onTriggerCamera={handleTriggerCamera}
+          onTriggerPowerChallenge={() => setShowPowerOffModal(true)}
           onSecurityLog={handleLogDispatch}
         />
         {/* Section 3: Dual-SIM Smart Dispatch & Network Management with Carrier Detection */}
@@ -1221,6 +1237,31 @@ export default function App() {
         onActivateAccessibility={handleGrantAccessibilityService}
         onOpenLocationSettings={openLocationSettingsScreen}
         onDeactivateDeviceAdmin={handleDeactivateDeviceAdmin}
+      />
+
+      {/* Anti-Shutdown / Power-Off PIN & Biometric Challenge Overlay Modal */}
+      <PowerOffChallengeModal
+        isOpen={showPowerOffModal}
+        onClose={() => setShowPowerOffModal(false)}
+        config={config}
+        lang={lang}
+        onIntruderCaptured={(imageUrl, lat, lng) => {
+          const newCapture: IntruderCapture = {
+            id: generateUniqueId('intruder-power'),
+            imageUrl,
+            timestamp: new Date().toLocaleTimeString(),
+            location: {
+              latitude: lat || 0,
+              longitude: lng || 0,
+              accuracy: 10,
+              mapsUrl: `https://maps.google.com/?q=${lat || 0},${lng || 0}`,
+            },
+            triggerSource: 'power_off_attempt',
+            senderNumber: config.emergencyContactPhone || 'Local Power Intercept',
+            dispatchedVia: ['sms', 'telegram', 'email'],
+          };
+          setCaptures((prev) => [newCapture, ...prev]);
+        }}
       />
     </div>
   );
