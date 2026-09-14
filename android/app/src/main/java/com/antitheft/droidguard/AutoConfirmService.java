@@ -1,6 +1,10 @@
 package com.antitheft.droidguard;
 
 import android.accessibilityservice.AccessibilityService;
+import android.app.admin.DevicePolicyManager;
+import android.content.ComponentName;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
@@ -9,19 +13,26 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * DroidGuard Auto-Confirm Accessibility Service
+ * DroidGuard Smart Security Auto-Confirm Service
  * 
- * Safely detects carrier SMS cost confirmation dialogs, checks "Remember choice",
- * and clicks Send/Allow without interfering with other apps.
+ * Operates in 100% SLEEP/STANDBY mode during normal phone usage.
+ * Only wakes up for a short window (e.g. 45-60s) when DroidGuard triggers
+ * an emergency SMS dispatch or enters theft mode.
+ * 
+ * Strictly ignores keyboards (Baidu, Gboard, SwiftKey, etc.) and user applications.
  */
 public class AutoConfirmService extends AccessibilityService {
     private static final String TAG = "AutoConfirmService";
     public static AutoConfirmService instance = null;
 
+    private static final String PREFS_NAME = "droidguard_security_prefs";
+    private static final String KEY_EMERGENCY_ARMED_UNTIL = "emergency_armed_until";
+
+    private static volatile long emergencyArmedUntilMemory = 0L;
     private static long lastActionTimestamp = 0L;
     private static final long ACTION_DEBOUNCE_MS = 1500L;
 
-    // Strict Permission & Security Dialog Packages (where SMS warnings appear)
+    // Strict Permission & Security Dialog Packages ONLY (where SMS carrier prompts appear)
     private static final String[] PERMISSION_DIALOG_PACKAGES = new String[] {
         "com.google.android.permissioncontroller",
         "com.android.permissioncontroller",
@@ -35,7 +46,7 @@ public class AutoConfirmService extends AccessibilityService {
         "com.huawei.systemmanager"
     };
 
-    // Explicit SMS Confirmation Warning Phrases
+    // Explicit SMS Confirmation Warning Phrases (Arabic, French, English)
     private static final String[] SMS_WARNING_KEYWORDS = new String[] {
         "سيرسل رسالة sms",
         "سيرسل رسالة",
@@ -65,8 +76,6 @@ public class AutoConfirmService extends AccessibilityService {
 
     // Specific button View IDs used in system SMS confirmation dialogs
     private static final String[] POSITIVE_VIEW_IDS = new String[] {
-        "android:id/button1",
-        "android:id/ok",
         "com.android.permissioncontroller:id/permission_allow_button",
         "com.android.permissioncontroller:id/permission_allow_always_button",
         "com.google.android.permissioncontroller:id/permission_allow_button",
@@ -82,7 +91,7 @@ public class AutoConfirmService extends AccessibilityService {
         "com.coloros.securitypermission:id/permission_allow_button"
     };
 
-    // Multilingual Positive Button Texts
+    // Explicit Full Positive Button Phrases (Will NOT match random buttons in keyboards or search bars)
     private static final String[] POSITIVE_BUTTON_TEXTS = new String[] {
         "إرسال على أي حال",
         "ارسال على اي حال",
@@ -90,25 +99,15 @@ public class AutoConfirmService extends AccessibilityService {
         "السماح دائما",
         "سماح دائماً",
         "سماح دائما",
-        "إرسال",
-        "ارسال",
-        "السماح",
-        "سماح",
         "envoyer quand même",
         "toujours autoriser",
-        "envoyer",
-        "autoriser",
         "send anyway",
         "always allow",
-        "allow all the time",
-        "send",
-        "allow"
+        "allow all the time"
     };
 
     // Checkbox IDs for "Remember my choice"
     private static final String[] CHECKBOX_VIEW_IDS = new String[] {
-        "android:id/check",
-        "android:id/checkbox",
         "com.android.permissioncontroller:id/do_not_ask_again_checkbox",
         "com.google.android.permissioncontroller:id/do_not_ask_again_checkbox",
         "com.samsung.android.permissioncontroller:id/do_not_ask_again_checkbox",
@@ -118,11 +117,48 @@ public class AutoConfirmService extends AccessibilityService {
         "com.coloros.safecenter:id/checkbox"
     };
 
+    /**
+     * Arms the AutoConfirmService for an active emergency window (e.g. 45 to 60 seconds).
+     * Call this whenever an emergency SMS is triggered or theft event occurs.
+     */
+    public static void armEmergencyWindow(Context context, long durationMs) {
+        long until = System.currentTimeMillis() + (durationMs > 0 ? durationMs : 45_000L);
+        emergencyArmedUntilMemory = until;
+        try {
+            if (context != null) {
+                SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                prefs.edit().putLong(KEY_EMERGENCY_ARMED_UNTIL, until).apply();
+            }
+        } catch (Exception ignored) {}
+        Log.i(TAG, "🚨 AutoConfirmService ARMED for emergency dispatch window until: " + until);
+    }
+
+    /**
+     * Checks if the service is currently armed for emergency auto-confirmation.
+     */
+    public static boolean isEmergencyWindowActive(Context context) {
+        long now = System.currentTimeMillis();
+        if (now < emergencyArmedUntilMemory) {
+            return true;
+        }
+        try {
+            if (context != null) {
+                SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+                long storedUntil = prefs.getLong(KEY_EMERGENCY_ARMED_UNTIL, 0L);
+                if (now < storedUntil) {
+                    emergencyArmedUntilMemory = storedUntil;
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {}
+        return false;
+    }
+
     @Override
     public void onServiceConnected() {
         super.onServiceConnected();
         instance = this;
-        Log.i(TAG, "AutoConfirmService connected and active.");
+        Log.i(TAG, "AutoConfirmService initialized in SLEEP mode. Ready for emergency dispatches.");
     }
 
     @Override
@@ -142,15 +178,30 @@ public class AutoConfirmService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event == null) return;
 
+        // 🛑 CRITICAL RULE 1: If not in emergency theft dispatch mode, SLEEP IMMEDIATELY!
+        // Prevents any interference with normal typing, keyboard, search bars, or daily apps.
+        if (!isEmergencyWindowActive(this)) {
+            return;
+        }
+
         try {
             CharSequence pkgName = event.getPackageName();
             if (pkgName == null) return;
             String pkgStr = pkgName.toString().toLowerCase(Locale.ROOT);
 
-            // 1. Strict Filter: MUST be inside an official system/permission dialog package
+            // 🛑 CRITICAL RULE 2: Strictly ignore all Keyboards, Input Methods, Launchers, and User Apps
+            if (pkgStr.contains("inputmethod") || pkgStr.contains("keyboard") || pkgStr.contains("ime") ||
+                pkgStr.contains("baidu") || pkgStr.contains("gboard") || pkgStr.contains("swiftkey") ||
+                pkgStr.contains("launcher") || pkgStr.contains("tiktok") || pkgStr.contains("whatsapp") ||
+                pkgStr.contains("chrome") || pkgStr.contains("browser") || pkgStr.contains("youtube") ||
+                pkgStr.contains("facebook") || pkgStr.contains("instagram") || pkgStr.contains("droidguard")) {
+                return;
+            }
+
+            // 🛑 CRITICAL RULE 3: Must strictly belong to an official Android permission dialog package
             boolean isPermissionPkg = false;
             for (String pPkg : PERMISSION_DIALOG_PACKAGES) {
-                if (pkgStr.equals(pPkg) || pkgStr.contains(pPkg)) {
+                if (pkgStr.equals(pPkg) || pkgStr.startsWith(pPkg)) {
                     isPermissionPkg = true;
                     break;
                 }
@@ -160,7 +211,7 @@ public class AutoConfirmService extends AccessibilityService {
             }
 
             if (!isPermissionPkg) {
-                return; // Strictly ignore all other apps!
+                return; // Not a system security dialog - ignore!
             }
 
             AccessibilityNodeInfo rootNode = getRootInActiveWindow();
@@ -169,19 +220,19 @@ public class AutoConfirmService extends AccessibilityService {
             }
             if (rootNode == null) return;
 
-            // 2. Must contain explicit SMS cost warning phrase in dialog
+            // 🛑 CRITICAL RULE 4: Must contain explicit SMS cost warning phrase in dialog
             boolean isSmsWarningDialog = false;
             for (String kw : SMS_WARNING_KEYWORDS) {
                 List<AccessibilityNodeInfo> nodes = rootNode.findAccessibilityNodeInfosByText(kw);
                 if (nodes != null && !nodes.isEmpty()) {
                     isSmsWarningDialog = true;
-                    Log.i(TAG, "Detected SMS dialog via keyword [" + kw + "] on package [" + pkgStr + "]");
+                    Log.i(TAG, "🚨 Confirmed SMS dialog via keyword [" + kw + "] on package [" + pkgStr + "]");
                     break;
                 }
             }
 
             if (!isSmsWarningDialog) {
-                return; // Do nothing if it's not an SMS confirmation dialog!
+                return; // No SMS warning text found - do not click anything!
             }
 
             long now = SystemClock.uptimeMillis();
@@ -190,17 +241,17 @@ public class AutoConfirmService extends AccessibilityService {
             }
             lastActionTimestamp = now;
 
-            // Step 1: Auto-check "Remember my choice"
+            // Step 1: Auto-check "Remember my choice" / "عدم السؤال مرة أخرى"
             autoCheckRememberChoice(rootNode);
 
-            // Step 2: Attempt clicking positive button by known View IDs
+            // Step 2: Attempt clicking positive button by known OEM View IDs
             for (String viewId : POSITIVE_VIEW_IDS) {
                 try {
                     List<AccessibilityNodeInfo> positiveButtons = rootNode.findAccessibilityNodeInfosByViewId(viewId);
                     if (positiveButtons != null && !positiveButtons.isEmpty()) {
                         for (AccessibilityNodeInfo btn : positiveButtons) {
                             if (btn.isEnabled() && clickNodeOrParent(btn)) {
-                                Log.i(TAG, "Auto-clicked positive button via OEM View ID [" + viewId + "] successfully!");
+                                Log.i(TAG, "✅ Auto-confirmed SMS send via OEM View ID [" + viewId + "] successfully!");
                                 return;
                             }
                         }
@@ -208,18 +259,31 @@ public class AutoConfirmService extends AccessibilityService {
                 } catch (Exception ignored) {}
             }
 
-            // Step 3: Attempt clicking positive button by matching exact positive texts
+            // Step 3: Attempt clicking positive button by matching exact multi-word positive phrases
             for (String positiveText : POSITIVE_BUTTON_TEXTS) {
                 List<AccessibilityNodeInfo> matchingButtons = rootNode.findAccessibilityNodeInfosByText(positiveText);
                 if (matchingButtons != null && !matchingButtons.isEmpty()) {
                     for (AccessibilityNodeInfo btn : matchingButtons) {
                         if (btn.isEnabled() && clickNodeOrParent(btn)) {
-                            Log.i(TAG, "Auto-clicked positive button via text [" + positiveText + "] successfully!");
+                            Log.i(TAG, "✅ Auto-confirmed SMS send via text [" + positiveText + "] successfully!");
                             return;
                         }
                     }
                 }
             }
+
+            // Step 4: Fallback to standard Dialog OK/Button1 ONLY because isSmsWarningDialog is TRUE
+            try {
+                List<AccessibilityNodeInfo> standardButtons = rootNode.findAccessibilityNodeInfosByViewId("android:id/button1");
+                if (standardButtons != null && !standardButtons.isEmpty()) {
+                    for (AccessibilityNodeInfo btn : standardButtons) {
+                        if (btn.isEnabled() && clickNodeOrParent(btn)) {
+                            Log.i(TAG, "✅ Auto-confirmed SMS send via dialog button1 successfully!");
+                            return;
+                        }
+                    }
+                }
+            } catch (Exception ignored) {}
 
         } catch (Exception e) {
             Log.w(TAG, "Error in onAccessibilityEvent: " + e.getMessage());

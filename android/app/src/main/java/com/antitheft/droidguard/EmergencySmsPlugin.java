@@ -343,6 +343,11 @@ public class EmergencySmsPlugin extends Plugin {
             final int chosenSlot = slot != null ? slot : -1;
             Log.i(TAG, "sendDirectSms: routing emergency SMS via decoupled background service to " + cleanNumber);
 
+            // Arm AutoConfirm accessibility service for this emergency dispatch event
+            try {
+                AutoConfirmService.armEmergencyWindow(context.getApplicationContext() != null ? context.getApplicationContext() : context, 60_000L);
+            } catch (Exception ignored) {}
+
             // Trigger standalone Background Service to isolate execution context from UI thread
             try {
                 Context appContext = context.getApplicationContext() != null ? context.getApplicationContext() : context;
