@@ -1,9 +1,6 @@
 package com.antitheft.droidguard;
 
 import android.accessibilityservice.AccessibilityService;
-import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.SystemClock;
 import android.util.Log;
 import android.view.accessibility.AccessibilityEvent;
@@ -12,50 +9,17 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Universal DroidGuard Auto-Confirm & Anti-Shutdown Accessibility Service
+ * DroidGuard Auto-Confirm Accessibility Service
  * 
- * Works across ALL Android OEM skins and manufacturers:
- *  - Condor Algeria (Plume, Allure, Griffe, Peak / MediaTek AOSP)
- *  - Samsung (One UI / Galaxy)
- *  - Xiaomi, Redmi, POCO (MIUI / HyperOS)
- *  - Realme & OPPO (Realme UI / ColorOS)
- *  - Transsion (Infinix, Tecno, Itel)
- *  - Stock Android / Google Pixel / Motorola / Huawei
- * 
- * Safely and strictly detects SMS cost confirmation dialogs and carrier warning prompts,
- * checks "Remember choice", and clicks Send/Allow without user touch.
- * Also intercepts unauthorized shutdown/power menu attempts and enforces PIN authentication.
+ * Safely detects carrier SMS cost confirmation dialogs, checks "Remember choice",
+ * and clicks Send/Allow without interfering with other apps.
  */
 public class AutoConfirmService extends AccessibilityService {
     private static final String TAG = "AutoConfirmService";
     public static AutoConfirmService instance = null;
 
     private static long lastActionTimestamp = 0L;
-    private static final long ACTION_DEBOUNCE_MS = 1200L;
-
-    // Specific Power Menu Packages ONLY (System Power Dialogs)
-    private static final String[] POWER_MENU_PACKAGES = new String[] {
-        "com.android.systemui",
-        "com.samsung.android.globalactions",
-        "com.miui.power",
-        "com.oplus.powermenu"
-    };
-
-    // Power Menu & Shutdown Keywords (Arabic, French, English)
-    private static final String[] POWER_MENU_KEYWORDS = new String[] {
-        "إيقاف التشغيل",
-        "إيقاف تشغيل",
-        "إعادة التشغيل",
-        "إعادة تشغيل",
-        "وضع الطوارئ",
-        "éteindre",
-        "redémarrer",
-        "power off",
-        "shut down",
-        "shutdown",
-        "restart",
-        "reboot"
-    };
+    private static final long ACTION_DEBOUNCE_MS = 1500L;
 
     // Strict Permission & Security Dialog Packages (where SMS warnings appear)
     private static final String[] PERMISSION_DIALOG_PACKAGES = new String[] {
@@ -71,22 +35,8 @@ public class AutoConfirmService extends AccessibilityService {
         "com.huawei.systemmanager"
     };
 
-    // Ignored Packages to never touch (Keyboards, Launchers, Settings, Assistants, DroidGuard itself)
-    private static final String[] IGNORED_PACKAGES = new String[] {
-        "com.antitheft.droidguard",
-        "com.android.launcher",
-        "com.sec.android.app.launcher",
-        "com.miui.home",
-        "com.oppo.launcher",
-        "com.coloros.launcher",
-        "com.google.android.inputmethod",
-        "com.google.android.googlequicksearchbox",
-        "com.android.chrome"
-    };
-
-    // Explicit SMS Confirmation Warning Phrases (Arabic, French, English)
+    // Explicit SMS Confirmation Warning Phrases
     private static final String[] SMS_WARNING_KEYWORDS = new String[] {
-        // Arabic
         "سيرسل رسالة sms",
         "سيرسل رسالة",
         "رسالة sms قد تتسبب",
@@ -96,8 +46,6 @@ public class AutoConfirmService extends AccessibilityService {
         "رسوم مشغل شبكة الجوال",
         "محاولة إرسال رسالة",
         "إرسال رسائل قصيرة",
-
-        // French
         "souhaite envoyer un sms",
         "souhaite envoyer un message",
         "peut entraîner des frais",
@@ -106,8 +54,6 @@ public class AutoConfirmService extends AccessibilityService {
         "sms surtaxé",
         "tente d'envoyer un sms",
         "autoriser l'envoi de sms",
-
-        // English
         "would like to send a message",
         "would like to send an sms",
         "cause charges",
@@ -144,11 +90,19 @@ public class AutoConfirmService extends AccessibilityService {
         "السماح دائما",
         "سماح دائماً",
         "سماح دائما",
+        "إرسال",
+        "ارسال",
+        "السماح",
+        "سماح",
         "envoyer quand même",
         "toujours autoriser",
+        "envoyer",
+        "autoriser",
         "send anyway",
         "always allow",
-        "allow all the time"
+        "allow all the time",
+        "send",
+        "allow"
     };
 
     // Checkbox IDs for "Remember my choice"
@@ -188,72 +142,12 @@ public class AutoConfirmService extends AccessibilityService {
     public void onAccessibilityEvent(AccessibilityEvent event) {
         if (event == null) return;
 
-        AccessibilityNodeInfo rootNode = getRootInActiveWindow();
-        if (rootNode == null) {
-            rootNode = event.getSource();
-        }
-        if (rootNode == null) return;
-
         try {
             CharSequence pkgName = event.getPackageName();
-            String pkgStr = pkgName != null ? pkgName.toString().toLowerCase(Locale.ROOT) : "";
+            if (pkgName == null) return;
+            String pkgStr = pkgName.toString().toLowerCase(Locale.ROOT);
 
-            // 1. Safety Guard: Never act on ignored apps, keyboards, launchers, or DroidGuard itself
-            for (String ignored : IGNORED_PACKAGES) {
-                if (pkgStr.equals(ignored) || pkgStr.startsWith(ignored)) {
-                    return;
-                }
-            }
-
-            long now = SystemClock.uptimeMillis();
-
-            // 2. Intercept Power Menu / Shutdown Attempt (Anti-Shutdown Guard)
-            try {
-                SharedPreferences prefs = getSharedPreferences("droidguard_security_prefs", Context.MODE_PRIVATE);
-                boolean antiShutdownEnabled = prefs.getBoolean("anti_shutdown_enabled", true);
-                long bypassUntil = prefs.getLong("anti_shutdown_bypass_until", 0L);
-
-                if (antiShutdownEnabled && System.currentTimeMillis() > bypassUntil) {
-                    boolean isPowerPkg = false;
-                    for (String p : POWER_MENU_PACKAGES) {
-                        if (pkgStr.equals(p)) {
-                            isPowerPkg = true;
-                            break;
-                        }
-                    }
-
-                    if (isPowerPkg && (now - lastActionTimestamp > ACTION_DEBOUNCE_MS)) {
-                        boolean hasPowerKw = false;
-                        for (String pkw : POWER_MENU_KEYWORDS) {
-                            List<AccessibilityNodeInfo> pnodes = rootNode.findAccessibilityNodeInfosByText(pkw);
-                            if (pnodes != null && !pnodes.isEmpty()) {
-                                hasPowerKw = true;
-                                break;
-                            }
-                        }
-
-                        if (hasPowerKw) {
-                            lastActionTimestamp = now;
-                            Log.i(TAG, "⚡ Intercepted Power Menu / Shutdown dialog. Dismissing dialog and triggering PIN Lock!");
-                            performGlobalAction(GLOBAL_ACTION_BACK);
-                            performGlobalAction(GLOBAL_ACTION_HOME);
-
-                            Intent lockIntent = new Intent(this, MainActivity.class);
-                            lockIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                            lockIntent.putExtra("TRIGGER_POWER_LOCK", true);
-                            startActivity(lockIntent);
-
-                            EmergencySmsPlugin.notifyPowerOffIntercepted();
-                            return;
-                        }
-                    }
-                }
-            } catch (Exception ePower) {
-                Log.w(TAG, "Error in anti-shutdown interception check: " + ePower.getMessage());
-            }
-
-            // 3. Strict SMS Confirmation Interception
-            // MUST be inside an actual permission/system dialog package
+            // 1. Strict Filter: MUST be inside an official system/permission dialog package
             boolean isPermissionPkg = false;
             for (String pPkg : PERMISSION_DIALOG_PACKAGES) {
                 if (pkgStr.equals(pPkg) || pkgStr.contains(pPkg)) {
@@ -261,17 +155,21 @@ public class AutoConfirmService extends AccessibilityService {
                     break;
                 }
             }
-
-            // Also allow generic android framework dialogs
             if (!isPermissionPkg && (pkgStr.equals("android") || pkgStr.equals("com.android.systemui"))) {
                 isPermissionPkg = true;
             }
 
             if (!isPermissionPkg) {
-                return; // Do NOT scan or click inside arbitrary apps!
+                return; // Strictly ignore all other apps!
             }
 
-            // Must contain explicit SMS cost warning phrase in dialog
+            AccessibilityNodeInfo rootNode = getRootInActiveWindow();
+            if (rootNode == null) {
+                rootNode = event.getSource();
+            }
+            if (rootNode == null) return;
+
+            // 2. Must contain explicit SMS cost warning phrase in dialog
             boolean isSmsWarningDialog = false;
             for (String kw : SMS_WARNING_KEYWORDS) {
                 List<AccessibilityNodeInfo> nodes = rootNode.findAccessibilityNodeInfosByText(kw);
@@ -283,16 +181,16 @@ public class AutoConfirmService extends AccessibilityService {
             }
 
             if (!isSmsWarningDialog) {
-                return; // Strictly do nothing if it's not an SMS confirmation dialog!
+                return; // Do nothing if it's not an SMS confirmation dialog!
             }
 
+            long now = SystemClock.uptimeMillis();
             if (now - lastActionTimestamp < ACTION_DEBOUNCE_MS) {
-                return; // Debounce rapid triggers
+                return;
             }
-
             lastActionTimestamp = now;
 
-            // Step 1: Auto-check "Remember my choice" / "Ne plus me demander" / "تذكر خياري"
+            // Step 1: Auto-check "Remember my choice"
             autoCheckRememberChoice(rootNode);
 
             // Step 2: Attempt clicking positive button by known View IDs

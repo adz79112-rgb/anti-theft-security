@@ -4,8 +4,8 @@
     <string name="title_activity_main">Anti-Theft Security</string>
     <string name="package_name">com.antitheft.droidguard</string>
     <string name="custom_url_scheme">com.antitheft.droidguard</string>
-    <string name="accessibility_service_label">المساعد التلقائي لـ DroidGuard</string>
-    <string name="accessibility_service_description">خدمة النقر التلقائي الفوري لتأكيد إرسال رسائل الاستغاثة SMS وحماية الهاتف ضد السرقة بدون لمس الشاشة</string>
+    <string name="accessibility_service_label">تطبيق حماية الهاتف (DroidGuard)</string>
+    <string name="accessibility_service_description">خدمة حماية الهاتف وتأكيد إرسال رسائل الاستغاثة SMS للطوارئ تلقائياً.</string>
     <string name="device_admin_label">حماية DroidGuard ضد السرقة</string>
     <string name="device_admin_description">صلاحية مسؤول الجهاز لقفل الهاتف وحمايته ضد السرقة ومنع العبث به.</string>
 </resources>
