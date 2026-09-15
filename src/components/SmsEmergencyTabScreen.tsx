@@ -45,6 +45,7 @@ import {
   requestSetDefaultSmsApp,
   sendSilentBackgroundSms,
   sanitizePhoneNumber,
+  sendFallbackIntentSms,
 } from '../utils/nativeEmergencySms';
 import { Capacitor } from '@capacitor/core';
 import { DualSimNetworkCard } from './DualSimNetworkCard';
@@ -302,6 +303,58 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
           lang,
           `❌ Error during silent dispatch: ${err?.message || 'Unknown error'}`,
           `❌ خطأ أثناء الإرسال الصامت: ${err?.message || 'خطأ غير معروف'}`
+        )
+      );
+    } finally {
+      setIsSendingTestSms(false);
+      setTimeout(() => setSaveFeedback(null), 8000);
+    }
+  };
+
+  // Fallback Intent Method (Opens system SMS app)
+  const handleSendFallbackIntentTest = async () => {
+    const targetPhone = emergencyPhone && emergencyPhone.trim() ? emergencyPhone.trim() : '0563752023';
+    setIsSendingTestSms(true);
+    setSaveFeedback(null);
+
+    try {
+      const now = new Date().toLocaleTimeString();
+      const testMessage = `🚨 [اختبار إرسال عبر تطبيق الرسائل - Fallback]\nالتوقيت: ${now}`;
+
+      if (Capacitor.isNativePlatform()) {
+        const success = await sendFallbackIntentSms(targetPhone, testMessage);
+        if (success) {
+           setSaveFeedback(
+            translateInline(
+              lang,
+              `✓ Opened default SMS app intent for ${targetPhone}`,
+              `✓ تم فتح تطبيق الرسائل الخاص بالنظام للإرسال إلى ${targetPhone}`
+            )
+          );
+        } else {
+           setSaveFeedback(
+            translateInline(
+              lang,
+              `⚠️ Failed to open default SMS app intent.`,
+              `⚠️ فشل فتح تطبيق رسائل النظام.`
+            )
+          );
+        }
+      } else {
+         setSaveFeedback(
+            translateInline(
+              lang,
+              `ℹ️ Web Preview Simulation: SMS intent prepared.`,
+              `ℹ️ محاكاة ويب: أمر فتح تطبيق الرسائل جاهز.`
+            )
+          );
+      }
+    } catch (err: any) {
+      setSaveFeedback(
+        translateInline(
+          lang,
+          `❌ Error: ${err?.message || 'Unknown error'}`,
+          `❌ خطأ: ${err?.message || 'خطأ غير معروف'}`
         )
       );
     } finally {
@@ -850,6 +903,20 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
                 {isSendingTestSms
                   ? translateInline(lang, 'Dispatching in background...', 'جاري الإرسال في الخلفية...')
                   : translateInline(lang, 'Test Silent Background SMS', 'تجربة الإرسال الصامت في الخلفية')}
+              </span>
+            </button>
+            <button
+              id="btn-test-fallback-intent-sms"
+              type="button"
+              disabled={isSendingTestSms}
+              onClick={handleSendFallbackIntentTest}
+              className="w-full sm:w-auto px-4 py-2 mt-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold text-xs font-mono-code transition cursor-pointer shadow-md shadow-amber-950/50 flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              <MessageSquare className="w-3.5 h-3.5" />
+              <span>
+                {isSendingTestSms
+                  ? translateInline(lang, 'Opening...', 'جاري الفتح...')
+                  : translateInline(lang, 'Test via System SMS App (Fallback)', 'إرسال عبر تطبيق رسائل النظام (البديل)')}
               </span>
             </button>
           </div>

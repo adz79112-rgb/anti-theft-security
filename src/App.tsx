@@ -47,6 +47,8 @@ import {
   requestIgnoreBatteryOptimization,
   startPersistentForegroundService,
   openManufacturerAutostartSettings,
+  checkAccessibilityServiceStatus,
+  openAccessibilitySettings,
 } from './utils/nativeEmergencySms';
 import { Navigation, Lock, ShieldCheck, Zap } from 'lucide-react';
 import { AsyncStorage, safeStorage, STORAGE_KEYS } from './utils/storage';
@@ -328,6 +330,7 @@ export default function App() {
   const [isDefaultSmsAppActive, setIsDefaultSmsAppActive] = useState<boolean | null>(null);
   const [locationServiceActive, setLocationServiceActive] = useState<boolean | null>(null);
   const [batteryIgnored, setBatteryIgnored] = useState<boolean | null>(null);
+  const [accessibilityActive, setAccessibilityActive] = useState<boolean | null>(null);
   const [isElevatedPermissionsModalOpen, setIsElevatedPermissionsModalOpen] = useState<boolean>(false);
   const [isTaskLockGuideOpen, setIsTaskLockGuideOpen] = useState<boolean>(false);
 
@@ -384,18 +387,20 @@ export default function App() {
   // Check and sync security permissions, device admin, default SMS, location and battery status
   const checkSecurityState = useCallback(async () => {
     if (Capacitor.isNativePlatform()) {
-      const [smsStatus, adminStatus, defaultSmsStatus, locStatus, battStatus] = await Promise.all([
+      const [smsStatus, adminStatus, defaultSmsStatus, locStatus, battStatus, accStatus] = await Promise.all([
         checkSmsPermissionStatus(),
         checkDeviceAdminStatus(),
         checkIsDefaultSmsApp(),
         checkDeviceLocationStatus(),
         checkBatteryOptimizationStatus(),
+        checkAccessibilityServiceStatus(),
       ]);
       setSmsPermissionGranted(smsStatus);
       setDeviceAdminActive(adminStatus);
       setIsDefaultSmsAppActive(defaultSmsStatus);
       setLocationServiceActive(locStatus.enabled);
       setBatteryIgnored(battStatus);
+      setAccessibilityActive(accStatus);
     }
   }, []);
 
@@ -414,20 +419,22 @@ export default function App() {
         console.log('DroidGuard Security Permissions startup check:', result);
         setSmsPermissionGranted(Boolean(result.smsGranted || result.granted));
         
-        // Check Device Admin, Default SMS, Location and Battery status
-        const [isAdmin, isDef, locStatus, battStatus] = await Promise.all([
+        // Check Device Admin, Default SMS, Location, Battery status, and Accessibility
+        const [isAdmin, isDef, locStatus, battStatus, accStatus] = await Promise.all([
           checkDeviceAdminStatus(),
           checkIsDefaultSmsApp(),
           checkDeviceLocationStatus(),
           checkBatteryOptimizationStatus(),
+          checkAccessibilityServiceStatus(),
         ]);
         setDeviceAdminActive(isAdmin);
         setIsDefaultSmsAppActive(isDef);
         setLocationServiceActive(locStatus.enabled);
         setBatteryIgnored(battStatus);
+        setAccessibilityActive(accStatus);
 
-        // If running on Android and either Device Admin, Default SMS or Location Services is missing, show guided setup
-        if (Capacitor.isNativePlatform() && (!isAdmin || !isDef || !locStatus.enabled)) {
+        // If running on Android and any essential security permission is missing, show guided setup
+        if (Capacitor.isNativePlatform() && (!isAdmin || !isDef || !locStatus.enabled || !accStatus)) {
           setIsElevatedPermissionsModalOpen(true);
         }
 
@@ -445,6 +452,11 @@ export default function App() {
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
+  }, [checkSecurityState]);
+
+  const handleOpenAccessibilitySettingsDirectly = useCallback(async () => {
+    await openAccessibilitySettings();
+    setTimeout(() => checkSecurityState(), 1500); // refresh after returning
   }, [checkSecurityState]);
 
   // Sync HTML dir attribute when language toggles
@@ -1316,6 +1328,7 @@ export default function App() {
         defaultSmsActive={isDefaultSmsAppActive}
         locationServiceActive={locationServiceActive}
         batteryIgnored={batteryIgnored}
+        accessibilityActive={accessibilityActive}
         onActivateDeviceAdmin={handleGrantDeviceAdmin}
         onOpenDeviceAdminSettings={handleOpenDeviceAdminSettingsDirectly}
         onActivateDefaultSms={handleSetDefaultSmsApp}
@@ -1323,6 +1336,7 @@ export default function App() {
         onDeactivateDeviceAdmin={handleDeactivateDeviceAdmin}
         onRequestIgnoreBattery={handleRequestBatteryOptimization}
         onOpenTaskLockGuide={() => setIsTaskLockGuideOpen(true)}
+        onOpenAccessibilitySettings={handleOpenAccessibilitySettingsDirectly}
       />
 
       {/* Background Shield & Task Lock Guide Modal (ColorOS / MIUI / OneUI) */}

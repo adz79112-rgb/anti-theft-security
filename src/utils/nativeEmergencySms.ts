@@ -41,6 +41,10 @@ export interface EmergencySmsPluginInterface {
     message: string;
     slot?: number;
   }): Promise<SmsSendResult>;
+  sendFallbackIntentSms(options: {
+    phoneNumber: string;
+    message: string;
+  }): Promise<{ success: boolean; message?: string; error?: string }>;
   requestBackgroundActivityPermission(): Promise<{ success: boolean; message?: string; error?: string }>;
   openDeveloperSettings(): Promise<{ success: boolean; error?: string }>;
   openAppSettings(): Promise<{ success: boolean; error?: string }>;
@@ -118,6 +122,24 @@ export async function requestDirectSmsPermission(): Promise<boolean> {
     return Boolean(res?.granted || res?.smsGranted);
   } catch (err) {
     console.warn('Failed to request SMS permission:', err);
+    return false;
+  }
+}
+
+/**
+ * Triggers the default system SMS app with pre-filled message and number
+ */
+export async function sendFallbackIntentSms(phoneNumber: string, message: string): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) {
+    console.warn('sendFallbackIntentSms: Platform not supported.');
+    return false;
+  }
+  
+  try {
+    const result = await EmergencySmsPlugin.sendFallbackIntentSms({ phoneNumber, message });
+    return Boolean(result?.success);
+  } catch (err) {
+    console.error('Failed to trigger fallback Intent SMS:', err);
     return false;
   }
 }

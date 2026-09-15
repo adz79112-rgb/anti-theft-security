@@ -11,6 +11,7 @@ interface ElevatedPermissionsModalProps {
   defaultSmsActive?: boolean | null;
   locationServiceActive?: boolean | null;
   batteryIgnored?: boolean | null;
+  accessibilityActive?: boolean | null;
   onActivateDeviceAdmin: () => void;
   onOpenDeviceAdminSettings: () => void;
   onActivateDefaultSms?: () => void;
@@ -18,6 +19,7 @@ interface ElevatedPermissionsModalProps {
   onDeactivateDeviceAdmin?: () => void;
   onRequestIgnoreBattery?: () => void;
   onOpenTaskLockGuide?: () => void;
+  onOpenAccessibilitySettings?: () => void;
 }
 
 export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> = ({
@@ -28,6 +30,7 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
   defaultSmsActive,
   locationServiceActive,
   batteryIgnored,
+  accessibilityActive,
   onActivateDeviceAdmin,
   onOpenDeviceAdminSettings,
   onActivateDefaultSms,
@@ -35,11 +38,13 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
   onDeactivateDeviceAdmin,
   onRequestIgnoreBattery,
   onOpenTaskLockGuide,
+  onOpenAccessibilitySettings,
 }) => {
   if (!isOpen) return null;
 
   const isSmsAppReady = Boolean(defaultSmsActive);
-  const allActive = Boolean(deviceAdminActive && isSmsAppReady && locationServiceActive !== false && batteryIgnored !== false);
+  const isAccessibilityReady = Boolean(accessibilityActive);
+  const allActive = Boolean(deviceAdminActive && isSmsAppReady && locationServiceActive !== false && batteryIgnored !== false && isAccessibilityReady !== false);
 
   return (
     <div
@@ -140,6 +145,67 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
                 >
                   <MessageSquare className="w-4 h-4" />
                   <span>{translateInline(lang, 'Set as Default SMS App Now', 'تعيين كتطبيق رسائل SMS افتراضي الآن')}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Item 1.5: Accessibility Service (Auto Confirm SMS) */}
+        <div
+          id="modal-step-accessibility"
+          className={`p-4 rounded-2xl border transition-all ${
+            isAccessibilityReady
+              ? 'bg-emerald-950/30 border-emerald-500/40'
+              : 'bg-orange-950/30 border-orange-500/40'
+          }`}
+        >
+          <div className="flex items-start gap-3">
+            <div
+              className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
+                isAccessibilityReady
+                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  : 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+              }`}
+            >
+              <Navigation className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <h4 className="text-sm font-bold text-white">
+                  {translateInline(
+                    lang,
+                    'Auto Confirm SMS (Accessibility)',
+                    'التأكيد التلقائي للرسائل (إمكانية الوصول)'
+                  )}
+                </h4>
+                {isAccessibilityReady ? (
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 rounded-full">
+                    <CheckCircle2 className="w-3 h-3" />
+                    {translateInline(lang, 'ACTIVE ✓', 'مفعلة ✓')}
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-bold text-orange-300 bg-orange-500/20 border border-orange-500/40 px-2 py-0.5 rounded-full">
+                    {translateInline(lang, 'ACTION REQUIRED', 'مطلوب التفعيل')}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-slate-300 mt-1 leading-relaxed">
+                {translateInline(
+                  lang,
+                  'Enable the accessibility service to automatically click "Send" on SMS confirmation dialogs.',
+                  'قم بتفعيل خدمة إمكانية الوصول للضغط تلقائياً على "إرسال" لتخطي نافذة تأكيد إرسال رسائل SMS.'
+                )}
+              </p>
+              {!isAccessibilityReady && (
+                <button
+                  id="btn-modal-activate-accessibility"
+                  type="button"
+                  onClick={onOpenAccessibilitySettings}
+                  className="mt-3 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-500 hover:to-red-500 text-white font-bold text-xs shadow-lg shadow-orange-950/60 transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Navigation className="w-4 h-4" />
+                  <span>{translateInline(lang, 'Open Accessibility Settings', 'فتح إعدادات إمكانية الوصول للتشغيل')}</span>
                 </button>
               )}
             </div>

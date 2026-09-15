@@ -375,6 +375,44 @@ public class EmergencySmsPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void sendFallbackIntentSms(PluginCall call) {
+        String phoneNumber = call.getString("phoneNumber");
+        String message = call.getString("message");
+        
+        if (phoneNumber == null || phoneNumber.trim().isEmpty()) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("error", "Phone number is required");
+            call.resolve(ret);
+            return;
+        }
+
+        if (message == null) {
+            message = "";
+        }
+
+        Context context = getContext();
+        try {
+            Intent intent = new Intent(Intent.ACTION_SENDTO);
+            intent.setData(Uri.parse("smsto:" + phoneNumber));
+            intent.putExtra("sms_body", message);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            
+            context.startActivity(intent);
+            
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            ret.put("message", "Opened default SMS app intent");
+            call.resolve(ret);
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
+    }
+
+    @PluginMethod
     public void openDeveloperSettings(PluginCall call) {
         Context context = getContext();
         try {
@@ -638,18 +676,48 @@ public class EmergencySmsPlugin extends Plugin {
 
     @PluginMethod
     public void isAccessibilityServiceEnabled(PluginCall call) {
-        // AccessibilityService has been fully decommissioned in favor of Default SMS App role
+        Context context = getContext();
+        int accessibilityEnabled = 0;
+        final String service = context.getPackageName() + "/" + AutoConfirmService.class.getCanonicalName();
+        try {
+            accessibilityEnabled = Settings.Secure.getInt(
+                    context.getApplicationContext().getContentResolver(),
+                    android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
+        } catch (Settings.SettingNotFoundException e) {
+            // Error
+        }
+        
+        boolean isEnabled = false;
+        
+        if (accessibilityEnabled == 1) {
+            String settingValue = Settings.Secure.getString(
+                    context.getApplicationContext().getContentResolver(),
+                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+            if (settingValue != null && settingValue.contains(service)) {
+                isEnabled = true;
+            }
+        }
+        
         JSObject ret = new JSObject();
-        ret.put("isEnabled", false);
+        ret.put("isEnabled", isEnabled);
         call.resolve(ret);
     }
 
     @PluginMethod
     public void openAccessibilitySettings(PluginCall call) {
-        // AccessibilityService has been fully decommissioned in favor of Default SMS App role
-        JSObject ret = new JSObject();
-        ret.put("success", true);
-        call.resolve(ret);
+        try {
+            Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getContext().startActivity(intent);
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
     }
 
     @PluginMethod
