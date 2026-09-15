@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Bot, Settings, CheckCircle2, AlertCircle, X, Sparkles, Lock, Navigation, BatteryCharging, Smartphone, Zap } from 'lucide-react';
+import { ShieldCheck, MessageSquare, Settings, CheckCircle2, AlertCircle, X, Sparkles, Lock, Navigation, BatteryCharging, Smartphone, Zap } from 'lucide-react';
 import { Language } from '../types';
 import { translateInline } from '../utils/translateInline';
 
@@ -8,12 +8,12 @@ interface ElevatedPermissionsModalProps {
   onClose: () => void;
   lang: Language;
   deviceAdminActive: boolean | null;
-  accessibilityActive: boolean | null;
+  defaultSmsActive?: boolean | null;
   locationServiceActive?: boolean | null;
   batteryIgnored?: boolean | null;
   onActivateDeviceAdmin: () => void;
   onOpenDeviceAdminSettings: () => void;
-  onActivateAccessibility: () => void;
+  onActivateDefaultSms?: () => void;
   onOpenLocationSettings?: () => void;
   onDeactivateDeviceAdmin?: () => void;
   onRequestIgnoreBattery?: () => void;
@@ -25,12 +25,12 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
   onClose,
   lang,
   deviceAdminActive,
-  accessibilityActive,
+  defaultSmsActive,
   locationServiceActive,
   batteryIgnored,
   onActivateDeviceAdmin,
   onOpenDeviceAdminSettings,
-  onActivateAccessibility,
+  onActivateDefaultSms,
   onOpenLocationSettings,
   onDeactivateDeviceAdmin,
   onRequestIgnoreBattery,
@@ -38,7 +38,8 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
 }) => {
   if (!isOpen) return null;
 
-  const allActive = Boolean(deviceAdminActive && accessibilityActive && locationServiceActive !== false && batteryIgnored !== false);
+  const isSmsAppReady = Boolean(defaultSmsActive);
+  const allActive = Boolean(deviceAdminActive && isSmsAppReady && locationServiceActive !== false && batteryIgnored !== false);
 
   return (
     <div
@@ -71,54 +72,54 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
           <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
             {translateInline(
               lang,
-              'Elevated Security & Zero-Touch Dispatch Setup',
-              'إعداد الحماية القصوى والإرسال التلقائي بدون لمس الشاشة'
+              'Elevated Security & Default SMS Authorization',
+              'إعداد الحماية القصوى وتطبيق الرسائل الافتراضي'
             )}
           </h3>
           <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
             {translateInline(
               lang,
-              'Enable these two essential Android privileges so DroidGuard can lock the phone immediately and auto-confirm emergency SMS without pressing any button.',
-              'يرجى تفعيل هاتين الصلاحيتين الأساسيتين ليتمكن التطبيق من قفل الهاتف فوراً والضغط التلقائي على زر "إرسال" بدون الحاجة للمس الشاشة أو قبول الرسالة يدوياً.'
+              'Set DroidGuard as the Default SMS app and enable Device Admin so the app can send emergency SMS silently without any popups, and lock the phone immediately.',
+              'يرجى تعيين التطبيق كتطبيق الرسائل SMS الافتراضي وتفعيل مسؤول الجهاز، ليتمكن الهاتف من إرسال رسائل الطوارئ مباشرة وبصمت تام بدون ظهور نوافذ تحذيرية أو عد تنازلي، وقفل الهاتف فوراً.'
             )}
           </p>
         </div>
 
-        {/* Item 1: Accessibility Service (Auto-Confirm) */}
+        {/* Item 1: Default SMS App (Silent SOS without restrictions) */}
         <div
-          id="modal-step-accessibility"
+          id="modal-step-default-sms"
           className={`p-4 rounded-2xl border transition-all ${
-            accessibilityActive
+            isSmsAppReady
               ? 'bg-emerald-950/30 border-emerald-500/40'
-              : 'bg-teal-950/30 border-teal-500/40'
+              : 'bg-cyan-950/30 border-cyan-500/40'
           }`}
         >
           <div className="flex items-start gap-3">
             <div
               className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
-                accessibilityActive
+                isSmsAppReady
                   ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                  : 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                  : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
               }`}
             >
-              <Bot className="w-5 h-5" />
+              <MessageSquare className="w-5 h-5" />
             </div>
             <div className="flex-1">
               <div className="flex items-center justify-between gap-2 flex-wrap">
                 <h4 className="text-sm font-bold text-white">
                   {translateInline(
                     lang,
-                    '1. Auto-Confirm Service (Accessibility)',
-                    '1. خدمة المساعد التلقائي (إمكانية الوصول)'
+                    '1. Default SMS App (Silent SOS Delivery)',
+                    '1. تعيين كتطبيق الرسائل SMS الافتراضي (إرسال صامت بدون قيود)'
                   )}
                 </h4>
-                {accessibilityActive ? (
+                {isSmsAppReady ? (
                   <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 rounded-full">
                     <CheckCircle2 className="w-3 h-3" />
-                    {translateInline(lang, 'ACTIVE ✓', 'مفعلة ✓')}
+                    {translateInline(lang, 'DEFAULT SMS ACTIVE ✓', 'مفعّل كتطبيق افتراضي ✓')}
                   </span>
                 ) : (
-                  <span className="text-[10px] font-bold text-teal-300 bg-teal-500/20 border border-teal-500/40 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold text-cyan-300 bg-cyan-500/20 border border-cyan-500/40 px-2 py-0.5 rounded-full">
                     {translateInline(lang, 'ACTION REQUIRED', 'مطلوب التفعيل')}
                   </span>
                 )}
@@ -126,48 +127,19 @@ export const ElevatedPermissionsModal: React.FC<ElevatedPermissionsModalProps> =
               <p className="text-xs text-slate-300 mt-1 leading-relaxed">
                 {translateInline(
                   lang,
-                  'Allows the app to automatically click "Send" when Android shows the SMS confirmation window, sending silent emergency SMS with zero physical taps.',
-                  'تمنح التطبيق قدرة الضغط التلقائي الفوري على زر "إرسال" بمجرد ظهور نافذة النظام التحذيرية، لإرسال رسائل الاستغاثة بصمت ودون الحاجة للمس الشاشة إطلاقاً!'
+                  'When set as the Default SMS app, Android exempts DroidGuard from security confirmation dialogs, allowing silent background emergency SMS to dispatch instantly.',
+                  'عند تعيين DroidGuard كتطبيق الرسائل الافتراضي، يلغي نظام أندرويد قيود النوافذ التحذيرية، ويرسل رسائل الاستغاثة فوراً وبصمت تام في الخلفية بدون طلب تأكيد أو لمس الشاشة.'
                 )}
               </p>
-              {!accessibilityActive && (
-                <div className="mt-2.5 p-2.5 rounded-xl bg-slate-950/70 border border-teal-500/20 text-[11px] text-slate-300 space-y-1.5">
-                  <div className="font-bold text-teal-300 flex items-center gap-1.5">
-                    <span>📱</span>
-                    <span>{translateInline(lang, 'Universal OEM Steps (Condor, Samsung, Xiaomi, Realme):', 'خطوات التفعيل لكافة الأجهزة (كوندور، سامسونج، شاومي، ريلمي):')}</span>
-                  </div>
-                  <p className="text-slate-300 leading-normal">
-                    {translateInline(
-                      lang,
-                      '1. Look for "Downloaded apps" or "Installed services" (Services téléchargés / التطبيقات المثبتة).',
-                      '1. ابحث عن «التطبيقات المثبتة» أو «Services téléchargés» (في كوندور وسامسونج وشاومي).'
-                    )}
-                  </p>
-                  <p className="text-slate-300 leading-normal">
-                    {translateInline(
-                      lang,
-                      '2. Select "Phone Security App (DroidGuard)" and toggle it ON.',
-                      '2. اختر «تطبيق حماية الهاتف (DroidGuard)» وفعّل المفتاح إلى تشغيل (ON).'
-                    )}
-                  </p>
-                  <p className="text-amber-300 text-[10px] leading-normal pt-0.5 border-t border-slate-800">
-                    {translateInline(
-                      lang,
-                      '💡 Condor/Android 13+ Note: If "Restricted setting" appears, open Settings ➔ Apps ➔ Anti-Theft ➔ Top 3 dots ➔ "Allow restricted settings".',
-                      '💡 ملاحظة لهواتف كوندور والأنظمة الحديثة: إذا ظهر «إعداد مقيد»، افتح إعدادات الهاتف ⬅️ التطبيقات ⬅️ التطبيق ⬅️ النقاط الثلاث ⬅️ السماح بالإعدادات المقيدة.'
-                    )}
-                  </p>
-                </div>
-              )}
-              {!accessibilityActive && (
+              {!isSmsAppReady && (
                 <button
-                  id="btn-modal-activate-accessibility"
+                  id="btn-modal-activate-default-sms"
                   type="button"
-                  onClick={onActivateAccessibility}
-                  className="mt-3 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg shadow-teal-950/60 transition cursor-pointer flex items-center justify-center gap-2"
+                  onClick={onActivateDefaultSms}
+                  className="mt-3 w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-950/60 transition cursor-pointer flex items-center justify-center gap-2"
                 >
-                  <Bot className="w-4 h-4" />
-                  <span>{translateInline(lang, 'Open Accessibility Settings', 'فتح شاشة إمكانية الوصول في الإعدادات')}</span>
+                  <MessageSquare className="w-4 h-4" />
+                  <span>{translateInline(lang, 'Set as Default SMS App Now', 'تعيين كتطبيق رسائل SMS افتراضي الآن')}</span>
                 </button>
               )}
             </div>

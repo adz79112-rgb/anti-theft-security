@@ -22,8 +22,6 @@ import {
   ExternalLink,
   X,
   Send,
-  Bot,
-  MousePointerClick,
 } from 'lucide-react';
 import { Language, DispatchEvent, SecurityConfig } from '../types';
 import {
@@ -41,8 +39,6 @@ import {
   checkDeviceAdminStatus,
   requestDeviceAdmin,
   openDeviceAdminSettings,
-  checkAccessibilityServiceStatus,
-  openAccessibilitySettings,
   lockDeviceNow,
   openPremiumSmsSettings,
   checkIsDefaultSmsApp,
@@ -75,32 +71,27 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
   const [smsPermissionGranted, setSmsPermissionGranted] = useState<boolean | null>(null);
   const [deviceAdminActive, setDeviceAdminActive] = useState<boolean | null>(null);
   const [isDefaultSms, setIsDefaultSms] = useState<boolean | null>(null);
-  const [accessibilityActive, setAccessibilityActive] = useState<boolean | null>(null);
   const [isRequestingPermission, setIsRequestingPermission] = useState<boolean>(false);
   const [isActivatingAdmin, setIsActivatingAdmin] = useState<boolean>(false);
   const [isSettingDefaultSms, setIsSettingDefaultSms] = useState<boolean>(false);
-  const [isOpeningAccessibility, setIsOpeningAccessibility] = useState<boolean>(false);
   const [isSendingTestSms, setIsSendingTestSms] = useState<boolean>(false);
   const [showUniversalOemModal, setShowUniversalOemModal] = useState<boolean>(false);
 
-  // Load emergency contact phone, check SEND_SMS, Device Admin, Accessibility Service and Default SMS status
+  // Load emergency contact phone, check SEND_SMS, Device Admin, and Default SMS status
   const refreshSecurityStatus = async () => {
     if (Capacitor.isNativePlatform()) {
-      const [smsGranted, adminActive, defaultSms, accessStatus] = await Promise.all([
+      const [smsGranted, adminActive, defaultSms] = await Promise.all([
         checkSmsPermissionStatus(),
         checkDeviceAdminStatus(),
         checkIsDefaultSmsApp(),
-        checkAccessibilityServiceStatus(),
       ]);
       setSmsPermissionGranted(smsGranted);
       setDeviceAdminActive(adminActive);
       setIsDefaultSms(defaultSms);
-      setAccessibilityActive(accessStatus);
     } else {
       setSmsPermissionGranted(false);
       setDeviceAdminActive(false);
       setIsDefaultSms(false);
-      setAccessibilityActive(false);
     }
   };
 
@@ -186,24 +177,6 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
     } finally {
       setIsActivatingAdmin(false);
       setTimeout(() => setSaveFeedback(null), 6000);
-    }
-  };
-
-  // Accessibility Service Opener (Auto-Confirm Service)
-  const handleOpenAccessibility = async () => {
-    setIsOpeningAccessibility(true);
-    try {
-      await openAccessibilitySettings();
-      setSaveFeedback(
-        translateInline(
-          lang,
-          'ℹ️ Opened Accessibility Settings. Please tap "Anti-Theft Security" and toggle it ON.',
-          'ℹ️ تم فتح إعدادات إمكانية الوصول. يرجى البحث عن "Anti-Theft Security" وتفعيل المفتاح للسماح بالنقر التلقائي.'
-        )
-      );
-    } finally {
-      setIsOpeningAccessibility(false);
-      setTimeout(() => setSaveFeedback(null), 7000);
     }
   };
 
@@ -765,52 +738,50 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
           </div>
         </div>
 
-        {/* 3. Auto-Confirm Accessibility Service (Auto-Clicks "Send" / "إرسال" Without User Touch) */}
+        {/* 2. Set as Default SMS Application (Primary Silent SMS Authorization) */}
         <div
-          id="accessibility-auto-confirm-card"
+          id="default-sms-app-card"
           className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col gap-3 ${
-            accessibilityActive
+            isDefaultSms
               ? 'border-emerald-500/40 bg-emerald-950/20 text-emerald-200'
-              : 'border-teal-500/40 bg-teal-950/20 text-teal-200'
+              : 'border-cyan-500/40 bg-cyan-950/20 text-cyan-200'
           }`}
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-start gap-3">
               <div
-                className={`p-2.5 rounded-xl border shrink-0 mt-0.5 ${
-                  accessibilityActive
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                    : 'bg-teal-500/20 text-teal-300 border-teal-500/30'
+                className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
+                  isDefaultSms
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
                 }`}
               >
-                <MousePointerClick className="w-5 h-5" />
+                <MessageSquare className="w-5 h-5" />
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
                   <h4 className="text-sm font-bold text-white">
                     {translateInline(
                       lang,
-                      'Phone Security App (Accessibility Service)',
-                      'خدمة حماية الهاتف (إمكانية الوصول - النقر التلقائي)'
+                      'Set as Default SMS App (Silent Background SOS)',
+                      'التعيين كتطبيق الرسائل الافتراضي (إرسال صامت تام)'
                     )}
                   </h4>
                   <span
                     className={`text-[10px] font-mono-code font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                      accessibilityActive
+                      isDefaultSms
                         ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
-                        : 'bg-teal-500/30 text-teal-300 border border-teal-500/40'
+                        : 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/40'
                     }`}
                   >
-                    {accessibilityActive
-                      ? translateInline(lang, 'AUTO-CLICK ACTIVE ✓', 'النقر التلقائي مفعل ✓')
-                      : translateInline(lang, 'ZERO-TOUCH SMS ⚡', 'إرسال بدون لمس ⚡')}
+                    {isDefaultSms ? 'ACTIVE (DEFAULT SMS)' : 'REQUIRED FOR SILENT SMS'}
                   </span>
                 </div>
-                <p className="text-xs text-slate-300 mt-1.5 leading-relaxed">
+                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
                   {translateInline(
                     lang,
-                    'Automatically detects the Android "Sending an SMS" confirmation dialog and clicks "Send" within milliseconds without requiring any physical tap or user intervention.',
-                    'تمنح التطبيق صلاحية الضغط التلقائي الفوري على زر "إرسال" بمجرد ظهور نافذة نظام أندرويد التحذيرية، لإرسال رسائل SMS الطوارئ بصمت تام وبدون الحاجة للمس الشاشة.'
+                    'Setting DroidGuard as the Default SMS app grants total background SMS dispatch authority without trigger warnings, countdowns, or carrier popups.',
+                    'عند تعيين DroidGuard كتطبيق الرسائل الافتراضي، يمنح النظام صلاحية الإرسال الصامت المباشر في الخلفية دون ظهور نوافذ تحذيرية أو عد تنازلي أثناء الطوارئ.'
                   )}
                 </p>
               </div>
@@ -818,24 +789,69 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
 
             <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
               <button
-                id="btn-open-accessibility-settings"
+                id="btn-set-default-sms-app"
                 type="button"
-                onClick={handleOpenAccessibility}
-                disabled={isOpeningAccessibility}
-                className={`px-4 py-2.5 rounded-xl text-white text-xs font-bold font-mono-code transition cursor-pointer shadow-lg flex items-center gap-2 disabled:opacity-50 ${
-                  accessibilityActive
-                    ? 'bg-emerald-700 hover:bg-emerald-600 shadow-emerald-950/60'
-                    : 'bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 shadow-teal-950/60'
+                disabled={isSettingDefaultSms || Boolean(isDefaultSms)}
+                onClick={handleSetDefaultSms}
+                className={`px-4 py-2.5 rounded-xl text-xs font-bold font-mono-code transition cursor-pointer shadow-lg flex items-center gap-2 ${
+                  isDefaultSms
+                    ? 'bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 cursor-default'
+                    : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-950/60'
                 }`}
               >
-                <Bot className="w-4 h-4" />
-                <span>
-                  {accessibilityActive
-                    ? translateInline(lang, 'Settings / Reconfigure', 'مفعلة ✓ (إعادة الضبط)')
-                    : translateInline(lang, 'Activate Phone Security Service', 'تفعيل خدمة حماية الهاتف الآن')}
-                </span>
+                {isDefaultSms ? (
+                  <>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                    <span>{translateInline(lang, 'Default SMS Active', 'مفعّل كتطبيق افتراضي')}</span>
+                  </>
+                ) : (
+                  <>
+                    <MessageSquare className="w-4 h-4" />
+                    <span>
+                      {isSettingDefaultSms
+                        ? translateInline(lang, 'Requesting...', 'جاري الطلب...')
+                        : translateInline(lang, 'Set as Default SMS App', 'تعيين كتطبيق رسائل افتراضي')}
+                    </span>
+                  </>
+                )}
               </button>
             </div>
+          </div>
+
+          {/* Sub-card: Immediate Background SMS Test Dispatch */}
+          <div className="pt-3 mt-1 border-t border-cyan-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-950/40 p-3 rounded-xl">
+            <div className="flex items-center gap-2.5">
+              <span className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300">
+                <Send className="w-4 h-4" />
+              </span>
+              <div>
+                <p className="text-xs font-bold text-white">
+                  {translateInline(lang, 'Direct Background SMS Dispatch (Stealth Execution)', 'إرسال الرسالة في الخلفية فوراً دون الحاجة لضغط زر إرسال')}
+                </p>
+                <p className="text-[11px] text-slate-400">
+                  {translateInline(
+                    lang,
+                    `Dispatches directly to ${emergencyPhone || '0563752023'} via SmsManager with zero countdowns.`,
+                    `يرسل فوراً إلى ${emergencyPhone || '0563752023'} عبر Android SmsManager مباشرة دون الحاجة لضغط زر إرسال في النظام.`
+                  )}
+                </p>
+              </div>
+            </div>
+
+            <button
+              id="btn-test-silent-background-sms"
+              type="button"
+              disabled={isSendingTestSms}
+              onClick={handleSendInstantSilentTest}
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs font-mono-code transition cursor-pointer shadow-md shadow-emerald-950/50 flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>
+                {isSendingTestSms
+                  ? translateInline(lang, 'Dispatching in background...', 'جاري الإرسال في الخلفية...')
+                  : translateInline(lang, 'Test Silent Background SMS', 'تجربة الإرسال الصامت في الخلفية')}
+              </span>
+            </button>
           </div>
         </div>
 
@@ -954,123 +970,6 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
           </div>
         </div>
 
-        {/* 4. Set as Default SMS Application (Role Manager / Absolute Bypass) */}
-        <div
-          id="default-sms-app-card"
-          className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col gap-3 ${
-            isDefaultSms
-              ? 'border-emerald-500/40 bg-emerald-950/20 text-emerald-200'
-              : 'border-cyan-500/40 bg-cyan-950/20 text-cyan-200'
-          }`}
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div
-                className={`p-2.5 rounded-xl shrink-0 mt-0.5 ${
-                  isDefaultSms
-                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                }`}
-              >
-                <MessageSquare className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-sm font-bold text-white">
-                    {translateInline(
-                      lang,
-                      'Set as Default SMS App (Silent Background SOS)',
-                      'التعيين كتطبيق الرسائل الافتراضي (إرسال صامت تام)'
-                    )}
-                  </h4>
-                  <span
-                    className={`text-[10px] font-mono-code font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                      isDefaultSms
-                        ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
-                        : 'bg-cyan-500/30 text-cyan-300 border border-cyan-500/40'
-                    }`}
-                  >
-                    {isDefaultSms ? 'ACTIVE (DEFAULT SMS)' : 'RECOMMENDED FOR STEALTH SOS'}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  {translateInline(
-                    lang,
-                    'Setting DroidGuard as the Default SMS app grants total background SMS dispatch authority without trigger warnings or carrier popups.',
-                    'عند تعيين DroidGuard كتطبيق الرسائل الافتراضي، يمنح النظام صلاحية الإرسال الصامت المباشر في الخلفية دون ظهور نوافذ تحذيرية أو عد تنازلي أثناء الطوارئ.'
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-              <button
-                id="btn-set-default-sms-app"
-                type="button"
-                disabled={isSettingDefaultSms || Boolean(isDefaultSms)}
-                onClick={handleSetDefaultSms}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold font-mono-code transition cursor-pointer shadow-lg flex items-center gap-2 ${
-                  isDefaultSms
-                    ? 'bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 cursor-default'
-                    : 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-cyan-950/60'
-                }`}
-              >
-                {isDefaultSms ? (
-                  <>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                    <span>{translateInline(lang, 'Default SMS Active', 'مفعّل كتطبيق افتراضي')}</span>
-                  </>
-                ) : (
-                  <>
-                    <MessageSquare className="w-4 h-4" />
-                    <span>
-                      {isSettingDefaultSms
-                        ? translateInline(lang, 'Requesting...', 'جاري الطلب...')
-                        : translateInline(lang, 'Set as Default SMS App', 'تعيين كتطبيق رسائل افتراضي')}
-                    </span>
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
-
-          {/* Sub-card: Immediate Background SMS Test Dispatch (No user click required) */}
-          <div className="pt-3 mt-1 border-t border-cyan-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-slate-950/40 p-3 rounded-xl">
-            <div className="flex items-center gap-2.5">
-              <span className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300">
-                <Send className="w-4 h-4" />
-              </span>
-              <div>
-                <p className="text-xs font-bold text-white">
-                  {translateInline(lang, 'Direct Background SMS Dispatch (Stealth Execution)', 'إرسال الرسالة في الخلفية فوراً دون الحاجة لضغط زر إرسال')}
-                </p>
-                <p className="text-[11px] text-slate-400">
-                  {translateInline(
-                    lang,
-                    `Dispatches directly to ${emergencyPhone || '0563752023'} via SmsManager with zero countdowns.`,
-                    `يرسل فوراً إلى ${emergencyPhone || '0563752023'} عبر Android SmsManager مباشرة دون الحاجة لضغط زر إرسال في النظام.`
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <button
-              id="btn-test-silent-background-sms"
-              type="button"
-              disabled={isSendingTestSms}
-              onClick={handleSendInstantSilentTest}
-              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs font-mono-code transition cursor-pointer shadow-md shadow-emerald-950/50 flex items-center justify-center gap-1.5 disabled:opacity-50"
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>
-                {isSendingTestSms
-                  ? translateInline(lang, 'Dispatching in background...', 'جاري الإرسال في الخلفية...')
-                  : translateInline(lang, 'Test Silent Background SMS', 'تجربة الإرسال الصامت في الخلفية')}
-              </span>
-            </button>
-          </div>
-        </div>
-
         {/* Feedback message */}
         {saveFeedback && (
           <div className="p-3 rounded-xl bg-slate-950/80 border border-amber-500/30 text-xs font-mono-code text-amber-300 flex items-center gap-2">
@@ -1168,7 +1067,7 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
         onClose={() => setShowUniversalOemModal(false)}
         lang={lang}
         onActivateDeviceAdmin={handleActivateDeviceAdmin}
-        onActivateAccessibility={handleOpenAccessibility}
+        onActivateDefaultSms={handleSetDefaultSms}
       />
     </div>
   );

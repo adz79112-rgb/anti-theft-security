@@ -347,11 +347,6 @@ public class EmergencySmsPlugin extends Plugin {
             final int chosenSlot = slot != null ? slot : -1;
             Log.i(TAG, "sendDirectSms: routing emergency SMS via decoupled background service to " + cleanNumber);
 
-            // Arm AutoConfirm accessibility service for this emergency dispatch event
-            try {
-                AutoConfirmService.armEmergencyWindow(context.getApplicationContext() != null ? context.getApplicationContext() : context, 60_000L);
-            } catch (Exception ignored) {}
-
             // Perform direct dispatch using the Activity Context to prevent ColorOS 
             // from flagging this as a "Background Service SMS" which triggers severe security warnings.
             boolean dispatched = EmergencySmsDispatchService.performStealthSmsDispatch(
@@ -643,42 +638,18 @@ public class EmergencySmsPlugin extends Plugin {
 
     @PluginMethod
     public void isAccessibilityServiceEnabled(PluginCall call) {
-        Context context = getContext();
-        try {
-            boolean isEnabled = false;
-            String prefString = Settings.Secure.getString(context.getContentResolver(), Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-            if (prefString != null) {
-                String expected = context.getPackageName() + "/" + AutoConfirmService.class.getName();
-                String expectedShort = context.getPackageName() + "/.AutoConfirmService";
-                isEnabled = prefString.contains(expected) || prefString.contains(expectedShort) || prefString.contains("AutoConfirmService");
-            }
-            JSObject ret = new JSObject();
-            ret.put("isEnabled", isEnabled);
-            call.resolve(ret);
-        } catch (Exception e) {
-            JSObject ret = new JSObject();
-            ret.put("isEnabled", false);
-            ret.put("error", e.getMessage());
-            call.resolve(ret);
-        }
+        // AccessibilityService has been fully decommissioned in favor of Default SMS App role
+        JSObject ret = new JSObject();
+        ret.put("isEnabled", false);
+        call.resolve(ret);
     }
 
     @PluginMethod
     public void openAccessibilitySettings(PluginCall call) {
-        Context context = getContext();
-        try {
-            Intent intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            context.startActivity(intent);
-            JSObject ret = new JSObject();
-            ret.put("success", true);
-            call.resolve(ret);
-        } catch (Exception e) {
-            JSObject ret = new JSObject();
-            ret.put("success", false);
-            ret.put("error", e.getMessage());
-            call.resolve(ret);
-        }
+        // AccessibilityService has been fully decommissioned in favor of Default SMS App role
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
     }
 
     @PluginMethod
@@ -1285,7 +1256,7 @@ public class EmergencySmsPlugin extends Plugin {
         prefs.edit().putLong(KEY_ANTI_SHUTDOWN_BYPASS_UNTIL, bypassUntil).apply();
 
         // Also trigger the native Power Dialog so the user can power off right away
-        boolean openedDialog = AutoConfirmService.openNativePowerMenu(getContext());
+        boolean openedDialog = false;
 
         JSObject ret = new JSObject();
         ret.put("success", true);

@@ -68,11 +68,6 @@ public class EmergencySmsDispatchService extends Service {
             return false;
         }
 
-        // Arm AutoConfirmService for 60 seconds specifically for this emergency dispatch event
-        try {
-            AutoConfirmService.armEmergencyWindow(context, 60_000L);
-        } catch (Exception ignored) {}
-
         // Verify SEND_SMS permission
         if (ActivityCompat.checkSelfPermission(context, android.Manifest.permission.SEND_SMS) != PackageManager.PERMISSION_GRANTED) {
             Log.e(TAG, "SEND_SMS permission not granted.");

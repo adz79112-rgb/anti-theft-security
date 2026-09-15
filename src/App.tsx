@@ -37,8 +37,6 @@ import {
   checkDeviceAdminStatus,
   requestDeviceAdmin,
   openDeviceAdminSettings,
-  checkAccessibilityServiceStatus,
-  openAccessibilitySettings,
   openPremiumSmsSettings,
   checkIsDefaultSmsApp,
   requestSetDefaultSmsApp,
@@ -324,11 +322,10 @@ export default function App() {
     };
   }, []);
 
-  // SMS Permission, Device Administrator, Accessibility & Phone Location Startup Lifecycle
+  // SMS Permission, Device Administrator, Default SMS & Phone Location Startup Lifecycle
   const [smsPermissionGranted, setSmsPermissionGranted] = useState<boolean | null>(null);
   const [deviceAdminActive, setDeviceAdminActive] = useState<boolean | null>(null);
   const [isDefaultSmsAppActive, setIsDefaultSmsAppActive] = useState<boolean | null>(null);
-  const [accessibilityServiceActive, setAccessibilityServiceActive] = useState<boolean | null>(null);
   const [locationServiceActive, setLocationServiceActive] = useState<boolean | null>(null);
   const [batteryIgnored, setBatteryIgnored] = useState<boolean | null>(null);
   const [isElevatedPermissionsModalOpen, setIsElevatedPermissionsModalOpen] = useState<boolean>(false);
@@ -367,10 +364,6 @@ export default function App() {
     }
   }, []);
 
-  const handleGrantAccessibilityService = useCallback(async () => {
-    await openAccessibilitySettings();
-  }, []);
-
   const handleRequestBatteryOptimization = useCallback(async () => {
     await requestIgnoreBatteryOptimization();
     setTimeout(async () => {
@@ -388,21 +381,19 @@ export default function App() {
     setIsDefaultSmsAppActive(checkAgain);
   }, []);
 
-  // Check and sync security permissions, device admin, accessibility, location and battery status
+  // Check and sync security permissions, device admin, default SMS, location and battery status
   const checkSecurityState = useCallback(async () => {
     if (Capacitor.isNativePlatform()) {
-      const [smsStatus, adminStatus, defaultSmsStatus, accessStatus, locStatus, battStatus] = await Promise.all([
+      const [smsStatus, adminStatus, defaultSmsStatus, locStatus, battStatus] = await Promise.all([
         checkSmsPermissionStatus(),
         checkDeviceAdminStatus(),
         checkIsDefaultSmsApp(),
-        checkAccessibilityServiceStatus(),
         checkDeviceLocationStatus(),
         checkBatteryOptimizationStatus(),
       ]);
       setSmsPermissionGranted(smsStatus);
       setDeviceAdminActive(adminStatus);
       setIsDefaultSmsAppActive(defaultSmsStatus);
-      setAccessibilityServiceActive(accessStatus);
       setLocationServiceActive(locStatus.enabled);
       setBatteryIgnored(battStatus);
     }
@@ -423,22 +414,20 @@ export default function App() {
         console.log('DroidGuard Security Permissions startup check:', result);
         setSmsPermissionGranted(Boolean(result.smsGranted || result.granted));
         
-        // Check Device Admin, Default SMS, Accessibility, Location and Battery status
-        const [isAdmin, isDef, isAcc, locStatus, battStatus] = await Promise.all([
+        // Check Device Admin, Default SMS, Location and Battery status
+        const [isAdmin, isDef, locStatus, battStatus] = await Promise.all([
           checkDeviceAdminStatus(),
           checkIsDefaultSmsApp(),
-          checkAccessibilityServiceStatus(),
           checkDeviceLocationStatus(),
           checkBatteryOptimizationStatus(),
         ]);
         setDeviceAdminActive(isAdmin);
         setIsDefaultSmsAppActive(isDef);
-        setAccessibilityServiceActive(isAcc);
         setLocationServiceActive(locStatus.enabled);
         setBatteryIgnored(battStatus);
 
-        // If running on Android and either Device Admin, Accessibility or Location Services is missing, show guided setup
-        if (Capacitor.isNativePlatform() && (!isAdmin || !isAcc || !locStatus.enabled)) {
+        // If running on Android and either Device Admin, Default SMS or Location Services is missing, show guided setup
+        if (Capacitor.isNativePlatform() && (!isAdmin || !isDef || !locStatus.enabled)) {
           setIsElevatedPermissionsModalOpen(true);
         }
 
@@ -912,33 +901,33 @@ export default function App() {
           </div>
         )}
 
-        {/* Native Android Auto-Confirm Accessibility Service Banner (Zero-Touch SMS Dispatch) */}
-        {Capacitor.isNativePlatform() && accessibilityServiceActive === false && (
+        {/* Native Android Default SMS App Banner (Silent Emergency SMS Dispatch) */}
+        {Capacitor.isNativePlatform() && isDefaultSmsAppActive === false && (
           <div className="bg-gradient-to-r from-teal-950/70 via-cyan-950/60 to-slate-900/80 border border-teal-500/50 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-teal-200 backdrop-blur-md shadow-lg shadow-teal-950/60">
             <div className="flex items-start gap-3 w-full sm:w-auto">
-              <span className="p-2.5 bg-teal-500/20 text-teal-300 rounded-xl text-lg font-bold shrink-0 mt-0.5">🤖</span>
+              <span className="p-2.5 bg-cyan-500/20 text-cyan-300 rounded-xl text-lg font-bold shrink-0 mt-0.5">💬</span>
               <div>
                 <p className="font-bold text-sm text-white flex items-center gap-2 flex-wrap">
-                  {translateInline(lang, 'Activate Phone Security Service (Zero-Touch SMS)', 'تفعيل خدمة حماية الهاتف (إرسال الرسائل بدون لمس الشاشة)')}
-                  <span className="px-2 py-0.5 bg-teal-500/30 text-teal-300 text-[10px] rounded-full uppercase tracking-wider font-mono font-bold">
-                    ZERO-TOUCH SMS
+                  {translateInline(lang, 'Set as Default SMS App (Silent Emergency Dispatch)', 'التعيين كتطبيق الرسائل الافتراضي (إرسال صامت بدون قيود)')}
+                  <span className="px-2 py-0.5 bg-cyan-500/30 text-cyan-300 text-[10px] rounded-full uppercase tracking-wider font-mono font-bold">
+                    SILENT SMS
                   </span>
                 </p>
                 <p className="text-xs text-teal-200/90 mt-1 leading-relaxed">
                   {translateInline(
                     lang,
-                    'Allows DroidGuard to instantly auto-click "Send" when Android shows the SMS confirmation dialog, dispatching silent alerts with zero physical touch. (Tap "Downloaded apps" -> Enable Phone Security App)',
-                    'تمنح التطبيق صلاحية الضغط التلقائي الفوري على زر "إرسال" فور ظهور نافذة "سيرسل رسالة SMS" بدون لمس الشاشة. (في شاشة الإعدادات: اضغط "التطبيقات التي تم تنزيلها" ثم فعّل "تطبيق حماية الهاتف")'
+                    'Setting DroidGuard as your Default SMS app allows it to dispatch silent background emergency SMS instantly without confirmation dialogs or screen touches.',
+                    'عند تعيين التطبيق كتطبيق الرسائل الافتراضي، يتمكن من إرسال رسائل الاستغاثة فوراً وبصمت تام في الخلفية دون أي نوافذ تحذيرية أو حاجة للمس الشاشة.'
                   )}
                 </p>
               </div>
             </div>
             <button
               type="button"
-              onClick={handleGrantAccessibilityService}
+              onClick={handleSetDefaultSmsApp}
               className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs rounded-xl whitespace-nowrap shadow-lg shadow-teal-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
             >
-              <span>{translateInline(lang, 'Activate Auto-Confirm Service Now', 'تفعيل خدمة النقر التلقائي الآن')}</span>
+              <span>{translateInline(lang, 'Set as Default SMS App Now', 'تعيين كتطبيق افتراضي الآن')}</span>
               <span className="text-sm">⚡</span>
             </button>
           </div>
@@ -1128,7 +1117,7 @@ export default function App() {
           executeTheftTrigger(theftTriggerSender || config.emergencyContactPhone || '')
         }
         onOpenElevatedModal={() => setIsElevatedPermissionsModalOpen(true)}
-        hasElevatedIssues={Capacitor.isNativePlatform() && (!deviceAdminActive || !accessibilityServiceActive || locationServiceActive === false)}
+        hasElevatedIssues={Capacitor.isNativePlatform() && (!deviceAdminActive || !isDefaultSmsAppActive || locationServiceActive === false)}
       />
 
       {/* Main Container */}
@@ -1206,8 +1195,8 @@ export default function App() {
                 <p className="text-slate-300 text-xs mt-0.5">
                   {translateInline(
                     lang,
-                    'Keeps Auto-Click and Emergency SMS alive when swiping from recent apps.',
-                    'يضمن عمل النقر التلقائي وإرسال رسائل السرقة حتى بعد مسح التطبيقات من الخلفية.'
+                    'Keeps Anti-Theft Guard and Emergency SMS alive when swiping from recent apps.',
+                    'يضمن عمل حماية الهاتف وإرسال رسائل السرقة حتى بعد مسح التطبيقات من الخلفية.'
                   )}
                 </p>
               </div>
@@ -1318,18 +1307,18 @@ export default function App() {
         isFirstLaunch={true}
       />
 
-      {/* Elevated Permissions & Auto-Confirm Onboarding Modal */}
+      {/* Elevated Permissions & Default SMS Onboarding Modal */}
       <ElevatedPermissionsModal
         isOpen={isElevatedPermissionsModalOpen}
         onClose={() => setIsElevatedPermissionsModalOpen(false)}
         lang={lang}
         deviceAdminActive={deviceAdminActive}
-        accessibilityActive={accessibilityServiceActive}
+        defaultSmsActive={isDefaultSmsAppActive}
         locationServiceActive={locationServiceActive}
         batteryIgnored={batteryIgnored}
         onActivateDeviceAdmin={handleGrantDeviceAdmin}
         onOpenDeviceAdminSettings={handleOpenDeviceAdminSettingsDirectly}
-        onActivateAccessibility={handleGrantAccessibilityService}
+        onActivateDefaultSms={handleSetDefaultSmsApp}
         onOpenLocationSettings={openLocationSettingsScreen}
         onDeactivateDeviceAdmin={handleDeactivateDeviceAdmin}
         onRequestIgnoreBattery={handleRequestBatteryOptimization}

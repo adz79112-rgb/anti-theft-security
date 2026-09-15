@@ -9,7 +9,7 @@ import {
   Zap,
   BatteryCharging,
   Settings,
-  Bot,
+  MessageSquare,
   HelpCircle
 } from 'lucide-react';
 import { Language } from '../types';
@@ -20,6 +20,7 @@ import {
   requestBackgroundActivityPermission,
   openDeveloperSettings,
   openAppSettings,
+  requestSetDefaultSmsApp,
   EmergencySmsPlugin,
   DeviceBrandInfo
 } from '../utils/nativeEmergencySms';
@@ -29,7 +30,7 @@ interface UniversalOemBypassModalProps {
   onClose: () => void;
   lang: Language;
   onActivateDeviceAdmin?: () => void;
-  onActivateAccessibility?: () => void;
+  onActivateDefaultSms?: () => void;
 }
 
 type BrandKey = 'condor' | 'samsung' | 'xiaomi' | 'realme_oppo' | 'generic';
@@ -39,7 +40,7 @@ export const UniversalOemBypassModal: React.FC<UniversalOemBypassModalProps> = (
   onClose,
   lang,
   onActivateDeviceAdmin,
-  onActivateAccessibility,
+  onActivateDefaultSms,
 }) => {
   const [deviceInfo, setDeviceInfo] = useState<DeviceBrandInfo | null>(null);
   const [selectedBrand, setSelectedBrand] = useState<BrandKey>('condor');
@@ -310,53 +311,44 @@ export const UniversalOemBypassModal: React.FC<UniversalOemBypassModalProps> = (
                 </p>
               </div>
 
-              {/* Condor Step 1: Accessibility */}
+              {/* Condor Step 1: Default SMS App */}
               <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-bold text-teal-300">
                     <span className="w-5 h-5 rounded-full bg-teal-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">1</span>
-                    <span>{translateInline(lang, 'Step 1: Activate Phone Security Accessibility Service', 'الخطوة 1: تفعيل خدمة حماية الهاتف (إمكانية الوصول)')}</span>
+                    <span>{translateInline(lang, 'Step 1: Set DroidGuard as Default SMS App', 'الخطوة 1: تعيين التطبيق كتطبيق الرسائل الافتراضي')}</span>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 font-mono-code font-bold">ZERO-TOUCH SMS</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 font-mono-code font-bold">SILENT SOS</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {translateInline(
                     lang,
-                    'Go to Settings (Paramètres) ➔ Accessibility (Accessibilité) ➔ Downloaded services (Services téléchargés) ➔ "Phone Security App (DroidGuard)" ➔ Turn ON.',
-                    'توجه إلى: إعدادات الهاتف (Paramètres) ⬅️ إمكانية الوصول (Accessibilité) ⬅️ الخدمات المُنَزَّلة (Services téléchargés / Applications installées) ⬅️ «تطبيق حماية الهاتف (DroidGuard)» ⬅️ تفعيل (Activer).'
+                    'Setting DroidGuard as the Default SMS app removes all system prompt dialogs, allowing silent emergency dispatch with coordinates instantly.',
+                    'تعيين DroidGuard كتطبيق الرسائل الافتراضي يلغي كافة نوافذ التأكيد، ويتيح إرسال رسائل الاستغاثة فوراً وبصمت تام في الخلفية دون الحاجة للمس الشاشة.'
                   )}
                 </p>
-                <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-amber-300 space-y-1">
-                  <div className="font-bold flex items-center gap-1.5">
-                    <HelpCircle className="w-3.5 h-3.5 shrink-0" />
-                    <span>{translateInline(lang, 'If "Restricted Setting" (Paramètre restreint) appears on Android 13/14:', 'إذا ظهرت لك رسالة «إعداد مقيد» (Paramètre restreint) في هواتف كوندور الحديثة:')}</span>
-                  </div>
-                  <p className="text-slate-300 leading-normal">
-                    {translateInline(
-                      lang,
-                      'Open Settings ➔ Apps (Applications) ➔ Anti-Theft Security ➔ Tap the 3 dots in the top right corner ➔ Tap "Allow restricted settings" (Autoriser les paramètres restreints). Then go back and enable Accessibility.',
-                      'افتح إعدادات الهاتف ⬅️ التطبيقات (Applications) ⬅️ Anti-Theft Security ⬅️ اضغط على النقاط الثلاث بالأعلى ⬅️ اختر «السماح بالإعدادات المقيدة» (Autoriser les paramètres restreints)، ثم ارجع وفعّل خدمة إمكانية الوصول.'
-                    )}
-                  </p>
-                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                  {onActivateAccessibility && (
-                    <button
-                      type="button"
-                      onClick={onActivateAccessibility}
-                      className="py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
-                    >
-                      <Bot className="w-4 h-4" />
-                      <span>{translateInline(lang, 'Open Accessibility Settings', 'فتح شاشة إمكانية الوصول في كوندور')}</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onActivateDefaultSms) {
+                        onActivateDefaultSms();
+                      } else {
+                        requestSetDefaultSmsApp();
+                      }
+                    }}
+                    className="py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                  >
+                    <MessageSquare className="w-4 h-4" />
+                    <span>{translateInline(lang, 'Set as Default SMS App', 'تعيين كتطبيق افتراضي الآن')}</span>
+                  </button>
                   <button
                     type="button"
                     onClick={handleOpenAppDetails}
                     className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
                   >
                     <Settings className="w-4 h-4" />
-                    <span>{translateInline(lang, 'Open App Info (Allow Restricted)', 'معلومات التطبيق (لحل الإعداد المقيد)')}</span>
+                    <span>{translateInline(lang, 'Open App Info (Permissions)', 'معلومات التطبيق (الأذونات)')}</span>
                   </button>
                 </div>
               </div>
@@ -467,29 +459,33 @@ export const UniversalOemBypassModal: React.FC<UniversalOemBypassModalProps> = (
                 </button>
               </div>
 
-              {/* Samsung Step 2: Accessibility */}
+              {/* Samsung Step 2: Default SMS App */}
               <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-teal-300">
                   <span className="w-5 h-5 rounded-full bg-teal-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">2</span>
-                  <span>{translateInline(lang, 'Step 2: Auto-Confirm in Installed Apps', 'الخطوة 2: تفعيل المساعد التلقائي في التطبيقات المثبتة')}</span>
+                  <span>{translateInline(lang, 'Step 2: Set as Default SMS App on One UI', 'الخطوة 2: تعيين التطبيق كتطبيق افتراضي للرسائل في سامسونج')}</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {translateInline(
                     lang,
-                    'Open Settings ➔ Accessibility (إمكانية الوصول) ➔ Installed apps (التطبيقات المثبتة) ➔ "DroidGuard Auto-Confirm" ➔ Turn ON. This automatically clicks Send on Samsung messaging confirmation dialogs.',
-                    'الإعدادات ⬅️ إمكانية الوصول ⬅️ التطبيقات المثبتة (Installed apps) ⬅️ «المساعد التلقائي لـ DroidGuard» ⬅️ تشغيل (ON). تتيح هذه الميزة الضغط الفوري على زر "إرسال" عند ظهور أي تنبيه في سامسونج.'
+                    'Settings ➔ Apps ➔ Choose default apps ➔ SMS app ➔ DroidGuard. This grants permission to send silent emergency SMS without Samsung dialog prompts.',
+                    'الضبط ⬅️ التطبيقات ⬅️ اختيار التطبيقات الافتراضية ⬅️ تطبيق الرسائل القصيرة (SMS) ⬅️ DroidGuard. يسمح هذا بإرسال رسائل الاستغاثة فوراً وبصمت تام دون طلب تأكيد من واجهة سامسونج One UI.'
                   )}
                 </p>
-                {onActivateAccessibility && (
-                  <button
-                    type="button"
-                    onClick={onActivateAccessibility}
-                    className="w-full py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
-                  >
-                    <Bot className="w-4 h-4" />
-                    <span>{translateInline(lang, 'Open Samsung Accessibility Settings', 'فتح إمكانية الوصول في سامسونج')}</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onActivateDefaultSms) {
+                      onActivateDefaultSms();
+                    } else {
+                      requestSetDefaultSmsApp();
+                    }
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>{translateInline(lang, 'Set as Default SMS App (Samsung)', 'تعيين كتطبيق افتراضي في سامسونج')}</span>
+                </button>
               </div>
 
               {/* Samsung Step 3: Device Admin */}
@@ -582,29 +578,33 @@ export const UniversalOemBypassModal: React.FC<UniversalOemBypassModalProps> = (
                 </button>
               </div>
 
-              {/* Xiaomi Step 3: Accessibility */}
+              {/* Xiaomi Step 3: Default SMS App */}
               <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-teal-300">
                   <span className="w-5 h-5 rounded-full bg-teal-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">3</span>
-                  <span>{translateInline(lang, 'Step 3: Auto-Confirm & 10-Second Risk Warning', 'الخطوة 3: إمكانية الوصول وتحذير الـ 10 ثوانٍ')}</span>
+                  <span>{translateInline(lang, 'Step 3: Default SMS App on MIUI / HyperOS', 'الخطوة 3: تعيين التطبيق الافتراضي للرسائل في شاومي')}</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {translateInline(
                     lang,
-                    'Settings ➔ Additional Settings ➔ Accessibility ➔ Downloaded apps ➔ Enable "DroidGuard Auto-Confirm". Accept the 10-second warning ("I am aware of the possible risks").',
-                    'الإعدادات ⬅️ إعدادات إضافية ⬅️ إمكانية الوصول ⬅️ التطبيقات التي تم تنزيلها ⬅️ تشغيل «المساعد التلقائي»، واضغط موافق بعد انتهاء عداد الـ 10 ثوانٍ (أنا على دراية بالمخاطر).'
+                    'Settings ➔ Apps ➔ Manage apps ➔ 3 dots (top right) ➔ Default apps ➔ Messages ➔ DroidGuard. Bypasses all MIUI countdowns and prompts.',
+                    'الإعدادات ⬅️ التطبيقات ⬅️ إدارة التطبيقات ⬅️ الثلاث نقاط بالأعلى ⬅️ التطبيقات الافتراضية ⬅️ الرسائل ⬅️ DroidGuard. يتجاوز كافة عدادات واجهة شاومي MIUI و HyperOS.'
                   )}
                 </p>
-                {onActivateAccessibility && (
-                  <button
-                    type="button"
-                    onClick={onActivateAccessibility}
-                    className="w-full py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
-                  >
-                    <Bot className="w-4 h-4" />
-                    <span>{translateInline(lang, 'Open Xiaomi Accessibility', 'فتح إمكانية الوصول في شاومي')}</span>
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onActivateDefaultSms) {
+                      onActivateDefaultSms();
+                    } else {
+                      requestSetDefaultSmsApp();
+                    }
+                  }}
+                  className="w-full py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>{translateInline(lang, 'Set as Default SMS App (Xiaomi)', 'تعيين كتطبيق افتراضي في شاومي')}</span>
+                </button>
               </div>
             </div>
           )}
@@ -725,25 +725,29 @@ export const UniversalOemBypassModal: React.FC<UniversalOemBypassModalProps> = (
 
                 <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
                   <p className="text-xs font-bold text-indigo-300">
-                    {translateInline(lang, '2. Auto-Confirm Service', '2. المساعد التلقائي')}
+                    {translateInline(lang, '2. Default SMS App Authorization', '2. التعيين كتطبيق افتراضي للرسائل')}
                   </p>
                   <p className="text-[11px] text-slate-300">
                     {translateInline(
                       lang,
-                      'Auto-clicks "Send" on carrier warning prompts with zero touch.',
-                      'يضغط تلقائياً على زر الإرسال عند ظهور تحذير المشغل.'
+                      'Allows emergency SOS dispatch with zero dialog prompts and no touch required.',
+                      'يتيح إرسال رسائل الاستغاثة فوراً وبصمت تام دون طلب تأكيد.'
                     )}
                   </p>
-                  {onActivateAccessibility && (
-                    <button
-                      type="button"
-                      onClick={onActivateAccessibility}
-                      className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer shadow-md"
-                    >
-                      <Bot className="w-3.5 h-3.5" />
-                      <span>{translateInline(lang, 'Activate Service', 'تفعيل الخدمة')}</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onActivateDefaultSms) {
+                        onActivateDefaultSms();
+                      } else {
+                        requestSetDefaultSmsApp();
+                      }
+                    }}
+                    className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer shadow-md"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>{translateInline(lang, 'Set as Default SMS App', 'تعيين كتطبيق افتراضي')}</span>
+                  </button>
                 </div>
               </div>
             </div>
