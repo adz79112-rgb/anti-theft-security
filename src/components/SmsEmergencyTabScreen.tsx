@@ -775,6 +775,15 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
                     <Settings className="w-3.5 h-3.5" />
                     <span>{translateInline(lang, 'Open in Settings (Fallback)', 'فتح في الإعدادات (حل بديل)')}</span>
                   </button>
+                  <button
+                    id="btn-open-accessibility-settings"
+                    type="button"
+                    onClick={() => openAccessibilitySettings()}
+                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 border border-rose-500/40 text-xs font-semibold font-mono-code transition cursor-pointer flex items-center justify-center gap-1.5 mt-2"
+                  >
+                    <Settings className="w-3.5 h-3.5" />
+                    <span>{translateInline(lang, 'Open Accessibility Settings', 'فتح إعدادات إمكانية الوصول')}</span>
+                  </button>
                 </>
               ) : (
                 <button

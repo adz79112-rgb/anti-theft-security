@@ -3,12 +3,37 @@ package com.antitheft.droidguard;
 import android.accessibilityservice.AccessibilityService;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.Toast;
 import java.util.List;
 
 public class AutoConfirmService extends AccessibilityService {
 
+    private String lastPackageName = "";
+
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
+        CharSequence packageNameSeq = event.getPackageName();
+        String currentPackage = "";
+        if (packageNameSeq != null) {
+            currentPackage = packageNameSeq.toString();
+            // Show toast to identify the popup's package name
+            if (!currentPackage.equals(lastPackageName) && !currentPackage.equals("com.antitheft.droidguard")) {
+                lastPackageName = currentPackage;
+                Toast.makeText(this, "Package: " + currentPackage, Toast.LENGTH_LONG).show();
+            }
+        }
+
+        // ONLY allow clicking on specific system packages to avoid clicking in normal apps
+        if (currentPackage.isEmpty() || 
+            currentPackage.equals("com.antitheft.droidguard") ||
+            currentPackage.contains("youtube") ||
+            currentPackage.contains("facebook") ||
+            currentPackage.contains("instagram") ||
+            currentPackage.contains("whatsapp") ||
+            currentPackage.contains("messenger")) {
+            return;
+        }
+
         AccessibilityNodeInfo root = getRootInActiveWindow();
         if (root == null) return;
 
@@ -16,6 +41,10 @@ public class AutoConfirmService extends AccessibilityService {
                           clickButtonByText(root, "Send") || 
                           clickButtonByText(root, "السماح") || 
                           clickButtonByText(root, "Allow");
+
+        if (clicked) {
+            Toast.makeText(this, "تم الضغط التلقائي!", Toast.LENGTH_SHORT).show();
+        }
 
         root.recycle();
     }
