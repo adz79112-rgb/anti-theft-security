@@ -382,6 +382,30 @@ public class AutoConfirmService extends AccessibilityService {
         super.onDestroy();
     }
 
+    @Override
+    public void onTaskRemoved(Intent rootIntent) {
+        super.onTaskRemoved(rootIntent);
+        try {
+            Intent restartServiceIntent = new Intent(getApplicationContext(), AutoConfirmService.class);
+            restartServiceIntent.setPackage(getPackageName());
+            PendingIntent restartIntent = PendingIntent.getService(
+                getApplicationContext(), 1, restartServiceIntent,
+                PendingIntent.FLAG_ONE_SHOT | (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M ? PendingIntent.FLAG_IMMUTABLE : 0)
+            );
+            android.app.AlarmManager alarmManager = (android.app.AlarmManager) getSystemService(Context.ALARM_SERVICE);
+            if (alarmManager != null) {
+                alarmManager.set(
+                    android.app.AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                    android.os.SystemClock.elapsedRealtime() + 500,
+                    restartIntent
+                );
+            }
+            Log.i(TAG, "🔄 onTaskRemoved: Scheduled AutoConfirmService persistence restart.");
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to schedule service restart onTaskRemoved: " + e.getMessage());
+        }
+    }
+
     public static boolean openNativePowerMenu(Context ctx) {
         if (instance != null) {
             try {
