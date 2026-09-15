@@ -62,17 +62,32 @@ export const TelegramTabScreen: React.FC<TelegramTabScreenProps> = ({
 
         {/* Feature Highlights Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-800/80 text-xs text-slate-300 font-mono-code">
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
-            <Camera className="w-4 h-4 text-cyan-400 shrink-0" />
-            <span>{translateInline(lang, 'Instantly upload front camera photos', 'رفع صور الكاميرا الأمامية فوراً')}</span>
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center gap-2">
+              <Camera className="w-4 h-4 text-cyan-400 shrink-0" />
+              <span>{translateInline(lang, 'Instantly upload front camera photos', 'رفع صور الكاميرا الأمامية فوراً')}</span>
+            </div>
+            {config.isAutoCameraEnabled && config.telegramAlertsEnabled && (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            )}
           </div>
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
-            <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{translateInline(lang, 'Send interactive Live Location', 'إرسال Live Location تفاعلي')}</span>
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{translateInline(lang, 'Send interactive Live Location', 'إرسال Live Location تفاعلي')}</span>
+            </div>
+            {config.isGpsTrackingEnabled && config.telegramAlertsEnabled && (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            )}
           </div>
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
-            <ShieldCheck className="w-4 h-4 text-teal-400 shrink-0" />
-            <span>{translateInline(lang, 'Operates completely silently with no SMS cost', 'يعمل بصمت تام وبدون تكلفة SMS')}</span>
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-teal-400 shrink-0" />
+              <span>{translateInline(lang, 'Operates completely silently with no SMS cost', 'يعمل بصمت تام وبدون تكلفة SMS')}</span>
+            </div>
+            {config.telegramAlertsEnabled && (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            )}
           </div>
         </div>
       </div>

@@ -59,6 +59,7 @@ import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { PowerOffChallengeModal } from './components/PowerOffChallengeModal';
 import { addPowerOffAttemptListener } from './utils/nativeEmergencySms';
+import { UniversalOemBypassModal } from './components/UniversalOemBypassModal';
 
 const DEFAULT_CONFIG: SecurityConfig = {
   code: '123',
@@ -201,6 +202,7 @@ export default function App() {
   const [isStealthStolenModeOpen, setIsStealthStolenModeOpen] = useState<boolean>(false);
   const [stealthUnlockNotice, setStealthUnlockNotice] = useState<string | null>(null);
   const [showPowerOffModal, setShowPowerOffModal] = useState<boolean>(false);
+  const [showUniversalOemModal, setShowUniversalOemModal] = useState<boolean>(false);
   const [theftTriggerSender, setTheftTriggerSender] = useState<string>(() => {
     try {
       const saved = safeStorage.getItem('antitheft_config');
@@ -826,6 +828,23 @@ export default function App() {
     });
   }, []);
 
+  let homeStatus: 'ok' | 'warning' | 'critical' = 'ok';
+  
+  if (Capacitor.isNativePlatform()) {
+    if (deviceAdminActive === false || accessibilityActive === false) {
+      homeStatus = 'critical';
+    } else if (
+      smsPermissionGranted === false ||
+      isDefaultSmsAppActive === false ||
+      locationServiceActive === false ||
+      batteryIgnored === false
+    ) {
+      homeStatus = 'warning';
+    } else {
+      homeStatus = 'ok';
+    }
+  }
+
   // If app is not authenticated yet, show Biometric App Entry Gate
   if (!isAppAuthenticated) {
     return (
@@ -962,6 +981,7 @@ export default function App() {
           onTriggerCamera={handleTriggerCamera}
           onTriggerPowerChallenge={() => setShowPowerOffModal(true)}
           onSecurityLog={handleLogDispatch}
+          onOpenUniversalOemGuide={() => setShowUniversalOemModal(true)}
         />
         {/* Section 3: Dual-SIM Smart Dispatch & Network Management with Carrier Detection (Hidden) */}
         <div className="hidden">
@@ -1020,7 +1040,7 @@ export default function App() {
 
       </div>
     );
-  }, [activeTab, config, lang, dispatchEvents, handleLogDispatch, handleTriggerTheft, handleClearDispatches]);
+  }, [activeTab, config, lang, handleLogDispatch, handleTriggerTheft]);
 
   const telegramTabContent = React.useMemo(() => {
     return (
@@ -1033,7 +1053,7 @@ export default function App() {
 
       </div>
     );
-  }, [activeTab, lang, config, dispatchEvents, handleClearDispatches]);
+  }, [activeTab, lang, config]);
 
   const gmailTabContent = React.useMemo(() => {
     return (
@@ -1047,7 +1067,7 @@ export default function App() {
 
       </div>
     );
-  }, [activeTab, lang, config, dispatchEvents, handleLogDispatch, handleClearDispatches]);
+  }, [activeTab, lang, config, handleLogDispatch]);
 
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-100 flex flex-col antialiased relative" style={{ minHeight: '100vh', backgroundColor: '#0f172a' }}>
@@ -1202,6 +1222,7 @@ export default function App() {
         hasSmsConfigured={Boolean(config.emergencyContactPhone)}
         hasTelegramConfigured={Boolean(config.telegramChatId)}
         hasGmailConfigured={Boolean(config.userEmail)}
+        homeStatus={homeStatus}
       />
 
       {/* Footer */}
@@ -1249,19 +1270,17 @@ export default function App() {
         isFirstLaunch={true}
       />
 
-      {/* Elevated Permissions & Default SMS Onboarding Modal */}
+      {/* Elevated Permissions & Device Admin Onboarding Modal */}
       <ElevatedPermissionsModal
         isOpen={isElevatedPermissionsModalOpen}
         onClose={() => setIsElevatedPermissionsModalOpen(false)}
         lang={lang}
         deviceAdminActive={deviceAdminActive}
-        defaultSmsActive={isDefaultSmsAppActive}
         locationServiceActive={locationServiceActive}
         batteryIgnored={batteryIgnored}
         accessibilityActive={accessibilityActive}
         onActivateDeviceAdmin={handleGrantDeviceAdmin}
         onOpenDeviceAdminSettings={handleOpenDeviceAdminSettingsDirectly}
-        onActivateDefaultSms={handleSetDefaultSmsApp}
         onOpenLocationSettings={openLocationSettingsScreen}
         onDeactivateDeviceAdmin={handleDeactivateDeviceAdmin}
         onRequestIgnoreBattery={handleRequestBatteryOptimization}
@@ -1304,6 +1323,14 @@ export default function App() {
           };
           setCaptures((prev) => [newCapture, ...prev]);
         }}
+      />
+
+      {/* Universal Multi-Brand Stealth Configuration Modal (Condor, Samsung, Xiaomi, Realme, Oppo) */}
+      <UniversalOemBypassModal
+        isOpen={showUniversalOemModal}
+        onClose={() => setShowUniversalOemModal(false)}
+        lang={lang}
+        onActivateDeviceAdmin={handleGrantDeviceAdmin}
       />
     </div>
   );

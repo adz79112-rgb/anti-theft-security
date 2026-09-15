@@ -204,7 +204,7 @@ export const TelegramConfigCard: React.FC<TelegramConfigCardProps> = ({
         </div>
 
         {/* CHAT ID Input */}
-        <div>
+        <div className="relative">
           <label
             htmlFor="telegram-chat-id"
             className="text-xs font-semibold text-slate-300 flex items-center justify-between mb-1.5"
@@ -216,15 +216,22 @@ export const TelegramConfigCard: React.FC<TelegramConfigCardProps> = ({
               </span>
             )}
           </label>
-          <input
-            id="telegram-chat-id"
-            type="text"
-            value={config.telegramChatId || ''}
-            onChange={handleChatIdChange}
-            placeholder="مثال: 123456789"
-            className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-emerald-300 font-mono-code text-sm focus:outline-none focus:border-cyan-500 transition"
-            dir="ltr"
-          />
+          <div className="relative">
+            <input
+              id="telegram-chat-id"
+              type="text"
+              value={config.telegramChatId || ''}
+              onChange={handleChatIdChange}
+              placeholder="مثال: 123456789"
+              className="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 pl-10 text-emerald-300 font-mono-code text-sm focus:outline-none focus:border-cyan-500 transition"
+              dir="ltr"
+            />
+            {isEnabled && isConfigured && (
+              <div className="absolute top-1/2 -translate-y-1/2 left-3 flex items-center justify-center" title="Fully Enabled & Ready">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+              </div>
+            )}
+          </div>
           <p className="text-[11px] text-slate-500 mt-1.5">
             {translateInline(
               lang,

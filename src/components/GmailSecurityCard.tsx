@@ -445,13 +445,19 @@ export const GmailSecurityCard: React.FC<GmailSecurityCardProps> = ({
             }}
             readOnly={isVerified}
             placeholder="adz79112@gmail.com"
-            className={`w-full rounded-2xl px-4 py-3 text-sm font-mono-code transition focus:outline-none ${
+            className={`w-full rounded-2xl px-4 py-3 pl-10 text-sm font-mono-code transition focus:outline-none ${
               isVerified
                 ? 'bg-slate-950/80 border border-emerald-500/30 text-emerald-300 cursor-not-allowed select-all'
                 : 'bg-slate-950 border border-red-500/40 text-red-200 focus:border-red-400 focus:ring-1 focus:ring-red-400'
             }`}
             dir="ltr"
           />
+
+          {isVerified && (
+            <div className="absolute top-1/2 -translate-y-1/2 left-3 flex items-center justify-center" title="Fully Enabled & Ready">
+              <CheckCircle2 className="w-5 h-5 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+            </div>
+          )}
 
           {isVerified && (
             <div className="absolute right-3 rtl:left-3 rtl:right-auto flex items-center gap-1 text-[11px] font-mono-code text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2.5 py-1 rounded-xl">

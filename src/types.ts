@@ -21,6 +21,8 @@ export interface SecurityConfig {
   antiShutdownPin?: string; // Custom PIN for power off (or defaults to app code/device credential)
 }
 
+export type AppConfig = SecurityConfig;
+
 export type ActionKeyword = 'theft' | 'camera' | 'track' | 'unknown';
 
 export interface ParsedTrigger {

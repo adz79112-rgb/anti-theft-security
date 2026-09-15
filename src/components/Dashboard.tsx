@@ -15,6 +15,8 @@ import {
   Mail,
   Lock,
   Power,
+  AlertCircle,
+  AlertOctagon,
 } from 'lucide-react';
 import { SecurityConfig, Language, DispatchEvent } from '../types';
 import { getTranslation } from '../utils/translations';
@@ -22,6 +24,7 @@ import { AsyncStorage, STORAGE_KEYS } from '../utils/storage';
 import { GmailSecurityCard } from './GmailSecurityCard';
 import { ShieldCard } from './ShieldCard';
 import { PowerOffProtectionCard } from './PowerOffProtectionCard';
+import { BrandSetupGuideCard } from './BrandSetupGuideCard';
 
 interface DashboardProps {
   config: SecurityConfig;
@@ -31,6 +34,7 @@ interface DashboardProps {
   onTriggerCamera: () => void;
   onTriggerPowerChallenge?: () => void;
   onSecurityLog?: (event: DispatchEvent) => void;
+  onOpenUniversalOemGuide?: () => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -41,6 +45,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   onTriggerCamera,
   onTriggerPowerChallenge,
   onSecurityLog,
+  onOpenUniversalOemGuide,
 }) => {
   const t = getTranslation(lang);
 
@@ -150,6 +155,38 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Anti-Uninstall & Device Admin Policy Engine */}
       <ShieldCard lang={lang} onSecurityLog={onSecurityLog} />
+
+      
+      {/* Theft Mode Simulator Button */}
+      <div className="bg-slate-900/80 border border-rose-900/50 rounded-3xl p-6 shadow-xl backdrop-blur-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+          <h3 className="text-xl font-bold text-rose-500 mb-1 flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            {lang === 'ar' ? 'محاكي وضع السرقة' : 'Theft Mode Simulator'}
+          </h3>
+          <p className="text-sm text-slate-400">
+            {lang === 'ar' 
+              ? 'تجربة فورية لإنذار السرقة (قفل الشاشة، الكاميرا، و GPS)' 
+              : 'Instant test of the theft alarm (Screen lock, Camera, GPS)'}
+          </p>
+        </div>
+        <button
+          id="theft-simulation-trigger-btn"
+          onClick={onTriggerTheft}
+          className="px-6 py-3 bg-rose-600 hover:bg-rose-500 text-white rounded-xl font-bold transition-all shadow-lg shadow-rose-900/20 active:scale-95 flex items-center gap-2 w-full sm:w-auto justify-center"
+        >
+          <AlertOctagon className="w-5 h-5" />
+          {lang === 'ar' ? 'تفعيل التجربة' : 'Trigger Simulation'}
+        </button>
+      </div>
+
+      {/* Universal Multi-Brand OEM Stealth & Zero-Touch Guide Card (Condor, Samsung, Xiaomi, Realme) */}
+      {onOpenUniversalOemGuide && (
+        <BrandSetupGuideCard
+          lang={lang}
+          onOpenGuide={onOpenUniversalOemGuide}
+        />
+      )}
 
       {/* Anti-Shutdown / Power-Off PIN Protection Guard */}
       <PowerOffProtectionCard

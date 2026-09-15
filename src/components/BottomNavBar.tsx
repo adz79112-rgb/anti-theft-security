@@ -18,6 +18,7 @@ interface BottomNavBarProps {
   hasSmsConfigured?: boolean;
   hasTelegramConfigured?: boolean;
   hasGmailConfigured?: boolean;
+  homeStatus?: 'ok' | 'warning' | 'critical';
 }
 
 export const BottomNavBar: React.FC<BottomNavBarProps> = ({
@@ -27,6 +28,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
   hasSmsConfigured = true,
   hasTelegramConfigured = true,
   hasGmailConfigured = true,
+  homeStatus = 'ok',
 }) => {
   const t = getTranslation(lang);
 
@@ -36,17 +38,15 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
     sub: string;
     icon: React.FC<{ className?: string }>;
     isConfigured: boolean;
-    activeColor: string;
-    badgeColor: string;
+    status?: 'ok' | 'warning' | 'critical';
   }[] = [
     {
       id: 'home',
       label: t.navDashboard,
       sub: t.navDashboardSub,
       icon: ShieldCheck,
-      isConfigured: true,
-      activeColor: 'text-emerald-400 bg-emerald-500/15 border-emerald-500/40 shadow-emerald-950/40',
-      badgeColor: 'bg-emerald-400',
+      isConfigured: homeStatus === 'ok',
+      status: homeStatus,
     },
     {
       id: 'sms',
@@ -54,8 +54,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
       sub: t.navSmsSub,
       icon: MessageSquareWarning,
       isConfigured: hasSmsConfigured,
-      activeColor: 'text-amber-400 bg-amber-500/15 border-amber-500/40 shadow-amber-950/40',
-      badgeColor: 'bg-amber-400',
+      status: hasSmsConfigured ? 'ok' : 'warning',
     },
     {
       id: 'telegram',
@@ -63,8 +62,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
       sub: t.navTelegramSub,
       icon: Send,
       isConfigured: hasTelegramConfigured,
-      activeColor: 'text-cyan-400 bg-cyan-500/15 border-cyan-500/40 shadow-cyan-950/40',
-      badgeColor: 'bg-cyan-400',
+      status: hasTelegramConfigured ? 'ok' : 'warning',
     },
     {
       id: 'gmail',
@@ -72,8 +70,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
       sub: t.navGmailSub,
       icon: Mail,
       isConfigured: hasGmailConfigured,
-      activeColor: 'text-red-400 bg-red-500/15 border-red-500/40 shadow-red-950/40',
-      badgeColor: 'bg-red-400',
+      status: hasGmailConfigured ? 'ok' : 'warning',
     },
   ];
 
@@ -89,6 +86,23 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
 
+            let activeColor = 'text-slate-100 bg-slate-800/50 border-slate-700 shadow-slate-950/40';
+            let inactiveColor = 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent';
+            let indicatorColor = 'via-slate-400';
+            let badgeClass = '';
+
+            if (tab.status === 'critical') {
+              activeColor = 'text-red-400 bg-red-500/15 border-red-500/40 shadow-red-950/40';
+              inactiveColor = 'text-red-500 hover:text-red-400 hover:bg-slate-900/60 border border-transparent';
+              indicatorColor = 'via-red-500';
+              badgeClass = 'bg-red-500 animate-pulse ring-red-900/50';
+            } else if (tab.status === 'ok') {
+              activeColor = 'text-emerald-400 bg-emerald-500/15 border-emerald-500/40 shadow-emerald-950/40';
+              inactiveColor = 'text-emerald-500 hover:text-emerald-400 hover:bg-slate-900/60 border border-transparent';
+              indicatorColor = 'via-emerald-400';
+              badgeClass = 'bg-emerald-400 ring-slate-950';
+            }
+
             return (
               <button
                 key={tab.id}
@@ -96,14 +110,12 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
                 type="button"
                 onClick={() => onSelectTab(tab.id)}
                 className={`relative flex flex-col items-center justify-center py-1.5 px-1 sm:px-2 rounded-2xl transition-all duration-200 cursor-pointer ${
-                  isActive
-                    ? `${tab.activeColor} border shadow-lg`
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'
+                  isActive ? `${activeColor} border shadow-lg` : inactiveColor
                 }`}
               >
                 {/* Active Indicator Top Notch */}
                 {isActive && (
-                  <span className="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
+                  <span className={`absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full bg-gradient-to-r from-transparent ${indicatorColor} to-transparent`} />
                 )}
 
                 <div className="relative">
@@ -112,10 +124,10 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
                       isActive ? 'scale-110' : 'scale-100'
                     }`}
                   />
-                  {tab.isConfigured && (
+                  {(tab.status === 'ok' || tab.status === 'critical') && (
                     <span
-                      className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ${tab.badgeColor} ring-2 ring-slate-950`}
-                      title="Configured"
+                      className={`absolute -top-1 -right-1 w-2 h-2 rounded-full ring-2 ${badgeClass}`}
+                      title={tab.status === 'critical' ? 'Action Required' : 'Configured'}
                     />
                   )}
                 </div>
@@ -124,7 +136,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
                   {tab.label}
                 </span>
 
-                <span className="text-[9px] text-slate-500 font-mono-code hidden sm:block truncate max-w-full">
+                <span className="text-[9px] font-mono-code hidden sm:block truncate max-w-full opacity-70">
                   {tab.sub}
                 </span>
               </button>

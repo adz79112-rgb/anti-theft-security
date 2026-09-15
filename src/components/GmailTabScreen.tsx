@@ -91,17 +91,32 @@ export const GmailTabScreen: React.FC<GmailTabScreenProps> = ({
 
         {/* Feature Highlights Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-800/80 text-xs text-slate-300 font-mono-code">
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
-            <Camera className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>{translateInline(lang, 'Front intruder photo attached', 'صورة المتسلل الأمامية ملحقة')}</span>
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center gap-2">
+              <Camera className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{translateInline(lang, 'Front intruder photo attached', 'صورة المتسلل الأمامية ملحقة')}</span>
+            </div>
+            {config.isAutoCameraEnabled && (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            )}
           </div>
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
-            <MapPin className="w-4 h-4 text-teal-400 shrink-0" />
-            <span>{translateInline(lang, 'Direct Google Maps link', 'رابط موقع Google Maps مباشر')}</span>
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-teal-400 shrink-0" />
+              <span>{translateInline(lang, 'Direct Google Maps link', 'رابط موقع Google Maps مباشر')}</span>
+            </div>
+            {config.isGpsTrackingEnabled && (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            )}
           </div>
-          <div className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
-            <Clock className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>{translateInline(lang, '72-hour anti-tamper security lock', 'قفل أمني 72 ساعة ضد التعديل')}</span>
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{translateInline(lang, '72-hour anti-tamper security lock', 'قفل أمني 72 ساعة ضد التعديل')}</span>
+            </div>
+            {config.isProtectionActive && (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            )}
           </div>
         </div>
       </div>

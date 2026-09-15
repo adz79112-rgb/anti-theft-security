@@ -22,6 +22,7 @@ import {
   ExternalLink,
   X,
   Send,
+  MapPin,
 } from 'lucide-react';
 import { Language, DispatchEvent, SecurityConfig } from '../types';
 import {
@@ -43,13 +44,13 @@ import {
   openPremiumSmsSettings,
   checkIsDefaultSmsApp,
   requestSetDefaultSmsApp,
+  openAccessibilitySettings,
   sendSilentBackgroundSms,
   sanitizePhoneNumber,
   sendFallbackIntentSms,
 } from '../utils/nativeEmergencySms';
 import { Capacitor } from '@capacitor/core';
 import { DualSimNetworkCard } from './DualSimNetworkCard';
-import { UniversalOemBypassModal } from './UniversalOemBypassModal';
 
 interface SmsEmergencyTabScreenProps {
   config: SecurityConfig;
@@ -76,7 +77,6 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
   const [isActivatingAdmin, setIsActivatingAdmin] = useState<boolean>(false);
   const [isSettingDefaultSms, setIsSettingDefaultSms] = useState<boolean>(false);
   const [isSendingTestSms, setIsSendingTestSms] = useState<boolean>(false);
-  const [showUniversalOemModal, setShowUniversalOemModal] = useState<boolean>(false);
 
   // Load emergency contact phone, check SEND_SMS, Device Admin, and Default SMS status
   const refreshSecurityStatus = async () => {
@@ -545,6 +545,37 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
             </span>
           </div>
         </div>
+
+        {/* Feature Highlights Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-slate-800/80 text-xs text-slate-300 font-mono-code">
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>{translateInline(lang, 'Dual-SIM Fallback Support', 'التبديل الذكي بين الشريحتين')}</span>
+            </div>
+            {smsPermissionGranted && isSaved && (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            )}
+          </div>
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{translateInline(lang, 'Live Google Maps Tracking', 'تتبع موقع Google Maps')}</span>
+            </div>
+            {smsPermissionGranted && config.isGpsTrackingEnabled && isSaved && (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            )}
+          </div>
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <div className="flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-teal-400 shrink-0" />
+              <span>{translateInline(lang, 'Silent Background Dispatch', 'الإرسال الصامت في الخلفية')}</span>
+            </div>
+            {smsPermissionGranted && deviceAdminActive && (
+              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
+            )}
+          </div>
+        </div>
       </div>
 
       {/* 1. Dedicated Emergency Phone Number Field */}
@@ -661,9 +692,14 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
                 setIsSaved(false);
               }}
               placeholder={translateInline(lang, '+1 202 555 0123', '+1 202 555 0123 / +966 5X XXX XXXX')}
-              className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-700 hover:border-slate-600 focus:border-amber-400 focus:outline-none text-slate-100 font-mono-code text-sm font-bold placeholder-slate-600 transition"
+              className="w-full px-4 py-3 pl-10 rounded-2xl bg-slate-950 border border-slate-700 hover:border-slate-600 focus:border-amber-400 focus:outline-none text-slate-100 font-mono-code text-sm font-bold placeholder-slate-600 transition"
               dir="ltr"
             />
+            {isSaved && smsPermissionGranted && (
+              <div className="absolute top-1/2 -translate-y-1/2 left-3 flex items-center justify-center" title="Fully Enabled & Ready">
+                <CheckCircle2 className="w-5 h-5 text-emerald-500 drop-shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
+              </div>
+            )}
           </div>
 
           <div className="sm:col-span-4 flex items-center gap-2">
@@ -690,167 +726,6 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
               'يرجى إدخال رقم هاتف شخص قريب أو هاتف آخر لك، ولا تقم بإدخال رقم شريحة (SIM) هذا الهاتف نفسه حتى تصلك البلاغات وإحداثيات الموقع عند فقدانه.'
             )}
           </p>
-        </div>
-
-        {/* 2. Device Administrator (DevicePolicyManager) System Privilege Card */}
-        <div
-          id="device-admin-status-card"
-          className={`p-4 sm:p-5 rounded-2xl border transition-all flex flex-col gap-3 ${
-            deviceAdminActive
-              ? 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
-              : 'bg-indigo-950/30 border-indigo-500/40 text-indigo-200'
-          }`}
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div
-                className={`p-2.5 rounded-xl border shrink-0 mt-0.5 ${
-                  deviceAdminActive
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
-                    : 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-                }`}
-              >
-                {deviceAdminActive ? <ShieldCheck className="w-5 h-5" /> : <ShieldAlert className="w-5 h-5" />}
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-sm font-bold text-white">
-                    {translateInline(
-                      lang,
-                      'Device Administrator Privileges (DevicePolicyManager)',
-                      'صلاحية مسؤول الجهاز (Device Administrator API)'
-                    )}
-                  </h4>
-                  <span
-                    className={`text-[10px] font-mono-code font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${
-                      deviceAdminActive
-                        ? 'bg-emerald-500/30 text-emerald-300 border border-emerald-500/40'
-                        : 'bg-amber-500/30 text-amber-300 border border-amber-500/40'
-                    }`}
-                  >
-                    {deviceAdminActive
-                      ? translateInline(lang, 'ACTIVE & ELEVATED ✓', 'مفعّل بأعلى الصلاحيات ✓')
-                      : translateInline(lang, 'ACTION REQUIRED ⚠️', 'مطلوب التفعيل ⚠️')}
-                  </span>
-                </div>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  {translateInline(
-                    lang,
-                    'Grants elevated OS-level protection for offline SMS dispatch, anti-tamper persistence, and instant hardware screen lock commands.',
-                    'تمنح التطبيق صلاحيات أمان عالية على مستوى نظام أندرويد لضمان إرسال رسائل SMS الطوارئ في الخلفية بأعلى أولوية، وحماية التطبيق من الإلغاء، وتنفيذ القفل الفوري للشاشة.'
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0 self-end sm:self-center">
-              {!deviceAdminActive ? (
-                <>
-                  <button
-                    id="btn-activate-device-admin"
-                    type="button"
-                    onClick={handleActivateDeviceAdmin}
-                    disabled={isActivatingAdmin}
-                    className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold font-mono-code transition cursor-pointer shadow-lg shadow-indigo-950/60 flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    <ShieldCheck className="w-4 h-4" />
-                    <span>
-                      {isActivatingAdmin
-                        ? translateInline(lang, 'Activating...', 'جاري التفعيل...')
-                        : translateInline(lang, 'Activate Directly', 'تفعيل مسؤول الجهاز مباشرة')}
-                    </span>
-                  </button>
-                  <button
-                    id="btn-open-device-admin-settings"
-                    type="button"
-                    onClick={handleOpenDeviceAdminSettingsDirectly}
-                    disabled={isActivatingAdmin}
-                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-indigo-500/40 text-xs font-semibold font-mono-code transition cursor-pointer flex items-center justify-center gap-1.5"
-                    title={translateInline(
-                      lang,
-                      'Open Device Admin in system settings (use this if direct activation shows a black screen)',
-                      'فتح قائمة مسؤولي الجهاز في الإعدادات مباشرة (استخدم هذا الخيار في حال ظهور شاشة سوداء)'
-                    )}
-                  >
-                    <Settings className="w-3.5 h-3.5" />
-                    <span>{translateInline(lang, 'Open in Settings (Fallback)', 'فتح في الإعدادات (حل بديل)')}</span>
-                  </button>
-                  <button
-                    id="btn-open-accessibility-settings"
-                    type="button"
-                    onClick={() => openAccessibilitySettings()}
-                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-300 border border-rose-500/40 text-xs font-semibold font-mono-code transition cursor-pointer flex items-center justify-center gap-1.5 mt-2"
-                  >
-                    <Settings className="w-3.5 h-3.5" />
-                    <span>{translateInline(lang, 'Open Accessibility Settings', 'فتح إعدادات إمكانية الوصول')}</span>
-                  </button>
-                </>
-              ) : (
-                <button
-                  id="btn-test-lock-screen"
-                  type="button"
-                  onClick={handleTestLockScreen}
-                  className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-bold font-mono-code transition cursor-pointer flex items-center gap-1.5"
-                >
-                  <Lock className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>{translateInline(lang, 'Test Instant Lock', 'اختبار قفل الشاشة')}</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Universal Multi-Brand OEM Stealth & Zero-Touch Guide Card (Condor, Samsung, Xiaomi, Realme) */}
-        <div
-          id="universal-oem-guide-card"
-          className="p-4 sm:p-5 rounded-2xl border border-teal-500/40 bg-teal-950/20 text-teal-200 transition-all flex flex-col gap-3"
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="p-2.5 rounded-xl bg-teal-500/20 text-teal-300 border border-teal-500/30 shrink-0 mt-0.5">
-                <Smartphone className="w-5 h-5" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h4 className="text-sm font-bold text-white">
-                    {translateInline(
-                      lang,
-                      'Multi-Brand Zero-Touch Guide (Condor, Samsung, Xiaomi, Realme)',
-                      'دليل ضبط أجهزة كوندور 🇩🇿، سامسونج 🇰🇷، شاومي 🇨🇳، وريلمي 📱'
-                    )}
-                  </h4>
-                  <span className="text-[10px] font-mono-code font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-teal-500/30 text-teal-300 border border-teal-500/40">
-                    ALL PHONES SUPPORTED
-                  </span>
-                </div>
-                <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                  {translateInline(
-                    lang,
-                    'Specific step-by-step instructions for Algerian Condor phones (DuraSpeed & Restricted Settings), Samsung One UI, Xiaomi HyperOS/MIUI, and Realme UI to ensure 100% silent background SMS without any countdown popups.',
-                    'إرشادات مخصصة ومفصلة لهواتف كوندور الجزائرية (حل مشكلة الإعداد المقيد و DuraSpeed)، سامسونج (تطبيقات لا تنام)، شاومي (البدء التلقائي)، وريلمي لتأكيد إرسال رسائل الاستغاثة فوراً وبصمت تام في الخلفية.'
-                  )}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-              <button
-                id="btn-open-universal-oem-guide"
-                type="button"
-                onClick={() => setShowUniversalOemModal(true)}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-500 hover:to-emerald-500 text-white text-xs font-bold font-mono-code transition cursor-pointer shadow-lg shadow-teal-950/60 flex items-center gap-2"
-              >
-                <Wrench className="w-4 h-4" />
-                <span>
-                  {translateInline(
-                    lang,
-                    'Open Brand Setup Guide 📱',
-                    'فتح دليل ضبط جهازك 📱'
-                  )}
-                </span>
-              </button>
-            </div>
-          </div>
         </div>
 
         {/* Feedback message */}
@@ -943,15 +818,6 @@ export const SmsEmergencyTabScreen: React.FC<SmsEmergencyTabScreenProps> = ({
           onLogDispatch={onLogDispatch}
         />
       </div>
-
-      {/* Universal Multi-Brand Stealth Configuration Modal (Condor, Samsung, Xiaomi, Realme, Oppo) */}
-      <UniversalOemBypassModal
-        isOpen={showUniversalOemModal}
-        onClose={() => setShowUniversalOemModal(false)}
-        lang={lang}
-        onActivateDeviceAdmin={handleActivateDeviceAdmin}
-        onActivateDefaultSms={handleSetDefaultSms}
-      />
     </div>
   );
 };

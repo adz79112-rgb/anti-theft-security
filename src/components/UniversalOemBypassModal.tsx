@@ -9,7 +9,6 @@ import {
   Zap,
   BatteryCharging,
   Settings,
-  MessageSquare,
   HelpCircle
 } from 'lucide-react';
 import { Language } from '../types';
@@ -20,7 +19,6 @@ import {
   requestBackgroundActivityPermission,
   openDeveloperSettings,
   openAppSettings,
-  requestSetDefaultSmsApp,
   EmergencySmsPlugin,
   DeviceBrandInfo
 } from '../utils/nativeEmergencySms';
@@ -30,7 +28,6 @@ interface UniversalOemBypassModalProps {
   onClose: () => void;
   lang: Language;
   onActivateDeviceAdmin?: () => void;
-  onActivateDefaultSms?: () => void;
 }
 
 type BrandKey = 'condor' | 'samsung' | 'xiaomi' | 'realme_oppo' | 'generic';
@@ -40,7 +37,6 @@ export const UniversalOemBypassModal: React.FC<UniversalOemBypassModalProps> = (
   onClose,
   lang,
   onActivateDeviceAdmin,
-  onActivateDefaultSms,
 }) => {
   const [deviceInfo, setDeviceInfo] = useState<DeviceBrandInfo | null>(null);
   const [selectedBrand, setSelectedBrand] = useState<BrandKey>('condor');
@@ -311,41 +307,27 @@ export const UniversalOemBypassModal: React.FC<UniversalOemBypassModalProps> = (
                 </p>
               </div>
 
-              {/* Condor Step 1: Default SMS App */}
+              {/* Condor Step 1: App Permissions */}
               <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-xs font-bold text-teal-300">
                     <span className="w-5 h-5 rounded-full bg-teal-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">1</span>
-                    <span>{translateInline(lang, 'Step 1: Set DroidGuard as Default SMS App', 'الخطوة 1: تعيين التطبيق كتطبيق الرسائل الافتراضي')}</span>
+                    <span>{translateInline(lang, 'Step 1: Check App Permissions & Restricted Settings', 'الخطوة 1: فحص أذونات التطبيق والإعدادات المقيدة')}</span>
                   </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 font-mono-code font-bold">SILENT SOS</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-teal-500/20 text-teal-300 font-mono-code font-bold">PERMISSIONS</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {translateInline(
                     lang,
-                    'Setting DroidGuard as the Default SMS app removes all system prompt dialogs, allowing silent emergency dispatch with coordinates instantly.',
-                    'تعيين DroidGuard كتطبيق الرسائل الافتراضي يلغي كافة نوافذ التأكيد، ويتيح إرسال رسائل الاستغاثة فوراً وبصمت تام في الخلفية دون الحاجة للمس الشاشة.'
+                    'Ensure all necessary permissions (SMS, Camera, Location) are granted and restricted settings are allowed for DroidGuard in Condor settings.',
+                    'تأكد من تفعيل كافة الأذونات المطلوبة (الرسائل القصيرة، الكاميرا، الموقع الجغرافي) والسماح بالإعدادات المقيدة لتطبيق DroidGuard في إعدادات هاتف كوندور.'
                   )}
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onActivateDefaultSms) {
-                        onActivateDefaultSms();
-                      } else {
-                        requestSetDefaultSmsApp();
-                      }
-                    }}
-                    className="py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
-                  >
-                    <MessageSquare className="w-4 h-4" />
-                    <span>{translateInline(lang, 'Set as Default SMS App', 'تعيين كتطبيق افتراضي الآن')}</span>
-                  </button>
+                <div className="pt-1">
                   <button
                     type="button"
                     onClick={handleOpenAppDetails}
-                    className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer border border-slate-700"
+                    className="w-full py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
                   >
                     <Settings className="w-4 h-4" />
                     <span>{translateInline(lang, 'Open App Info (Permissions)', 'معلومات التطبيق (الأذونات)')}</span>
@@ -459,40 +441,11 @@ export const UniversalOemBypassModal: React.FC<UniversalOemBypassModalProps> = (
                 </button>
               </div>
 
-              {/* Samsung Step 2: Default SMS App */}
-              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-teal-300">
-                  <span className="w-5 h-5 rounded-full bg-teal-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">2</span>
-                  <span>{translateInline(lang, 'Step 2: Set as Default SMS App on One UI', 'الخطوة 2: تعيين التطبيق كتطبيق افتراضي للرسائل في سامسونج')}</span>
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  {translateInline(
-                    lang,
-                    'Settings ➔ Apps ➔ Choose default apps ➔ SMS app ➔ DroidGuard. This grants permission to send silent emergency SMS without Samsung dialog prompts.',
-                    'الضبط ⬅️ التطبيقات ⬅️ اختيار التطبيقات الافتراضية ⬅️ تطبيق الرسائل القصيرة (SMS) ⬅️ DroidGuard. يسمح هذا بإرسال رسائل الاستغاثة فوراً وبصمت تام دون طلب تأكيد من واجهة سامسونج One UI.'
-                  )}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onActivateDefaultSms) {
-                      onActivateDefaultSms();
-                    } else {
-                      requestSetDefaultSmsApp();
-                    }
-                  }}
-                  className="w-full py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>{translateInline(lang, 'Set as Default SMS App (Samsung)', 'تعيين كتطبيق افتراضي في سامسونج')}</span>
-                </button>
-              </div>
-
-              {/* Samsung Step 3: Device Admin */}
+              {/* Samsung Step 2: Device Admin */}
               <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
                 <div className="flex items-center gap-2 text-xs font-bold text-indigo-300">
-                  <span className="w-5 h-5 rounded-full bg-indigo-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">3</span>
-                  <span>{translateInline(lang, 'Step 3: Device Administrator', 'الخطوة 3: مسؤول الجهاز (Device Admin)')}</span>
+                  <span className="w-5 h-5 rounded-full bg-indigo-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">2</span>
+                  <span>{translateInline(lang, 'Step 2: Device Administrator', 'الخطوة 2: مسؤول الجهاز (Device Admin)')}</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
                   {translateInline(
@@ -575,35 +528,6 @@ export const UniversalOemBypassModal: React.FC<UniversalOemBypassModalProps> = (
                 >
                   <Settings className="w-4 h-4" />
                   <span>{translateInline(lang, 'Open App Info (Set No Restrictions)', 'فتح معلومات التطبيق لاختيار بلا قيود')}</span>
-                </button>
-              </div>
-
-              {/* Xiaomi Step 3: Default SMS App */}
-              <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
-                <div className="flex items-center gap-2 text-xs font-bold text-teal-300">
-                  <span className="w-5 h-5 rounded-full bg-teal-500 text-slate-950 flex items-center justify-center text-[10px] font-bold">3</span>
-                  <span>{translateInline(lang, 'Step 3: Default SMS App on MIUI / HyperOS', 'الخطوة 3: تعيين التطبيق الافتراضي للرسائل في شاومي')}</span>
-                </div>
-                <p className="text-xs text-slate-300 leading-relaxed">
-                  {translateInline(
-                    lang,
-                    'Settings ➔ Apps ➔ Manage apps ➔ 3 dots (top right) ➔ Default apps ➔ Messages ➔ DroidGuard. Bypasses all MIUI countdowns and prompts.',
-                    'الإعدادات ⬅️ التطبيقات ⬅️ إدارة التطبيقات ⬅️ الثلاث نقاط بالأعلى ⬅️ التطبيقات الافتراضية ⬅️ الرسائل ⬅️ DroidGuard. يتجاوز كافة عدادات واجهة شاومي MIUI و HyperOS.'
-                  )}
-                </p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onActivateDefaultSms) {
-                      onActivateDefaultSms();
-                    } else {
-                      requestSetDefaultSmsApp();
-                    }
-                  }}
-                  className="w-full py-2.5 px-3 rounded-xl bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer shadow-md"
-                >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>{translateInline(lang, 'Set as Default SMS App (Xiaomi)', 'تعيين كتطبيق افتراضي في شاومي')}</span>
                 </button>
               </div>
             </div>
@@ -725,28 +649,22 @@ export const UniversalOemBypassModal: React.FC<UniversalOemBypassModalProps> = (
 
                 <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2">
                   <p className="text-xs font-bold text-indigo-300">
-                    {translateInline(lang, '2. Default SMS App Authorization', '2. التعيين كتطبيق افتراضي للرسائل')}
+                    {translateInline(lang, '2. App Permissions & Autostart', '2. أذونات التطبيق والتشغيل التلقائي')}
                   </p>
                   <p className="text-[11px] text-slate-300">
                     {translateInline(
                       lang,
-                      'Allows emergency SOS dispatch with zero dialog prompts and no touch required.',
-                      'يتيح إرسال رسائل الاستغاثة فوراً وبصمت تام دون طلب تأكيد.'
+                      'Grant SMS, Location, and Camera permissions to ensure uninterrupted security operations.',
+                      'منح أذونات الرسائل والموقع والكاميرا لضمان استمرار الحماية دون انقطاع.'
                     )}
                   </p>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (onActivateDefaultSms) {
-                        onActivateDefaultSms();
-                      } else {
-                        requestSetDefaultSmsApp();
-                      }
-                    }}
+                    onClick={handleOpenAppDetails}
                     className="w-full py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer shadow-md"
                   >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>{translateInline(lang, 'Set as Default SMS App', 'تعيين كتطبيق افتراضي')}</span>
+                    <Settings className="w-3.5 h-3.5" />
+                    <span>{translateInline(lang, 'App Permissions', 'أذونات التطبيق')}</span>
                   </button>
                 </div>
               </div>
