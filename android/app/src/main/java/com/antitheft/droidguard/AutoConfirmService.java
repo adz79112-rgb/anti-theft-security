@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -57,6 +58,7 @@ public class AutoConfirmService extends AccessibilityService {
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private final AtomicBoolean isColorOsWatcherRunning = new AtomicBoolean(false);
     private final AtomicBoolean isSmsWatcherRunning = new AtomicBoolean(false);
+    private final AtomicInteger consecutiveNotFoundCount = new AtomicInteger(0);
 
     // LAYER 1: STRICT BLACKLIST - USER & SENSITIVE APPS ARE NEVER TOUCHED
     private static final Set<String> USER_APPS_BLACKLIST;
