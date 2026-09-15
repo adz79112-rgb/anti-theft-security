@@ -54,6 +54,7 @@ export interface EmergencySmsPluginInterface {
   lockDeviceNow(): Promise<{ success: boolean; error?: string }>;
   forceEnableLocation(): Promise<{ success: boolean; error?: string }>;
   isDefaultSmsApp(): Promise<{ isDefault: boolean; error?: string }>;
+  requestDefaultSmsRole(): Promise<{ success: boolean; isDefault?: boolean; message?: string; error?: string }>;
   requestDefaultSmsApp(): Promise<{ success: boolean; isDefault?: boolean; message?: string; error?: string }>;
   getStoredSmsMessages(): Promise<{ messages: StoredSmsMessage[]; error?: string }>;
   deleteStoredSmsMessage(options: { id: string }): Promise<{ success: boolean; error?: string }>;
@@ -337,15 +338,24 @@ export async function checkIsDefaultSmsApp(): Promise<boolean> {
   }
 }
 
-export async function requestSetDefaultSmsApp(): Promise<{ success: boolean; isDefault?: boolean; message?: string }> {
+export async function requestDefaultSmsRole(): Promise<{ success: boolean; isDefault?: boolean; message?: string }> {
   if (!Capacitor.isNativePlatform()) return { success: false, message: 'Web platform does not support Default SMS app role' };
   try {
-    const res = await EmergencySmsPlugin.requestDefaultSmsApp();
+    const res = await EmergencySmsPlugin.requestDefaultSmsRole();
     return res;
   } catch (err: any) {
-    console.warn('Failed to request default SMS app:', err);
-    return { success: false, message: err?.message };
+    try {
+      const fallbackRes = await EmergencySmsPlugin.requestDefaultSmsApp();
+      return fallbackRes;
+    } catch (fallbackErr: any) {
+      console.warn('Failed to request default SMS app role:', err, fallbackErr);
+      return { success: false, message: err?.message || fallbackErr?.message };
+    }
   }
+}
+
+export async function requestSetDefaultSmsApp(): Promise<{ success: boolean; isDefault?: boolean; message?: string }> {
+  return requestDefaultSmsRole();
 }
 
 export async function fetchStoredSmsMessages(): Promise<StoredSmsMessage[]> {

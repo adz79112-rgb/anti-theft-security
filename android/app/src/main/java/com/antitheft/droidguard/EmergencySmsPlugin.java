@@ -720,6 +720,11 @@ public class EmergencySmsPlugin extends Plugin {
     }
 
     @PluginMethod
+    public void requestDefaultSmsRole(PluginCall call) {
+        requestDefaultSmsApp(call);
+    }
+
+    @PluginMethod
     public void requestDefaultSmsApp(PluginCall call) {
         Activity activity = getActivity();
         Context context = getContext();
@@ -746,33 +751,64 @@ public class EmergencySmsPlugin extends Plugin {
                 return;
             }
 
+            boolean dialogLaunched = false;
+
+            // 1. Android 10+ (API 29+) RoleManager flow
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                RoleManager roleManager = context.getSystemService(RoleManager.class);
-                if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_SMS)) {
-                    Intent roleRequestIntent = roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS);
-                    if (activity != null) {
-                        activity.startActivity(roleRequestIntent);
-                    } else {
-                        roleRequestIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        context.startActivity(roleRequestIntent);
+                try {
+                    RoleManager roleManager = context.getSystemService(RoleManager.class);
+                    if (roleManager != null && roleManager.isRoleAvailable(RoleManager.ROLE_SMS)) {
+                        Intent roleRequestIntent = roleManager.createRequestRoleIntent(RoleManager.ROLE_SMS);
+                        if (activity != null) {
+                            activity.startActivityForResult(roleRequestIntent, 9922);
+                            dialogLaunched = true;
+                        } else {
+                            roleRequestIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                            context.startActivity(roleRequestIntent);
+                            dialogLaunched = true;
+                        }
                     }
+                } catch (Exception eRole) {
+                    Log.w(TAG, "RoleManager request failed, trying fallback: " + eRole.getMessage());
                 }
-            } else {
-                Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
-                intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, context.getPackageName());
-                if (activity != null) {
-                    activity.startActivity(intent);
-                } else {
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    context.startActivity(intent);
+            }
+
+            // 2. Android 9 and below or RoleManager fallback
+            if (!dialogLaunched) {
+                try {
+                    Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
+                    intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, context.getPackageName());
+                    if (activity != null) {
+                        activity.startActivityForResult(intent, 9923);
+                        dialogLaunched = true;
+                    } else {
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        context.startActivity(intent);
+                        dialogLaunched = true;
+                    }
+                } catch (Exception eChangeDefault) {
+                    Log.w(TAG, "ACTION_CHANGE_DEFAULT failed, trying Default Apps settings: " + eChangeDefault.getMessage());
+                }
+            }
+
+            // 3. Fallback to System Default Apps Settings if prompt intents fail
+            if (!dialogLaunched) {
+                try {
+                    Intent manageDefaultApps = new Intent("android.settings.MANAGE_DEFAULT_APPS_SETTINGS");
+                    manageDefaultApps.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(manageDefaultApps);
+                    dialogLaunched = true;
+                } catch (Exception eSettings) {
+                    Log.w(TAG, "MANAGE_DEFAULT_APPS_SETTINGS failed: " + eSettings.getMessage());
                 }
             }
 
             JSObject ret = new JSObject();
-            ret.put("success", true);
-            ret.put("message", "Default SMS dialog requested");
+            ret.put("success", dialogLaunched);
+            ret.put("message", dialogLaunched ? "Default SMS role request launched" : "Could not open default SMS selector");
             call.resolve(ret);
         } catch (Exception e) {
+            Log.e(TAG, "Error in requestDefaultSmsApp: " + e.getMessage(), e);
             JSObject ret = new JSObject();
             ret.put("success", false);
             ret.put("error", e.getMessage());
