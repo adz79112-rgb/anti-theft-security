@@ -16,21 +16,10 @@ public class AutoConfirmService extends AccessibilityService {
         String currentPackage = "";
         if (packageNameSeq != null) {
             currentPackage = packageNameSeq.toString();
-            // Show toast to identify the popup's package name
-            if (!currentPackage.equals(lastPackageName) && !currentPackage.equals("com.antitheft.droidguard")) {
-                lastPackageName = currentPackage;
-                Toast.makeText(this, "Package: " + currentPackage, Toast.LENGTH_LONG).show();
-            }
         }
 
-        // ONLY allow clicking on specific system packages to avoid clicking in normal apps
-        if (currentPackage.isEmpty() || 
-            currentPackage.equals("com.antitheft.droidguard") ||
-            currentPackage.contains("youtube") ||
-            currentPackage.contains("facebook") ||
-            currentPackage.contains("instagram") ||
-            currentPackage.contains("whatsapp") ||
-            currentPackage.contains("messenger")) {
+        // ONLY allow clicking on the specific Oppo security package or our own app
+        if (!currentPackage.equals("com.oplus.securitypermission") && !currentPackage.equals("com.antitheft.droidguard")) {
             return;
         }
 
@@ -43,7 +32,7 @@ public class AutoConfirmService extends AccessibilityService {
                           clickButtonByText(root, "Allow");
 
         if (clicked) {
-            Toast.makeText(this, "تم الضغط التلقائي!", Toast.LENGTH_SHORT).show();
+            // Optional: log success or perform other actions
         }
 
         root.recycle();
