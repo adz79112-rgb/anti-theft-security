@@ -55,6 +55,26 @@
             android:name=".EmergencySmsDispatchService"
             android:exported="false" />
 
+        <!-- Persistent Foreground Protection Service -->
+        <service
+            android:name=".DroidGuardProtectionService"
+            android:enabled="true"
+            android:exported="false"
+            android:stopWithTask="false" />
+
+        <!-- Auto-Boot & Package Replacement Receiver to ensure Background Protection persists -->
+        <receiver
+            android:name=".BootReceiver"
+            android:enabled="true"
+            android:exported="true">
+            <intent-filter android:priority="999">
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
         <!-- 1. Default SMS App: Incoming SMS Receiver -->
         <receiver
             android:name=".SmsReceiver"

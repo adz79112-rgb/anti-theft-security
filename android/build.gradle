@@ -30,6 +30,37 @@ allprojects {
             force "androidx.activity:activity:1.9.3"
             force "androidx.fragment:fragment:1.8.5"
             force "androidx.coordinatorlayout:coordinatorlayout:1.2.0"
+
+            eachDependency { DependencyResolveDetails details ->
+                if (details.requested.group == 'androidx.core') {
+                    if (details.requested.name == 'core' || details.requested.name == 'core-ktx') {
+                        details.useVersion '1.13.1'
+                        details.because 'androidx.core 1.17.0+ requires compileSdk 36 and AGP 8.9+'
+                    }
+                }
+                if (details.requested.group == 'androidx.activity') {
+                    details.useVersion '1.9.3'
+                }
+                if (details.requested.group == 'androidx.fragment') {
+                    details.useVersion '1.8.5'
+                }
+                if (details.requested.group == 'androidx.appcompat') {
+                    details.useVersion '1.7.0'
+                }
+            }
+        }
+    }
+}
+
+subprojects {
+    afterEvaluate { project ->
+        if (project.hasProperty("android")) {
+            project.android {
+                if (namespace == null) {
+                    // prevent AGP 8 missing namespace errors on legacy plugins
+                }
+                compileSdkVersion rootProject.ext.compileSdkVersion
+            }
         }
     }
 }

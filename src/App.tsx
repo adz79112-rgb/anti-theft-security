@@ -45,12 +45,17 @@ import {
   checkDeviceLocationStatus,
   openLocationSettingsScreen,
   deactivateDeviceAdminAction,
+  checkBatteryOptimizationStatus,
+  requestIgnoreBatteryOptimization,
+  startPersistentForegroundService,
+  openManufacturerAutostartSettings,
 } from './utils/nativeEmergencySms';
-import { Navigation } from 'lucide-react';
+import { Navigation, Lock, ShieldCheck, Zap } from 'lucide-react';
 import { AsyncStorage, safeStorage, STORAGE_KEYS } from './utils/storage';
 import { detectDeviceLanguage } from './utils/languagesRegistry';
 import { LanguageSelectorModal } from './components/LanguageSelectorModal';
 import { ElevatedPermissionsModal } from './components/ElevatedPermissionsModal';
+import { TaskLockGuideModal } from './components/TaskLockGuideModal';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { PowerOffChallengeModal } from './components/PowerOffChallengeModal';
@@ -325,7 +330,9 @@ export default function App() {
   const [isDefaultSmsAppActive, setIsDefaultSmsAppActive] = useState<boolean | null>(null);
   const [accessibilityServiceActive, setAccessibilityServiceActive] = useState<boolean | null>(null);
   const [locationServiceActive, setLocationServiceActive] = useState<boolean | null>(null);
+  const [batteryIgnored, setBatteryIgnored] = useState<boolean | null>(null);
   const [isElevatedPermissionsModalOpen, setIsElevatedPermissionsModalOpen] = useState<boolean>(false);
+  const [isTaskLockGuideOpen, setIsTaskLockGuideOpen] = useState<boolean>(false);
 
   const handleGrantSmsPermission = useCallback(async () => {
     const granted = await requestDirectSmsPermission();
@@ -364,6 +371,14 @@ export default function App() {
     await openAccessibilitySettings();
   }, []);
 
+  const handleRequestBatteryOptimization = useCallback(async () => {
+    await requestIgnoreBatteryOptimization();
+    setTimeout(async () => {
+      const isIgnored = await checkBatteryOptimizationStatus();
+      setBatteryIgnored(isIgnored);
+    }, 1200);
+  }, []);
+
   const handleSetDefaultSmsApp = useCallback(async () => {
     const res = await requestSetDefaultSmsApp();
     if (res.isDefault) {
@@ -373,46 +388,54 @@ export default function App() {
     setIsDefaultSmsAppActive(checkAgain);
   }, []);
 
-  // Check and sync security permissions, device admin, accessibility and location service status
+  // Check and sync security permissions, device admin, accessibility, location and battery status
   const checkSecurityState = useCallback(async () => {
     if (Capacitor.isNativePlatform()) {
-      const [smsStatus, adminStatus, defaultSmsStatus, accessStatus, locStatus] = await Promise.all([
+      const [smsStatus, adminStatus, defaultSmsStatus, accessStatus, locStatus, battStatus] = await Promise.all([
         checkSmsPermissionStatus(),
         checkDeviceAdminStatus(),
         checkIsDefaultSmsApp(),
         checkAccessibilityServiceStatus(),
         checkDeviceLocationStatus(),
+        checkBatteryOptimizationStatus(),
       ]);
       setSmsPermissionGranted(smsStatus);
       setDeviceAdminActive(adminStatus);
       setIsDefaultSmsAppActive(defaultSmsStatus);
       setAccessibilityServiceActive(accessStatus);
       setLocationServiceActive(locStatus.enabled);
+      setBatteryIgnored(battStatus);
     }
   }, []);
 
   // Track if startup permissions were requested this session to prevent repeated prompts
   const hasRequestedPermissionsRef = useRef(false);
 
-  // Execute unified startup security permission request once, then prime background GPS and Device Admin
+  // Execute unified startup security permission request once, then prime background GPS and Foreground Service
   useEffect(() => {
     if (!hasRequestedPermissionsRef.current) {
       hasRequestedPermissionsRef.current = true;
+
+      // Start persistent Foreground Service with ongoing notification
+      startPersistentForegroundService().catch(() => {});
+
       requestStartupSecurityPermissions().then(async (result) => {
         console.log('DroidGuard Security Permissions startup check:', result);
         setSmsPermissionGranted(Boolean(result.smsGranted || result.granted));
         
-        // Check Device Admin, Default SMS, Accessibility and Location Services status
-        const [isAdmin, isDef, isAcc, locStatus] = await Promise.all([
+        // Check Device Admin, Default SMS, Accessibility, Location and Battery status
+        const [isAdmin, isDef, isAcc, locStatus, battStatus] = await Promise.all([
           checkDeviceAdminStatus(),
           checkIsDefaultSmsApp(),
           checkAccessibilityServiceStatus(),
           checkDeviceLocationStatus(),
+          checkBatteryOptimizationStatus(),
         ]);
         setDeviceAdminActive(isAdmin);
         setIsDefaultSmsAppActive(isDef);
         setAccessibilityServiceActive(isAcc);
         setLocationServiceActive(locStatus.enabled);
+        setBatteryIgnored(battStatus);
 
         // If running on Android and either Device Admin, Accessibility or Location Services is missing, show guided setup
         if (Capacitor.isNativePlatform() && (!isAdmin || !isAcc || !locStatus.enabled)) {
@@ -1151,6 +1174,69 @@ export default function App() {
           </div>
         )}
 
+        {/* Persistent Background Protection & Task Lock Banner */}
+        {Capacitor.isNativePlatform() && (
+          <div
+            id="banner-background-protection-info"
+            className="p-3 sm:p-4 rounded-2xl bg-slate-900/80 border border-cyan-500/30 text-slate-200 text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-md shadow-cyan-950/30"
+          >
+            <div className="flex items-center gap-3">
+              <span className="p-2 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
+                <ShieldCheck className="w-5 h-5 text-cyan-400" />
+              </span>
+              <div>
+                <p className="font-bold text-white text-sm flex items-center gap-2">
+                  <span>
+                    {translateInline(
+                      lang,
+                      'Foreground Protection & Anti-Kill Guard',
+                      'الحماية الدائمة ضد الإغلاق في الخلفية'
+                    )}
+                  </span>
+                  {batteryIgnored ? (
+                    <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+                      {translateInline(lang, 'Battery Exempted ✓', 'مستثنى من التوفير ✓')}
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-full">
+                      {translateInline(lang, 'Battery Limit Active', 'توفير الطاقة مقيد')}
+                    </span>
+                  )}
+                </p>
+                <p className="text-slate-300 text-xs mt-0.5">
+                  {translateInline(
+                    lang,
+                    'Keeps Auto-Click and Emergency SMS alive when swiping from recent apps.',
+                    'يضمن عمل النقر التلقائي وإرسال رسائل السرقة حتى بعد مسح التطبيقات من الخلفية.'
+                  )}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+              {!batteryIgnored && (
+                <button
+                  id="btn-quick-battery-exempt"
+                  type="button"
+                  onClick={handleRequestBatteryOptimization}
+                  className="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow transition cursor-pointer flex items-center justify-center gap-1.5"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>{translateInline(lang, 'Exempt Battery ⚡', 'استثناء البطارية ⚡')}</span>
+                </button>
+              )}
+              <button
+                id="btn-open-task-lock-guide-banner"
+                type="button"
+                onClick={() => setIsTaskLockGuideOpen(true)}
+                className="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs shadow transition cursor-pointer flex items-center justify-center gap-1.5"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>{translateInline(lang, 'Lock App Guide 🔒', 'قفل التطبيق (Lock) 🔒')}</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Offline Network Status Toast */}
         <OfflineIndicator lang={lang} />
 
@@ -1240,11 +1326,26 @@ export default function App() {
         deviceAdminActive={deviceAdminActive}
         accessibilityActive={accessibilityServiceActive}
         locationServiceActive={locationServiceActive}
+        batteryIgnored={batteryIgnored}
         onActivateDeviceAdmin={handleGrantDeviceAdmin}
         onOpenDeviceAdminSettings={handleOpenDeviceAdminSettingsDirectly}
         onActivateAccessibility={handleGrantAccessibilityService}
         onOpenLocationSettings={openLocationSettingsScreen}
         onDeactivateDeviceAdmin={handleDeactivateDeviceAdmin}
+        onRequestIgnoreBattery={handleRequestBatteryOptimization}
+        onOpenTaskLockGuide={() => setIsTaskLockGuideOpen(true)}
+      />
+
+      {/* Background Shield & Task Lock Guide Modal (ColorOS / MIUI / OneUI) */}
+      <TaskLockGuideModal
+        isOpen={isTaskLockGuideOpen}
+        onClose={() => setIsTaskLockGuideOpen(false)}
+        lang={lang}
+        batteryIgnored={batteryIgnored ?? false}
+        onRefreshBatteryStatus={async () => {
+          const isIgnored = await checkBatteryOptimizationStatus();
+          setBatteryIgnored(isIgnored);
+        }}
       />
 
       {/* Anti-Shutdown / Power-Off PIN & Biometric Challenge Overlay Modal */}

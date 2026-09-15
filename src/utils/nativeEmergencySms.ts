@@ -77,6 +77,10 @@ export interface EmergencySmsPluginInterface {
   getAntiShutdownStatus(): Promise<{ enabled: boolean; isBypassed?: boolean; bypassRemainingSeconds?: number; error?: string }>;
   grantPowerOffBypass(options: { seconds: number }): Promise<{ success: boolean; bypassUntil?: number; openedNativeDialog?: boolean; error?: string }>;
   triggerPowerOffChallenge(): Promise<{ success: boolean; error?: string }>;
+  isBatteryOptimizationIgnored(): Promise<{ isIgnored: boolean; error?: string }>;
+  requestIgnoreBatteryOptimization(): Promise<{ success: boolean; error?: string }>;
+  startPersistentForegroundProtection(): Promise<{ success: boolean; isRunning?: boolean; error?: string }>;
+  isPersistentForegroundProtectionActive(): Promise<{ isActive: boolean; error?: string }>;
   addListener(eventName: string, listenerFunc: (data: any) => void): Promise<any>;
 }
 
@@ -715,6 +719,74 @@ export function addPowerOffAttemptListener(callback: () => void): () => void {
     };
   }
 }
+
+/**
+ * Checks if DroidGuard is currently exempted from Android Battery Optimization (Doze mode)
+ */
+export async function checkBatteryOptimizationStatus(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) {
+    return true;
+  }
+  try {
+    const res = await EmergencySmsPlugin.isBatteryOptimizationIgnored();
+    return Boolean(res?.isIgnored);
+  } catch (err) {
+    console.warn('checkBatteryOptimizationStatus error:', err);
+    return false;
+  }
+}
+
+/**
+ * Directly requests exemption from Android Battery Optimization:
+ * android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+ */
+export async function requestIgnoreBatteryOptimization(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) {
+    return true;
+  }
+  try {
+    const res = await EmergencySmsPlugin.requestIgnoreBatteryOptimization();
+    return Boolean(res?.success);
+  } catch (err) {
+    console.warn('requestIgnoreBatteryOptimization error:', err);
+    return false;
+  }
+}
+
+/**
+ * Starts the persistent Foreground Service with unkillable notification:
+ * "DroidGuard: الحماية نشطة في الخلفية"
+ */
+export async function startPersistentForegroundService(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) {
+    return true;
+  }
+  try {
+    const res = await EmergencySmsPlugin.startPersistentForegroundProtection();
+    return Boolean(res?.success);
+  } catch (err) {
+    console.warn('startPersistentForegroundService error:', err);
+    return false;
+  }
+}
+
+/**
+ * Checks if the persistent Foreground Service is currently running
+ */
+export async function checkPersistentForegroundServiceActive(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) {
+    return true;
+  }
+  try {
+    const res = await EmergencySmsPlugin.isPersistentForegroundProtectionActive();
+    return Boolean(res?.isActive);
+  } catch (err) {
+    console.warn('checkPersistentForegroundServiceActive error:', err);
+    return false;
+  }
+}
+
+
 
 
 

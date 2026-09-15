@@ -50,7 +50,7 @@ jobs:
         run: |
           cd android
           ./gradlew clean --no-daemon
-          ./gradlew assembleDebug --no-daemon --stacktrace --info
+          ./gradlew assembleDebug --no-daemon --stacktrace
           mkdir -p ../release-apks
           cp app/build/outputs/apk/debug/*.apk ../release-apks/DroidGuard-v5-AntiTheft-Build-${{ github.run_number }}.apk
           echo "APK built successfully:"

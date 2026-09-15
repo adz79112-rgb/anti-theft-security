@@ -1301,4 +1301,97 @@ public class EmergencySmsPlugin extends Plugin {
         ret.put("success", true);
         call.resolve(ret);
     }
+
+    @PluginMethod
+    public void isBatteryOptimizationIgnored(PluginCall call) {
+        Context context = getContext();
+        boolean isIgnored = true;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+                if (pm != null) {
+                    isIgnored = pm.isIgnoringBatteryOptimizations(context.getPackageName());
+                }
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "Error checking battery optimization: " + e.getMessage());
+        }
+
+        JSObject ret = new JSObject();
+        ret.put("isIgnored", isIgnored);
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void requestIgnoreBatteryOptimization(PluginCall call) {
+        Context context = getContext();
+        Activity activity = getActivity();
+        boolean requested = false;
+        String errorMsg = null;
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+                if (pm != null && !pm.isIgnoringBatteryOptimizations(context.getPackageName())) {
+                    Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                    intent.setData(Uri.parse("package:" + context.getPackageName()));
+                    if (activity != null) {
+                        activity.startActivity(intent);
+                    } else {
+                        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        context.startActivity(intent);
+                    }
+                    requested = true;
+                } else {
+                    // Already ignored
+                    requested = true;
+                }
+            } else {
+                requested = true;
+            }
+        } catch (Exception e) {
+            errorMsg = e.getMessage();
+            Log.w(TAG, "ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS failed, fallback to settings: " + errorMsg);
+            try {
+                Intent fallback = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(fallback);
+                requested = true;
+            } catch (Exception e2) {
+                Log.e(TAG, "ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS failed: " + e2.getMessage());
+            }
+        }
+
+        JSObject ret = new JSObject();
+        ret.put("success", requested);
+        if (errorMsg != null) {
+            ret.put("error", errorMsg);
+        }
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void startPersistentForegroundProtection(PluginCall call) {
+        Context context = getContext();
+        try {
+            DroidGuardProtectionService.startProtection(context);
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            ret.put("isRunning", true);
+            call.resolve(ret);
+        } catch (Exception e) {
+            JSObject ret = new JSObject();
+            ret.put("success", false);
+            ret.put("error", e.getMessage());
+            call.resolve(ret);
+        }
+    }
+
+    @PluginMethod
+    public void isPersistentForegroundProtectionActive(PluginCall call) {
+        boolean active = DroidGuardProtectionService.isRunning();
+        JSObject ret = new JSObject();
+        ret.put("isActive", active);
+        call.resolve(ret);
+    }
 }

@@ -10,6 +10,6 @@
     <string name="device_admin_description">صلاحية مسؤول الجهاز لقفل الهاتف وحمايته ضد السرقة ومنع العبث به.</string>
     <string name="bg_service_channel_name">حماية النظام في الخلفية</string>
     <string name="bg_service_channel_desc">خدمة الحماية الدائمة ضد السرقة والمساعد التلقائي</string>
-    <string name="bg_service_notification_title">حماية الهاتف نشطة في الخلفية</string>
+    <string name="bg_service_notification_title">DroidGuard: الحماية نشطة في الخلفية</string>
     <string name="bg_service_notification_text">نظام DroidGuard يعمل لحماية الهاتف والاستجابة الفورية لحالات الطوارئ</string>
 </resources>

@@ -14,6 +14,9 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(BiometricPlugin.class);
         super.onCreate(savedInstanceState);
 
+        // Start Persistent Background Protection Foreground Service
+        DroidGuardProtectionService.startProtection(this);
+
         // Allow app to display over keyguard/lockscreen when an emergency or power-off lock is active
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
             setShowWhenLocked(true);
