@@ -93,7 +93,7 @@ export const DispatchHistory: React.FC<DispatchHistoryProps> = ({ logs, onClearL
           </div>
           <div>
             <h3 className="text-base font-bold text-slate-100">{t.dispatchLogTitle}</h3>
-            <p className="text-xs text-slate-400">{translateInline(lang, 'Log of automated emergency reports (SMS & Telegram)', 'سجل البلاغات والتقارير المرسلة آلياً (SMS & Telegram)')}</p>
+            <p className="text-xs text-slate-400 hidden">{translateInline(lang, 'Log of automated emergency reports (SMS & Telegram)', 'سجل البلاغات والتقارير المرسلة آلياً (SMS & Telegram)')}</p>
           </div>
         </div>
 

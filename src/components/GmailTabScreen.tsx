@@ -38,6 +38,17 @@ export const GmailTabScreen: React.FC<GmailTabScreenProps> = ({
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
+      {/* Main Gmail Security Card with Verification & Cooldown */}
+      <GmailSecurityCard
+        lang={lang}
+        currentEmail={config.userEmail || 'adz79112@gmail.com'}
+        onEmailChanged={(newActive) => {
+          setActiveRecipientEmail(newActive);
+          onChangeConfig({ ...config, userEmail: newActive });
+        }}
+        onSecurityLog={onSecurityLog}
+      />
+
       {/* Top Banner Card for Gmail Security Channel */}
       <div className="bg-slate-900/80 border border-red-500/30 rounded-3xl p-5 sm:p-6 shadow-xl backdrop-blur-md relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-600 via-rose-500 to-amber-500" />
@@ -94,17 +105,6 @@ export const GmailTabScreen: React.FC<GmailTabScreenProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Main Gmail Security Card with Verification & Cooldown */}
-      <GmailSecurityCard
-        lang={lang}
-        currentEmail={config.userEmail || 'adz79112@gmail.com'}
-        onEmailChanged={(newActive) => {
-          setActiveRecipientEmail(newActive);
-          onChangeConfig({ ...config, userEmail: newActive });
-        }}
-        onSecurityLog={onSecurityLog}
-      />
     </div>
   );
 };

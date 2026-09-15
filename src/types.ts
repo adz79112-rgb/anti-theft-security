@@ -80,7 +80,7 @@ export interface StoredSmsMessage {
   read?: boolean;
 }
 
-export type NavTabId = 'home' | 'messages' | 'sms' | 'telegram' | 'gmail';
+export type NavTabId = 'home' | 'sms' | 'telegram' | 'gmail';
 
 export type Language =
   // Section 1: Pinned Top Primary Languages

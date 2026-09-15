@@ -8,7 +8,7 @@ import {
   Language,
 } from './types';
 import { fetchDeviceLocation, initializeBackgroundGPS, LocationResult } from './utils/location';
-import { captureFrontCameraPhoto } from './utils/camera';
+import { captureFrontCameraPhoto, captureBackCameraPhoto } from './utils/camera';
 import { AppEntryGate } from './components/AppEntryGate';
 import { EmergencyLockOverlay } from './components/EmergencyLockOverlay';
 import { LockdownScreen } from './components/LockdownScreen';
@@ -20,7 +20,6 @@ import { DispatchHistory } from './components/DispatchHistory';
 import { TelegramConfigCard } from './components/TelegramConfigCard';
 import { CyberpunkConsole } from './components/CyberpunkConsole';
 import { BottomNavBar, NavTabId } from './components/BottomNavBar';
-import { GoogleMessagesScreen } from './components/GoogleMessagesScreen';
 import { SmsEmergencyTabScreen } from './components/SmsEmergencyTabScreen';
 import { TelegramTabScreen } from './components/TelegramTabScreen';
 import { GmailTabScreen } from './components/GmailTabScreen';
@@ -470,114 +469,181 @@ export default function App() {
     async (senderNumber: string, directBlackScreen: boolean = false) => {
       setTheftTriggerSender(senderNumber);
 
-      // Silently capture front photo & location in background as requested
-      captureFrontCameraPhoto().then((photoUrl) => {
-        fetchDeviceLocation().then(async (loc) => {
-          setCurrentLocation(loc);
-          const timestamp = new Date().toLocaleTimeString();
-          const newCapture: IntruderCapture = {
-            id: generateUniqueId('cap'),
-            imageUrl: photoUrl,
-            timestamp,
-            location: loc,
-            triggerSource: 'THEFT_LOCKDOWN_TRIGGER',
-            senderNumber,
-            dispatchedVia: ['sms', 'email', 'telegram'],
-          };
-          setCaptures((prev) => [newCapture, ...prev]);
+      // Silently capture front and back photo & location in background as requested
+      try {
+        const photoUrlFront = await captureFrontCameraPhoto();
+        const photoUrlBack = await captureBackCameraPhoto();
+        const loc = await fetchDeviceLocation();
+        setCurrentLocation(loc);
+        const timestamp = new Date().toLocaleTimeString();
 
-          // 1. Silent Background Emergency SMS via native Android SmsManager
-          const emergencyPhone = (config.emergencyContactPhone && config.emergencyContactPhone.trim())
-            || (await getEmergencyContactPhone())
-            || '0563752023';
-          const smsBody = `🚨 [إنذار سرقة DroidGuard]\nالموقع المباشر للجهاز:\n${loc.mapsUrl}\nإحداثيات: ${loc.source === 'unavailable' ? 'غير متوفر' : loc.latitude.toFixed(5) + ', ' + loc.longitude.toFixed(5)}\nالوقت: ${timestamp}`;
+        const newCaptureFront: IntruderCapture = {
+          id: generateUniqueId('cap-front'),
+          imageUrl: photoUrlFront,
+          timestamp,
+          location: loc,
+          triggerSource: 'THEFT_LOCKDOWN_TRIGGER (Front)',
+          senderNumber,
+          dispatchedVia: ['sms', 'email', 'telegram'],
+        };
+        const newCaptureBack: IntruderCapture = {
+          id: generateUniqueId('cap-back'),
+          imageUrl: photoUrlBack,
+          timestamp,
+          location: loc,
+          triggerSource: 'THEFT_LOCKDOWN_TRIGGER (Rear)',
+          senderNumber,
+          dispatchedVia: ['sms', 'email', 'telegram'],
+        };
+        setCaptures((prev) => [newCaptureFront, newCaptureBack, ...prev]);
 
-          const recipientsToAlert: string[] = [];
-          if (emergencyPhone && emergencyPhone.trim()) recipientsToAlert.push(emergencyPhone.trim());
-          if (!recipientsToAlert.includes('0563752023')) recipientsToAlert.push('0563752023');
-          if (senderNumber && senderNumber.trim() && !recipientsToAlert.includes(senderNumber.trim())) {
-            recipientsToAlert.push(senderNumber.trim());
-          }
+        // 1. Silent Background Emergency SMS via native Android SmsManager
+        const emergencyPhone = (config.emergencyContactPhone && config.emergencyContactPhone.trim())
+          || (await getEmergencyContactPhone())
+          || '0563752023';
+        const smsBody = `🚨 [إنذار سرقة DroidGuard]\nالموقع المباشر للجهاز:\n${loc.mapsUrl}\nإحداثيات: ${loc.source === 'unavailable' ? 'غير متوفر' : loc.latitude.toFixed(5) + ', ' + loc.longitude.toFixed(5)}\nالوقت: ${timestamp}`;
 
-          if (recipientsToAlert.length === 0) {
-            setDispatchEvents((prev) => [
-              {
-                id: generateUniqueId('disp'),
-                timestamp,
-                recipient: 'لم يتم تحديد رقم طوارئ',
-                type: 'emergency_sms',
-                content: '[تعذر إرسال SMS] لم يتم ضبط رقم هاتف الطوارئ في الإعدادات. يرجى إضافته من تبويب SMS.',
-                status: 'failed',
-              },
-              ...prev,
-            ]);
-          }
+        const recipientsToAlert: string[] = [];
+        if (emergencyPhone && emergencyPhone.trim()) recipientsToAlert.push(emergencyPhone.trim());
+        if (!recipientsToAlert.includes('0563752023')) recipientsToAlert.push('0563752023');
+        if (senderNumber && senderNumber.trim() && !recipientsToAlert.includes(senderNumber.trim())) {
+          recipientsToAlert.push(senderNumber.trim());
+        }
 
-          for (const recipient of recipientsToAlert) {
-            sendDualSimSmsFallback(recipient, smsBody).then((dualSimResult) => {
-              const isEmergency = recipient === emergencyPhone;
-              if (dualSimResult.sim1Delivered) {
-                setDispatchEvents((prev) => [
-                  {
-                    id: generateUniqueId('disp'),
-                    timestamp,
-                    recipient: `${recipient} (${isEmergency ? 'طوارئ أساسي' : 'مرسل الأمر'} - SIM 1 ${dualSimResult.sim1Details.carrier})`,
-                    type: 'emergency_sms',
-                    content: `[SMS متزامن - شريحة 1] تم تأكيد إرسال موقع GPS المباشر إلى ${recipient} عبر Android SmsManager: ${loc.mapsUrl}`,
-                    status: 'delivered',
-                  },
-                  ...prev,
-                ]);
-              }
-              if (dualSimResult.sim2Delivered) {
-                setDispatchEvents((prev) => [
-                  {
-                    id: generateUniqueId('disp'),
-                    timestamp,
-                    recipient: `${recipient} (${isEmergency ? 'طوارئ أساسي' : 'مرسل الأمر'} - SIM 2 ${dualSimResult.sim2Details.carrier})`,
-                    type: 'emergency_sms',
-                    content: `[SMS متزامن - شريحة 2 احتياطية] تم تأكيد إرسال موقع GPS عبر Android SmsManager: ${loc.mapsUrl}`,
-                    status: 'delivered',
-                  },
-                  ...prev,
-                ]);
-              }
-              if (!dualSimResult.sim1Delivered && !dualSimResult.sim2Delivered) {
-                setDispatchEvents((prev) => [
-                  {
-                    id: generateUniqueId('disp'),
-                    timestamp,
-                    recipient: `${recipient} (${isEmergency ? 'طوارئ أساسي' : 'مرسل الأمر'})`,
-                    type: 'emergency_sms',
-                    content: `[SMS متزامن - تعذر الإرسال] ${dualSimResult.summary}`,
-                    status: 'failed',
-                  },
-                  ...prev,
-                ]);
-              }
-            });
-          }
+        if (recipientsToAlert.length === 0) {
+          setDispatchEvents((prev) => [
+            {
+              id: generateUniqueId('disp'),
+              timestamp,
+              recipient: 'لم يتم تحديد رقم طوارئ',
+              type: 'emergency_sms',
+              content: '[تعذر إرسال SMS] لم يتم ضبط رقم هاتف الطوارئ في الإعدادات. يرجى إضافته من تبويب SMS.',
+              status: 'failed',
+            },
+            ...prev,
+          ]);
+        }
 
-          // 2. Dispatch directly to Gmail (adz79112@gmail.com)
-          const targetEmail = config.userEmail || (await AsyncStorage.getItem(STORAGE_KEYS.USER_EMAIL)) || 'adz79112@gmail.com';
-          sendGmailSecurityReport({
-            toEmail: targetEmail,
-            senderNumber,
-            mapsUrl: loc.mapsUrl,
-            latitude: loc.latitude,
-            longitude: loc.longitude,
-            photoUrl,
-            timestamp,
-            triggerSource: 'THEFT_LOCKDOWN_TRIGGER (محاكاة سرقة وإطفاء الهاتف)',
-          }).then((res) => {
-            if (res.ok) {
+        for (const recipient of recipientsToAlert) {
+          sendDualSimSmsFallback(recipient, smsBody).then((dualSimResult) => {
+            const isEmergency = recipient === emergencyPhone;
+            if (dualSimResult.sim1Delivered) {
               setDispatchEvents((prev) => [
                 {
                   id: generateUniqueId('disp'),
                   timestamp,
-                  recipient: targetEmail,
-                  type: 'gmail_report',
-                  content: `[تقرير فوري Gmail] تم إرسال موقع GPS المباشر (${loc.mapsUrl}) وصورة الكاميرا الأمامية إلى بريد الأمان ${targetEmail}`,
+                  recipient: `${recipient} (${isEmergency ? 'طوارئ أساسي' : 'مرسل الأمر'} - SIM 1 ${dualSimResult.sim1Details.carrier})`,
+                  type: 'emergency_sms',
+                  content: `[SMS متزامن - شريحة 1] تم تأكيد إرسال موقع GPS المباشر إلى ${recipient} عبر Android SmsManager: ${loc.mapsUrl}`,
+                  status: 'delivered',
+                },
+                ...prev,
+              ]);
+            }
+            if (dualSimResult.sim2Delivered) {
+              setDispatchEvents((prev) => [
+                {
+                  id: generateUniqueId('disp'),
+                  timestamp,
+                  recipient: `${recipient} (${isEmergency ? 'طوارئ أساسي' : 'مرسل الأمر'} - SIM 2 ${dualSimResult.sim2Details.carrier})`,
+                  type: 'emergency_sms',
+                  content: `[SMS متزامن - شريحة 2 احتياطية] تم تأكيد إرسال موقع GPS عبر Android SmsManager: ${loc.mapsUrl}`,
+                  status: 'delivered',
+                },
+                ...prev,
+              ]);
+            }
+            if (!dualSimResult.sim1Delivered && !dualSimResult.sim2Delivered) {
+              setDispatchEvents((prev) => [
+                {
+                  id: generateUniqueId('disp'),
+                  timestamp,
+                  recipient: `${recipient} (${isEmergency ? 'طوارئ أساسي' : 'مرسل الأمر'})`,
+                  type: 'emergency_sms',
+                  content: `[SMS متزامن - تعذر الإرسال] ${dualSimResult.summary}`,
+                  status: 'failed',
+                },
+                ...prev,
+              ]);
+            }
+          });
+        }
+
+        // 2. Dispatch directly to Gmail (adz79112@gmail.com)
+        const targetEmail = config.userEmail || (await AsyncStorage.getItem(STORAGE_KEYS.USER_EMAIL)) || 'adz79112@gmail.com';
+        
+        // Send Front Camera Email
+        sendGmailSecurityReport({
+          toEmail: targetEmail,
+          senderNumber,
+          mapsUrl: loc.mapsUrl,
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          photoUrl: photoUrlFront,
+          timestamp,
+          triggerSource: 'THEFT_LOCKDOWN_TRIGGER (الكاميرا الأمامية)',
+        }).then((res) => {
+          if (res.ok) {
+            setDispatchEvents((prev) => [
+              {
+                id: generateUniqueId('disp-gmail-front'),
+                timestamp,
+                recipient: targetEmail,
+                type: 'gmail_report',
+                content: `[تقرير فوري Gmail] تم إرسال موقع GPS وصورة الكاميرا الأمامية إلى بريد الأمان ${targetEmail}`,
+                status: 'delivered',
+              },
+              ...prev,
+            ]);
+          }
+        });
+
+        // Send Back Camera Email
+        sendGmailSecurityReport({
+          toEmail: targetEmail,
+          senderNumber,
+          mapsUrl: loc.mapsUrl,
+          latitude: loc.latitude,
+          longitude: loc.longitude,
+          photoUrl: photoUrlBack,
+          timestamp,
+          triggerSource: 'THEFT_LOCKDOWN_TRIGGER (الكاميرا الخلفية)',
+        }).then((res) => {
+          if (res.ok) {
+            setDispatchEvents((prev) => [
+              {
+                id: generateUniqueId('disp-gmail-back'),
+                timestamp,
+                recipient: targetEmail,
+                type: 'gmail_report',
+                content: `[تقرير فوري Gmail] تم إرسال صورة الكاميرا الخلفية إلى بريد الأمان ${targetEmail}`,
+                status: 'delivered',
+              },
+              ...prev,
+            ]);
+          }
+        });
+
+        // 3. Dispatch directly to Telegram Bot if configured
+        const targetChatId = config.telegramChatId || (await AsyncStorage.getItem(STORAGE_KEYS.CHAT_ID));
+        if (targetChatId) {
+          const token = config.telegramBotToken || DEFAULT_BOT_TOKEN;
+          
+          // Send Front Camera to Telegram
+          sendTelegramPhoto(
+            token,
+            targetChatId,
+            photoUrlFront,
+            `🚨 <b>[DroidGuard - الكاميرا الأمامية]</b>\n📸 <b>صورة المتسلل (الأمامية):</b> مرفقة\n📍 <b>الموقع المباشر:</b> <a href="${loc.mapsUrl}">خرائط Google</a> (${loc.source === 'unavailable' ? 'غير متوفر' : loc.latitude.toFixed(5) + ', ' + loc.longitude.toFixed(5)})\n📱 <b>رقم الطوارئ:</b> ${senderNumber}\n⏰ <b>الوقت:</b> ${timestamp}`
+          ).then((res) => {
+            if (res.ok) {
+              setDispatchEvents((prev) => [
+                {
+                  id: generateUniqueId('disp-tg-front'),
+                  timestamp,
+                  recipient: `Telegram (@${targetChatId})`,
+                  type: 'telegram_photo',
+                  content: `[بث فوري تليجرام] تم رفع صورة الكاميرا الأمامية وإحداثيات الموقع بنجاح`,
                   status: 'delivered',
                 },
                 ...prev,
@@ -585,39 +651,38 @@ export default function App() {
             }
           });
 
-          // 3. Dispatch directly to Telegram Bot if configured
-          const targetChatId = config.telegramChatId || (await AsyncStorage.getItem(STORAGE_KEYS.CHAT_ID));
-          if (targetChatId) {
-            const token = config.telegramBotToken || DEFAULT_BOT_TOKEN;
-            sendTelegramPhoto(
-              token,
-              targetChatId,
-              photoUrl,
-              `🚨 <b>[DroidGuard - إنذار سرقة ومحاكاة إطفاء الهاتف]</b>\n📸 <b>تم التقاط صورة المتسلل:</b> مرفقة\n📍 <b>الموقع المباشر:</b> <a href="${loc.mapsUrl}">خرائط Google</a> (${loc.source === 'unavailable' ? 'غير متوفر' : loc.latitude.toFixed(5) + ', ' + loc.longitude.toFixed(5)})\n📱 <b>رقم الطوارئ:</b> ${senderNumber}\n⏰ <b>الوقت:</b> ${timestamp}`
-            ).then((res) => {
-              if (res.ok) {
-                setDispatchEvents((prev) => [
-                  {
-                    id: generateUniqueId('disp'),
-                    timestamp,
-                    recipient: `Telegram (@${targetChatId})`,
-                    type: 'telegram_photo',
-                    content: `[بث فوري تليجرام] تم رفع صورة المتسلل وإحداثيات الموقع مباشرة لحساب تليجرام المرتبط`,
-                    status: 'delivered',
-                  },
-                  ...prev,
-                ]);
-              }
-            });
-            if (loc.source !== 'unavailable') { sendTelegramLocation(token, targetChatId, loc.latitude, loc.longitude); }
-          }
-        });
-      });
+          // Send Back Camera to Telegram
+          sendTelegramPhoto(
+            token,
+            targetChatId,
+            photoUrlBack,
+            `🚨 <b>[DroidGuard - الكاميرا الخلفية]</b>\n📸 <b>صورة المتسلل (الخلفية):</b> مرفقة\n⏰ <b>الوقت:</b> ${timestamp}`
+          ).then((res) => {
+            if (res.ok) {
+              setDispatchEvents((prev) => [
+                {
+                  id: generateUniqueId('disp-tg-back'),
+                  timestamp,
+                  recipient: `Telegram (@${targetChatId})`,
+                  type: 'telegram_photo',
+                  content: `[بث فوري تليجرام] تم رفع صورة الكاميرا الخلفية بنجاح`,
+                  status: 'delivered',
+                },
+                ...prev,
+              ]);
+            }
+          });
+
+          if (loc.source !== 'unavailable') { sendTelegramLocation(token, targetChatId, loc.latitude, loc.longitude); }
+        }
+      } catch (err) {
+        console.error('Error executing theft trigger payload:', err);
+      }
 
       if (directBlackScreen) {
         setIsStealthStolenModeOpen(true);
       } else {
-        // Open EmergencyLockOverlay: Plays siren + human voice alert ("هذا الهاتف مسروق أعده لصاحبه") + Fake Power-Off menu
+        // Open EmergencyLockOverlay: Plays siren + human voice alert
         setIsTheftModeTriggered(true);
       }
     },
@@ -799,41 +864,6 @@ export default function App() {
   const homeTabContent = React.useMemo(() => {
     return (
       <div className={`space-y-8 ${activeTab === 'home' ? 'block' : 'hidden'}`}>
-        {/* Native Android Default SMS App Role Banner (RoleManager / ACTION_CHANGE_DEFAULT) */}
-        {Capacitor.isNativePlatform() && isDefaultSmsAppActive === false && (
-          <div className="bg-gradient-to-r from-blue-950/80 via-cyan-950/70 to-slate-900/90 border-2 border-cyan-500/70 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-cyan-200 backdrop-blur-md shadow-xl shadow-cyan-950/80">
-            <div className="flex items-start sm:items-center gap-3.5 w-full sm:w-auto">
-              <span className="p-3 bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 rounded-2xl text-xl font-bold shrink-0">💬</span>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-extrabold text-sm sm:text-base text-white">
-                    {translateInline(lang, 'تعيين تطبيق DroidGuard كتطبيق الرسائل الافتراضي (Default SMS App)', 'Set DroidGuard as Default SMS App')}
-                  </p>
-                  <span className="px-2.5 py-0.5 bg-cyan-500/30 text-cyan-300 border border-cyan-500/50 text-[10px] rounded-full uppercase tracking-wider font-mono font-black animate-pulse">
-                    HIGH PRIORITY
-                  </span>
-                </div>
-                <p className="text-xs text-cyan-200/90 mt-1 leading-relaxed">
-                  {translateInline(
-                    lang,
-                    'اضغط هنا لفتح نافذة النظام الرسمية وتعيين التطبيق كمدير الرسائل الافتراضي للهاتف. هذا الإجراء يمنح صلاحية إرسال واستقبال رسائل الطوارئ في الخلفية فوراً وبصمت تام دون قيود أو نوافذ تحذيرية.',
-                    'Tap here to open the official Android system dialog (RoleManager) to make DroidGuard your Default SMS app for instant, silent background SOS dispatch without carrier countdowns.'
-                  )}
-                </p>
-              </div>
-            </div>
-            <button
-              id="btn-app-home-set-default-sms"
-              type="button"
-              onClick={handleSetDefaultSmsApp}
-              className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 hover:from-cyan-400 hover:to-blue-500 text-white font-extrabold text-xs sm:text-sm rounded-xl whitespace-nowrap shadow-lg shadow-cyan-500/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
-            >
-              <span>{translateInline(lang, 'Set as Default SMS App Now', 'تعيين كتطبيق رسائل افتراضي الآن')}</span>
-              <span className="text-base">🚀</span>
-            </button>
-          </div>
-        )}
-
         {/* Native Android SEND_SMS Permission Status Indicator & One-Tap Grant Trigger */}
         {Capacitor.isNativePlatform() && smsPermissionGranted === false && (
           <div className="bg-red-950/40 border border-red-500/50 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-red-200 backdrop-blur-md shadow-lg shadow-red-950/50 animate-pulse">
@@ -913,78 +943,16 @@ export default function App() {
           </div>
         )}
 
-        {/* Native Android Default SMS App Banner (Silent Emergency SMS Dispatch) */}
-        {Capacitor.isNativePlatform() && isDefaultSmsAppActive === false && (
-          <div className="bg-gradient-to-r from-teal-950/70 via-cyan-950/60 to-slate-900/80 border border-teal-500/50 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-teal-200 backdrop-blur-md shadow-lg shadow-teal-950/60">
-            <div className="flex items-start gap-3 w-full sm:w-auto">
-              <span className="p-2.5 bg-cyan-500/20 text-cyan-300 rounded-xl text-lg font-bold shrink-0 mt-0.5">💬</span>
-              <div>
-                <p className="font-bold text-sm text-white flex items-center gap-2 flex-wrap">
-                  {translateInline(lang, 'Set as Default SMS App (Silent Emergency Dispatch)', 'التعيين كتطبيق الرسائل الافتراضي (إرسال صامت بدون قيود)')}
-                  <span className="px-2 py-0.5 bg-cyan-500/30 text-cyan-300 text-[10px] rounded-full uppercase tracking-wider font-mono font-bold">
-                    SILENT SMS
-                  </span>
-                </p>
-                <p className="text-xs text-teal-200/90 mt-1 leading-relaxed">
-                  {translateInline(
-                    lang,
-                    'Setting DroidGuard as your Default SMS app allows it to dispatch silent background emergency SMS instantly without confirmation dialogs or screen touches.',
-                    'عند تعيين التطبيق كتطبيق الرسائل الافتراضي، يتمكن من إرسال رسائل الاستغاثة فوراً وبصمت تام في الخلفية دون أي نوافذ تحذيرية أو حاجة للمس الشاشة.'
-                  )}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleSetDefaultSmsApp}
-              className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-teal-600 to-cyan-600 hover:from-teal-500 hover:to-cyan-500 text-white font-bold text-xs rounded-xl whitespace-nowrap shadow-lg shadow-teal-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
-            >
-              <span>{translateInline(lang, 'Set as Default SMS App Now', 'تعيين كتطبيق افتراضي الآن')}</span>
-              <span className="text-sm">⚡</span>
-            </button>
-          </div>
-        )}
-
-        {/* Native Android Premium SMS Access Bypass Banner */}
-        {Capacitor.isNativePlatform() && (
-          <div className="bg-amber-950/40 border border-amber-500/40 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 text-amber-200 backdrop-blur-md shadow-lg shadow-amber-950/60">
-            <div className="flex items-start gap-3 w-full sm:w-auto">
-              <span className="p-2.5 bg-amber-500/20 text-amber-300 rounded-xl text-lg font-bold shrink-0 mt-0.5">⚡</span>
-              <div>
-                <p className="font-bold text-sm text-white flex items-center gap-2 flex-wrap">
-                  {translateInline(lang, 'Enable Premium SMS Access (Bypass OEM Restrictions)', 'تفعيل الوصول إلى الرسائل المميزة (تجاوز قيود الشركات المصنعة)')}
-                  <span className="px-2 py-0.5 bg-amber-500/30 text-amber-300 text-[10px] rounded-full uppercase tracking-wider font-mono font-bold">
-                    OEM BYPASS
-                  </span>
-                </p>
-                <p className="text-xs text-amber-200/90 mt-1 leading-relaxed">
-                  {translateInline(
-                    lang,
-                    "Please scroll down to 'Premium SMS access' and change it from 'Ask' to 'Always Allow' to ensure silent background SOS delivery without countdown popups.",
-                    "يرجى التمرير للأسفل داخل صفحة معلومات التطبيق واختيار 'الوصول إلى الرسائل المميزة' (Premium SMS access) وتغييرها من 'سؤال' (Ask) إلى 'السماح دائماً' (Always Allow) لضمان إرسال رسائل الطوارئ في الخلفية بصمت تام دون نوافذ عد تنازلي."
-                  )}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => openPremiumSmsSettings()}
-              className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-600 to-yellow-600 hover:from-amber-500 hover:to-yellow-500 text-slate-950 font-bold text-xs rounded-xl whitespace-nowrap shadow-lg shadow-amber-600/30 transition active:scale-95 flex items-center justify-center gap-2 cursor-pointer shrink-0"
-            >
-              <span>{translateInline(lang, 'Enable Premium SMS Access', 'تفعيل الوصول إلى الرسائل المميزة')}</span>
-              <span className="text-sm">⚙️</span>
-            </button>
-          </div>
-        )}
-
         {/* Featured Cyberpunk Core: Master Shield Button, AsyncStorage Chat ID & Security Binding */}
-        <CyberpunkConsole
-          config={config}
-          onChangeConfig={setConfig}
-          lang={lang}
-          onLogDispatch={handleLogDispatch}
-          onSaveCapture={handleSaveCapture}
-        />
+        <div className="hidden">
+          <CyberpunkConsole
+            config={config}
+            onChangeConfig={setConfig}
+            lang={lang}
+            onLogDispatch={handleLogDispatch}
+            onSaveCapture={handleSaveCapture}
+          />
+        </div>
         {/* Section 2: Sensor Setup & Security Dashboard */}
         <Dashboard
           config={config}
@@ -995,12 +963,14 @@ export default function App() {
           onTriggerPowerChallenge={() => setShowPowerOffModal(true)}
           onSecurityLog={handleLogDispatch}
         />
-        {/* Section 3: Dual-SIM Smart Dispatch & Network Management with Carrier Detection */}
-        <DualSimNetworkCard
-          lang={lang}
-          onTriggerStealthStolen={handleTriggerTheft}
-          onLogDispatch={handleLogDispatch}
-        />
+        {/* Section 3: Dual-SIM Smart Dispatch & Network Management with Carrier Detection (Hidden) */}
+        <div className="hidden">
+          <DualSimNetworkCard
+            lang={lang}
+            onTriggerStealthStolen={handleTriggerTheft}
+            onLogDispatch={handleLogDispatch}
+          />
+        </div>
         {/* Section 4: Captured Intruder Photos Gallery */}
         <IntruderGallery
           captures={captures}
@@ -1037,17 +1007,6 @@ export default function App() {
     handleClearDispatches,
   ]);
 
-  const messagesTabContent = React.useMemo(() => {
-    return (
-      <div className={`space-y-4 ${activeTab === 'messages' ? 'block' : 'hidden'}`}>
-        <GoogleMessagesScreen
-          lang={lang}
-          onOpenSmsConfig={() => setActiveTab('sms')}
-        />
-      </div>
-    );
-  }, [activeTab, lang]);
-
   const smsTabContent = React.useMemo(() => {
     return (
       <div className={`space-y-8 ${activeTab === 'sms' ? 'block' : 'hidden'}`}>
@@ -1058,18 +1017,7 @@ export default function App() {
           onLogDispatch={handleLogDispatch}
           onTriggerStealthStolen={handleTriggerTheft}
         />
-        {/* Filtered logs for Emergency SMS and Dual Dispatch */}
-        <DispatchHistory
-          logs={dispatchEvents.filter(
-            (e) =>
-              e.type === 'emergency_sms' ||
-              e.type === 'stealth_dispatch' ||
-              e.recipient.startsWith('+') ||
-              !e.recipient.includes('@')
-          )}
-          onClearLogs={handleClearDispatches}
-          lang={lang}
-        />
+
       </div>
     );
   }, [activeTab, config, lang, dispatchEvents, handleLogDispatch, handleTriggerTheft, handleClearDispatches]);
@@ -1082,17 +1030,7 @@ export default function App() {
           config={config}
           onChangeConfig={setConfig}
         />
-        {/* Filtered logs for Telegram */}
-        <DispatchHistory
-          logs={dispatchEvents.filter(
-            (e) =>
-              e.type === 'telegram_alert' ||
-              e.type === 'telegram_photo' ||
-              e.type === 'telegram_location'
-          )}
-          onClearLogs={handleClearDispatches}
-          lang={lang}
-        />
+
       </div>
     );
   }, [activeTab, lang, config, dispatchEvents, handleClearDispatches]);
@@ -1106,14 +1044,7 @@ export default function App() {
           onChangeConfig={setConfig}
           onSecurityLog={handleLogDispatch}
         />
-        {/* Filtered logs for email */}
-        <DispatchHistory
-          logs={dispatchEvents.filter(
-            (e) => e.type === 'location_ping' || e.recipient.includes('@')
-          )}
-          onClearLogs={handleClearDispatches}
-          lang={lang}
-        />
+
       </div>
     );
   }, [activeTab, lang, config, dispatchEvents, handleLogDispatch, handleClearDispatches]);
@@ -1258,7 +1189,6 @@ export default function App() {
         )}
 
         {homeTabContent}
-        {messagesTabContent}
         {smsTabContent}
         {telegramTabContent}
         {gmailTabContent}

@@ -313,7 +313,7 @@ export const GmailSecurityCard: React.FC<GmailSecurityCardProps> = ({
             <span className="text-xs font-mono-code font-bold text-red-300 block">
               {translateInline(lang, 'Emergency User Gmail (Stealth Reports)', 'بريد الطوارئ (Gmail) للتقارير الشاملة')}
             </span>
-            <span className="text-[10px] text-slate-400">
+            <span className="text-[10px] text-slate-400 hidden">
               {translateInline(lang, 'Receives live GPS link & stealth photos on #TRACK command', 'يستقبل رابط GPS وصور الكاميرا الأمامية عند استلام الأمر (#TRACK)')}
             </span>
           </div>

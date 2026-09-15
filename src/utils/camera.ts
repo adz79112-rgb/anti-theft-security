@@ -56,6 +56,52 @@ export async function captureFrontCameraPhoto(): Promise<string> {
   return generateSurveillanceSilhouette();
 }
 
+export async function captureBackCameraPhoto(): Promise<string> {
+  // Attempt real back camera capture via WebRTC
+  if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: 'environment',
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+        },
+        audio: false,
+      });
+      const video = document.createElement('video');
+      video.autoplay = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.srcObject = stream;
+      await new Promise<void>((resolve) => {
+        video.onloadedmetadata = () => {
+          video.play();
+          setTimeout(resolve, 250);
+        };
+      });
+      const canvas = document.createElement('canvas');
+      canvas.width = 320;
+      canvas.height = 240;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        
+        ctx.font = 'bold 10px monospace';
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText(`[REAR_CAM] ${new Date().toISOString()}`, 10, canvas.height - 10);
+        
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.55);
+        stream.getTracks().forEach((track) => track.stop());
+        return dataUrl;
+      }
+      stream.getTracks().forEach((track) => track.stop());
+    } catch (err) {
+      console.warn('Back camera access not granted or unavailable, generating fallback:', err);
+    }
+  }
+  return generateSurveillanceSilhouette();
+}
+
 function generateSurveillanceSilhouette(): string {
   const canvas = document.createElement('canvas');
   canvas.width = 320;

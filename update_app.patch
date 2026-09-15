@@ -1,0 +1,40 @@
+--- src/App.tsx
++++ src/App.tsx
+@@ -470,20 +470,30 @@
+       setTheftTriggerSender(senderNumber);
+ 
+       // Silently capture front photo & location in background as requested
+-      captureFrontCameraPhoto().then((photoUrl) => {
+-        fetchDeviceLocation().then(async (loc) => {
++      try {
++        const photoUrlFront = await captureFrontCameraPhoto();
++        const photoUrlBack = await (await import('./utils/camera')).captureBackCameraPhoto();
++        const loc = await fetchDeviceLocation();
+           setCurrentLocation(loc);
+           const timestamp = new Date().toLocaleTimeString();
+-          const newCapture: IntruderCapture = {
++          const newCaptureFront: IntruderCapture = {
+             id: generateUniqueId('cap'),
+-            imageUrl: photoUrl,
++            imageUrl: photoUrlFront,
+             timestamp,
+             location: loc,
+-            triggerSource: 'THEFT_LOCKDOWN_TRIGGER',
++            triggerSource: 'THEFT_LOCKDOWN_TRIGGER (Front)',
+             senderNumber,
+             dispatchedVia: ['sms', 'email', 'telegram'],
+           };
+-          setCaptures((prev) => [newCapture, ...prev]);
++          const newCaptureBack: IntruderCapture = {
++            id: generateUniqueId('cap_back'),
++            imageUrl: photoUrlBack,
++            timestamp,
++            location: loc,
++            triggerSource: 'THEFT_LOCKDOWN_TRIGGER (Rear)',
++            senderNumber,
++            dispatchedVia: ['sms', 'email', 'telegram'],
++          };
++          setCaptures((prev) => [newCaptureFront, newCaptureBack, ...prev]);
+ 
+           // 1. Silent Background Emergency SMS via native Android SmsManager
+           const emergencyPhone = (config.emergencyContactPhone && config.emergencyContactPhone.trim())

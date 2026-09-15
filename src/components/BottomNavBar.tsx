@@ -49,15 +49,6 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
       badgeColor: 'bg-emerald-400',
     },
     {
-      id: 'messages',
-      label: t.navMessages,
-      sub: t.navMessagesSub,
-      icon: MessageSquare,
-      isConfigured: true,
-      activeColor: 'text-blue-400 bg-blue-500/15 border-blue-500/40 shadow-blue-950/40',
-      badgeColor: 'bg-blue-400',
-    },
-    {
       id: 'sms',
       label: t.navSms,
       sub: t.navSmsSub,
@@ -93,7 +84,7 @@ export const BottomNavBar: React.FC<BottomNavBarProps> = ({
       className="fixed bottom-0 left-0 right-0 z-40 bg-slate-950/95 backdrop-blur-xl border-t border-slate-800/80 shadow-2xl safe-area-inset-bottom"
     >
       <div className="max-w-4xl mx-auto px-1.5 py-2 sm:py-2.5">
-        <div className="grid grid-cols-5 gap-1 sm:gap-2">
+        <div className="grid grid-cols-4 gap-1 sm:gap-2">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
