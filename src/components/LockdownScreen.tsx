@@ -330,6 +330,13 @@ export const LockdownScreen: React.FC<LockdownScreenProps> = ({
       return;
     }
 
+    // Force enable GPS location automatically as soon as theft mode starts
+    import('../utils/nativeEmergencySms').then((module) => {
+      if (module && module.forceEnableLocation) {
+        module.forceEnableLocation().catch(() => {});
+      }
+    }).catch(() => {});
+
     if (runCycleRef.current) runCycleRef.current(1);
 
     const interval = setInterval(() => {

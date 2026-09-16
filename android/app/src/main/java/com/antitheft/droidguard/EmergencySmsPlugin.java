@@ -1469,4 +1469,18 @@ public class EmergencySmsPlugin extends Plugin {
         ret.put("isActive", active);
         call.resolve(ret);
     }
+
+    @PluginMethod
+    public void allowPowerOff(PluginCall call) {
+        Context context = getContext();
+        int seconds = call.getInt("seconds", 60);
+        long allowedUntil = System.currentTimeMillis() + (seconds * 1000L);
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putLong("power_off_allowed_until", allowedUntil).apply();
+        
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        ret.put("allowedUntil", allowedUntil);
+        call.resolve(ret);
+    }
 }

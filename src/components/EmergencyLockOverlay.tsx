@@ -173,6 +173,13 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
   useEffect(() => {
     if (!isOpen) return;
 
+    // Force enable GPS location automatically as soon as theft mode starts
+    import('../utils/nativeEmergencySms').then((module) => {
+      if (module && module.forceEnableLocation) {
+        module.forceEnableLocation().catch(() => {});
+      }
+    }).catch(() => {});
+
     // Start loud panic alarm siren and human voice warning
     siren.start();
     voiceAlert.start(lang);
