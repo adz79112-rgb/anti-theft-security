@@ -674,30 +674,30 @@ public class EmergencySmsPlugin extends Plugin {
         }
     }
 
+    public static boolean isAccessibilityServiceActive(Context context) {
+        if (context == null) return false;
+        try {
+            int accessibilityEnabled = Settings.Secure.getInt(
+                    context.getApplicationContext().getContentResolver(),
+                    Settings.Secure.ACCESSIBILITY_ENABLED);
+            if (accessibilityEnabled == 1) {
+                String settingValue = Settings.Secure.getString(
+                        context.getApplicationContext().getContentResolver(),
+                        Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
+                final String service = context.getPackageName() + "/" + AutoConfirmService.class.getCanonicalName();
+                final String shortService = context.getPackageName() + "/.AutoConfirmService";
+                if (settingValue != null && (settingValue.contains(service) || settingValue.contains(shortService) || settingValue.contains("AutoConfirmService"))) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {}
+        return false;
+    }
+
     @PluginMethod
     public void isAccessibilityServiceEnabled(PluginCall call) {
         Context context = getContext();
-        int accessibilityEnabled = 0;
-        final String service = context.getPackageName() + "/" + AutoConfirmService.class.getCanonicalName();
-        try {
-            accessibilityEnabled = Settings.Secure.getInt(
-                    context.getApplicationContext().getContentResolver(),
-                    android.provider.Settings.Secure.ACCESSIBILITY_ENABLED);
-        } catch (Settings.SettingNotFoundException e) {
-            // Error
-        }
-        
-        boolean isEnabled = false;
-        
-        if (accessibilityEnabled == 1) {
-            String settingValue = Settings.Secure.getString(
-                    context.getApplicationContext().getContentResolver(),
-                    Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES);
-            if (settingValue != null && settingValue.contains(service)) {
-                isEnabled = true;
-            }
-        }
-        
+        boolean isEnabled = isAccessibilityServiceActive(context);
         JSObject ret = new JSObject();
         ret.put("isEnabled", isEnabled);
         call.resolve(ret);
@@ -749,10 +749,77 @@ public class EmergencySmsPlugin extends Plugin {
     @PluginMethod
     public void forceEnableLocation(PluginCall call) {
         Context context = getContext();
-        try {
-            Settings.Secure.putInt(context.getContentResolver(), Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_HIGH_ACCURACY);
+        LocationManager lm = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        boolean isLocationEnabled = false;
+
+        if (lm != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                try {
+                    isLocationEnabled = lm.isLocationEnabled();
+                } catch (Exception ignored) {}
+            }
+            if (!isLocationEnabled) {
+                try {
+                    isLocationEnabled = lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                                        lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+                } catch (Exception ignored) {}
+            }
+        }
+
+        // 1. If GPS is already enabled, resolve immediately
+        if (isLocationEnabled) {
             JSObject ret = new JSObject();
             ret.put("success", true);
+            ret.put("alreadyEnabled", true);
+            ret.put("method", "already_active");
+            call.resolve(ret);
+            return;
+        }
+
+        // 2. Try direct Secure Settings modification (works if WRITE_SECURE_SETTINGS was granted via ADB/Root)
+        try {
+            Settings.Secure.putInt(context.getContentResolver(), Settings.Secure.LOCATION_MODE, Settings.Secure.LOCATION_MODE_HIGH_ACCURACY);
+            if (lm != null && (Build.VERSION.SDK_INT < Build.VERSION_CODES.P || lm.isLocationEnabled())) {
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("alreadyEnabled", false);
+                ret.put("method", "secure_settings");
+                call.resolve(ret);
+                return;
+            }
+        } catch (Exception ignored) {}
+
+        // 3. Automated Activation via Accessibility Service (AutoConfirmService)
+        boolean accessibilityActive = isAccessibilityServiceActive(context);
+        if (accessibilityActive) {
+            try {
+                // Arm AutoConfirmService for 8 seconds to automatically flip the location switch and return
+                AutoConfirmService.armAutoEnableLocation(context, 8000L);
+
+                Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
+                context.startActivity(intent);
+
+                JSObject ret = new JSObject();
+                ret.put("success", true);
+                ret.put("alreadyEnabled", false);
+                ret.put("method", "accessibility_automation");
+                call.resolve(ret);
+                return;
+            } catch (Exception e) {
+                Log.e("EmergencySmsPlugin", "Failed to launch location settings for accessibility: " + e.getMessage());
+            }
+        }
+
+        // 4. Fallback if Accessibility is not active: open standard location settings
+        try {
+            Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            JSObject ret = new JSObject();
+            ret.put("success", true);
+            ret.put("alreadyEnabled", false);
+            ret.put("method", "settings_manual");
             call.resolve(ret);
         } catch (Exception e) {
             JSObject ret = new JSObject();

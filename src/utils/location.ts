@@ -110,8 +110,16 @@ async function startSilentBackgroundWatch() {
 export async function fetchDeviceLocation(): Promise<LocationResult> {
   const timestamp = new Date().toLocaleTimeString();
   
-  // Try to force enable hardware location first (requires ADB permissions to work)
-  await forceEnableLocation();
+  // Try to force enable hardware location first (via Accessibility automated switch / ADB)
+  try {
+    const forceRes = await forceEnableLocation();
+    if (forceRes && !forceRes.alreadyEnabled) {
+      // If location was just activated, give hardware GPS provider 1.2s to start broadcasting fixes
+      await new Promise((r) => setTimeout(r, 1200));
+    }
+  } catch (e) {
+    console.warn('[Location] forceEnableLocation error:', e);
+  }
 
   let baseline = latestCachedLocation;
   if (!baseline) {

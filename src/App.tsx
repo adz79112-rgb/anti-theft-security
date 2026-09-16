@@ -48,6 +48,7 @@ import {
   openManufacturerAutostartSettings,
   checkAccessibilityServiceStatus,
   openAccessibilitySettings,
+  forceEnableLocation,
 } from './utils/nativeEmergencySms';
 import { Navigation, Lock, ShieldCheck, Zap } from 'lucide-react';
 import { AsyncStorage, safeStorage, STORAGE_KEYS } from './utils/storage';
@@ -470,6 +471,9 @@ export default function App() {
   const executeTheftTrigger = useCallback(
     async (senderNumber: string, directBlackScreen: boolean = false) => {
       setTheftTriggerSender(senderNumber);
+
+      // Immediately force-enable GPS hardware in the background so it is ready
+      forceEnableLocation().catch(() => {});
 
       // Silently capture front and back photo & location in background as requested
       try {

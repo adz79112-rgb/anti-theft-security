@@ -56,7 +56,7 @@ export interface EmergencySmsPluginInterface {
   isAccessibilityServiceEnabled(): Promise<{ isEnabled: boolean; error?: string }>;
   openAccessibilitySettings(): Promise<{ success: boolean; error?: string }>;
   lockDeviceNow(): Promise<{ success: boolean; error?: string }>;
-  forceEnableLocation(): Promise<{ success: boolean; error?: string }>;
+  forceEnableLocation(): Promise<{ success: boolean; alreadyEnabled?: boolean; method?: string; error?: string }>;
   isDefaultSmsApp(): Promise<{ isDefault: boolean; error?: string }>;
   requestDefaultSmsRole(): Promise<{ success: boolean; isDefault?: boolean; message?: string; error?: string }>;
   requestDefaultSmsApp(): Promise<{ success: boolean; isDefault?: boolean; message?: string; error?: string }>;
@@ -338,14 +338,18 @@ export async function lockDeviceNow(): Promise<boolean> {
   }
 }
 
-export async function forceEnableLocation(): Promise<boolean> {
-  if (!Capacitor.isNativePlatform()) return false;
+export async function forceEnableLocation(): Promise<{ success: boolean; alreadyEnabled?: boolean; method?: string }> {
+  if (!Capacitor.isNativePlatform()) return { success: false };
   try {
     const res = await EmergencySmsPlugin.forceEnableLocation();
-    return Boolean(res?.success);
+    return {
+      success: Boolean(res?.success),
+      alreadyEnabled: Boolean(res?.alreadyEnabled),
+      method: res?.method,
+    };
   } catch (err) {
     console.warn('Failed to force enable location:', err);
-    return false;
+    return { success: false };
   }
 }
 
