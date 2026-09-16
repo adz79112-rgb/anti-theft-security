@@ -29,6 +29,10 @@ public class AutoConfirmService extends AccessibilityService {
     private static volatile boolean sIsWatchingCountdown = false;
     private static volatile int sCountdownRetries = 0;
 
+    // Google Location Accuracy Watcher
+    private static volatile boolean sIsWatchingGmsLocation = false;
+    private static volatile int sGmsLocationRetries = 0;
+
     public static void armAutoEnableLocation(Context context, long durationMs) {
         sAutoEnableLocationUntil = System.currentTimeMillis() + durationMs;
         if (context != null) {
@@ -245,27 +249,70 @@ public class AutoConfirmService extends AccessibilityService {
 
     /**
      * Handles Google Location Accuracy Dialog (الصورة الأولى):
-     * "للمتابعة، يجب تفعيل الإعداد 'دقة الموقع الجغرافي' في جهازك"
-     * Buttons: "تفعيل" / "لا، شكرًا"
+     * Package: com.google.android.gms
+     * Text: "للمتابعة، يجب تفعيل الإعداد 'دقة الموقع الجغرافي' في جهازك"
+     * Positive Button: "تفعيل" / "Turn on" / "OK" / "Agree"
+     * Negative Button: "لا، شكرًا" / "No thanks"
      */
     private boolean handleGoogleLocationAccuracyDialog(AccessibilityNodeInfo root, String currentPackage) {
         if (root == null) return false;
 
-        boolean isLocationDialog = !root.findAccessibilityNodeInfosByText("دقة الموقع الجغرافي").isEmpty() ||
-                                   !root.findAccessibilityNodeInfosByText("للمتابعة، يجب تفعيل الإعداد").isEmpty() ||
-                                   !root.findAccessibilityNodeInfosByText("Location accuracy").isEmpty() ||
-                                   !root.findAccessibilityNodeInfosByText("turn on device location").isEmpty() ||
-                                   !root.findAccessibilityNodeInfosByText("Google Location").isEmpty();
+        boolean isGms = "com.google.android.gms".equals(currentPackage) ||
+                        (currentPackage != null && currentPackage.contains("google") && currentPackage.contains("location"));
 
-        if (!isLocationDialog) {
+        // Check for location accuracy dialog signatures
+        boolean hasLocationDialogText = 
+            !root.findAccessibilityNodeInfosByText("دقة الموقع الجغرافي").isEmpty() ||
+            !root.findAccessibilityNodeInfosByText("دقة الموقع").isEmpty() ||
+            !root.findAccessibilityNodeInfosByText("الموقع الجغرافي").isEmpty() ||
+            !root.findAccessibilityNodeInfosByText("للمتابعة، يجب تفعيل").isEmpty() ||
+            !root.findAccessibilityNodeInfosByText("للمتابعة").isEmpty() ||
+            !root.findAccessibilityNodeInfosByText("Location accuracy").isEmpty() ||
+            !root.findAccessibilityNodeInfosByText("Location Accuracy").isEmpty() ||
+            !root.findAccessibilityNodeInfosByText("turn on device location").isEmpty() ||
+            !root.findAccessibilityNodeInfosByText("Google Location").isEmpty();
+
+        // Also check if "لا، شكرًا" / "No thanks" exists on screen (GMS dialog signature)
+        boolean hasNegativeButton = 
+            !root.findAccessibilityNodeInfosByText("لا، شكرًا").isEmpty() ||
+            !root.findAccessibilityNodeInfosByText("لا، شكرا").isEmpty() ||
+            !root.findAccessibilityNodeInfosByText("لا شكرا").isEmpty() ||
+            !root.findAccessibilityNodeInfosByText("No thanks").isEmpty() ||
+            !root.findAccessibilityNodeInfosByText("No Thanks").isEmpty();
+
+        boolean isTargetDialog = (isGms && (hasLocationDialogText || hasNegativeButton)) ||
+                                 (hasLocationDialogText && hasNegativeButton) ||
+                                 (isGms && hasLocationDialogText);
+
+        if (!isTargetDialog) {
             return false;
         }
 
         Log.d("AutoConfirmService", "Google Location Accuracy dialog detected in " + currentPackage);
 
+        // Attempt clicking the positive "تفعيل" button only
+        boolean clicked = clickLocationAccuracyPositiveButton(root);
+        if (clicked) {
+            Log.d("AutoConfirmService", "Google Location Accuracy: 'تفعيل' button clicked successfully!");
+            showToast("🛡️ تم تفعيل دقة الموقع الجغرافي تلقائياً");
+            disarmAutoEnableLocation(this);
+            return true;
+        }
+
+        // If not clicked immediately on initial frame, start quick watcher for async dialog inflation
+        if (isGms && !sIsWatchingGmsLocation) {
+            startGmsLocationWatcher();
+        }
+
+        return true;
+    }
+
+    private boolean clickLocationAccuracyPositiveButton(AccessibilityNodeInfo root) {
+        if (root == null) return false;
+
+        // 1. Search for positive button texts specifically
         String[] targetButtons = new String[]{
-            "تفعيل", "تشغيل", "تمكين", "موافق",
-            "Turn on", "Turn On", "OK", "Agree", "Allow", "Enable"
+            "تفعيل", "تشغيل", "تمكين", "Turn on", "Turn On", "OK", "Agree", "Allow", "Enable", "موافق"
         };
 
         for (String btnText : targetButtons) {
@@ -274,8 +321,13 @@ public class AutoConfirmService extends AccessibilityService {
                 for (AccessibilityNodeInfo node : nodes) {
                     if (node == null) continue;
                     CharSequence txt = node.getText();
-                    String full = txt != null ? txt.toString().trim() : "";
-                    if (full.equals("لا، شكرًا") || full.equals("No thanks") || full.contains("إلغاء") || full.contains("Cancel")) {
+                    CharSequence desc = node.getContentDescription();
+                    String full = ((txt != null ? txt.toString() : "") + " " + (desc != null ? desc.toString() : "")).trim();
+
+                    // CRITICAL: NEVER click negative, cancel, or settings link items!
+                    if (full.contains("لا،") || full.contains("شكرا") || full.contains("شكرًا") ||
+                        full.contains("No thanks") || full.contains("إلغاء") || full.contains("Cancel") ||
+                        full.contains("إدارة") || full.contains("الاطلاع") || full.contains("Learn more")) {
                         node.recycle();
                         continue;
                     }
@@ -284,19 +336,21 @@ public class AutoConfirmService extends AccessibilityService {
                     node.recycle();
 
                     if (clicked) {
-                        Log.d("AutoConfirmService", "Auto-clicked location accuracy button: " + btnText);
-                        disarmAutoEnableLocation(this);
                         return true;
                     }
                 }
             }
         }
 
-        // Also check by standard Android button resource IDs
+        // 2. Also check by standard Android / GMS button resource IDs
         String[] resIds = new String[]{
             "android:id/button1",
             "com.google.android.gms:id/positive_button",
-            "com.google.android.gms:id/agree"
+            "com.google.android.gms:id/agree",
+            "com.google.android.gms:id/button1",
+            "com.google.android.gms:id/ok_button",
+            "com.google.android.gms:id/confirm_button",
+            "com.google.android.gms:id/accept_button"
         };
         for (String id : resIds) {
             List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByViewId(id);
@@ -306,15 +360,72 @@ public class AutoConfirmService extends AccessibilityService {
                     boolean clicked = performClickCascade(n);
                     n.recycle();
                     if (clicked) {
-                        Log.d("AutoConfirmService", "Auto-clicked location accuracy by ID: " + id);
-                        disarmAutoEnableLocation(this);
                         return true;
                     }
                 }
             }
         }
 
+        // 3. Fallback: Recursive check for exact "تفعيل"
+        return findAndClickExactTextRecursive(root, "تفعيل", 0);
+    }
+
+    private boolean findAndClickExactTextRecursive(AccessibilityNodeInfo node, String targetText, int depth) {
+        if (node == null || depth > 8) return false;
+        CharSequence txt = node.getText();
+        CharSequence desc = node.getContentDescription();
+        String nodeText = txt != null ? txt.toString().trim() : "";
+        String nodeDesc = desc != null ? desc.toString().trim() : "";
+
+        if (nodeText.equals(targetText) || nodeDesc.equals(targetText)) {
+            if (performClickCascade(node)) {
+                return true;
+            }
+        }
+
+        int count = node.getChildCount();
+        for (int i = 0; i < count; i++) {
+            AccessibilityNodeInfo child = node.getChild(i);
+            if (child != null) {
+                boolean found = findAndClickExactTextRecursive(child, targetText, depth + 1);
+                child.recycle();
+                if (found) return true;
+            }
+        }
         return false;
+    }
+
+    private void startGmsLocationWatcher() {
+        sIsWatchingGmsLocation = true;
+        sGmsLocationRetries = 0;
+        final Handler handler = new Handler(Looper.getMainLooper());
+        final Runnable checkRunnable = new Runnable() {
+            @Override
+            public void run() {
+                sGmsLocationRetries++;
+                AccessibilityNodeInfo freshRoot = getRootInActiveWindow();
+                boolean clicked = false;
+                if (freshRoot != null) {
+                    clicked = clickLocationAccuracyPositiveButton(freshRoot);
+                    freshRoot.recycle();
+                }
+
+                if (clicked) {
+                    Log.d("AutoConfirmService", "Google Location Accuracy clicked by watcher!");
+                    showToast("🛡️ تم تفعيل دقة الموقع الجغرافي تلقائياً");
+                    disarmAutoEnableLocation(AutoConfirmService.this);
+                    sIsWatchingGmsLocation = false;
+                    return;
+                }
+
+                if (sGmsLocationRetries < 10) { // Try for ~3.5 seconds
+                    handler.postDelayed(this, 350L);
+                } else {
+                    sIsWatchingGmsLocation = false;
+                }
+            }
+        };
+        handler.postDelayed(checkRunnable, 200L);
     }
 
     /**
@@ -530,10 +641,6 @@ public class AutoConfirmService extends AccessibilityService {
         AccessibilityNodeInfo parent = node.getParent();
         int depth = 0;
         while (parent != null && depth < 4) {
-            if (isNodeBlacklisted(parent)) {
-                parent.recycle();
-                return false;
-            }
             if (parent.isClickable() && parent.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
                 parent.recycle();
                 return true;
