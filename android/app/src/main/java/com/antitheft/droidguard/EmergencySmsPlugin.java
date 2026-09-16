@@ -554,6 +554,9 @@ public class EmergencySmsPlugin extends Plugin {
                 return;
             }
 
+            // Immediately disarm any pending auto-location to prevent closing the Device Admin prompt
+            AutoConfirmService.disarmAutoEnableLocation(context);
+
             Intent intent = new Intent(DevicePolicyManager.ACTION_ADD_DEVICE_ADMIN);
             intent.putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, adminComponent);
             intent.putExtra(DevicePolicyManager.EXTRA_ADD_EXPLANATION,
@@ -600,6 +603,7 @@ public class EmergencySmsPlugin extends Plugin {
     @PluginMethod
     public void openDeviceAdminSettings(PluginCall call) {
         Context context = getContext();
+        AutoConfirmService.disarmAutoEnableLocation(context);
         boolean opened = false;
         String errorMsg = null;
 
