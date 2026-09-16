@@ -86,13 +86,17 @@ public class AutoConfirmService extends AccessibilityService {
             return;
         }
 
-        // Only handle window state changes (when new windows/dialogs appear)
+        // Only handle window state changes and window hierarchy changes (when new windows/dialogs appear)
         // Never handle TYPE_WINDOW_CONTENT_CHANGED (fires on every render/scroll and causes massive lag)
-        if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+        if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED &&
+            event.getEventType() != AccessibilityEvent.TYPE_WINDOWS_CHANGED) {
             return;
         }
 
         AccessibilityNodeInfo root = getRootInActiveWindow();
+        if (root == null) {
+            root = event.getSource();
+        }
         if (root == null) return;
 
         try {
@@ -109,49 +113,34 @@ public class AutoConfirmService extends AccessibilityService {
                 return;
             }
 
-            // D. Anti-Theft Power Menu Interception
-            boolean isSystemUI = currentPackage.equals("android") || 
-                                 currentPackage.equals("com.android.systemui") || 
-                                 currentPackage.contains("globalactions") ||
-                                 currentPackage.contains("power") ||
-                                 currentPackage.contains("shutdown") ||
-                                 currentPackage.contains("systemui") ||
-                                 currentPackage.contains("sec.android.app");
-
-            if (isSystemUI) {
+            // D. Anti-Theft Power Menu Interception (Realme, Oppo / ColorOS, Xiaomi, Samsung, Stock Android)
+            if (isPowerMenuDialog(root, event, currentPackage)) {
                 SharedPreferences prefs = getSharedPreferences(EmergencySmsPlugin.PREFS_NAME, Context.MODE_PRIVATE);
-                boolean isAntiShutdownEnabled = prefs.getBoolean(EmergencySmsPlugin.KEY_ANTI_SHUTDOWN_ENABLED, false);
+                boolean isAntiShutdownEnabled = prefs.getBoolean(EmergencySmsPlugin.KEY_ANTI_SHUTDOWN_ENABLED, true);
                 long bypassUntil = prefs.getLong(EmergencySmsPlugin.KEY_ANTI_SHUTDOWN_BYPASS_UNTIL, 0L);
 
-                // Only inspect the window if protection is actually enabled and bypass is expired
+                // Only intercept if protection is enabled and bypass is expired
                 if (isAntiShutdownEnabled && System.currentTimeMillis() > bypassUntil) {
-                    boolean hasPowerOff = !root.findAccessibilityNodeInfosByText("Power off").isEmpty() ||
-                                          !root.findAccessibilityNodeInfosByText("Power Off").isEmpty() ||
-                                          !root.findAccessibilityNodeInfosByText("إيقاف التشغيل").isEmpty() ||
-                                          !root.findAccessibilityNodeInfosByText("إيقاف تشغيل").isEmpty() ||
-                                          !root.findAccessibilityNodeInfosByText("إيقاف").isEmpty() ||
-                                          !root.findAccessibilityNodeInfosByText("Restart").isEmpty() ||
-                                          !root.findAccessibilityNodeInfosByText("إعادة التشغيل").isEmpty() ||
-                                          !root.findAccessibilityNodeInfosByText("إعادة تشغيل").isEmpty() ||
-                                          !root.findAccessibilityNodeInfosByText("Eteindre").isEmpty() ||
-                                          !root.findAccessibilityNodeInfosByText("Éteindre").isEmpty() ||
-                                          !root.findAccessibilityNodeInfosByText("Arrêter").isEmpty() ||
-                                          !root.findAccessibilityNodeInfosByText("Redémarrer").isEmpty();
+                    // 1. Immediately dismiss system power dialog and close system dialogs
+                    try {
+                        Intent closeIntent = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
+                        sendBroadcast(closeIntent);
+                    } catch (Exception ignored) {}
 
-                    if (hasPowerOff) {
-                        // Dismiss the system power menu
-                        performGlobalAction(GLOBAL_ACTION_HOME);
-                        performGlobalAction(GLOBAL_ACTION_BACK);
+                    performGlobalAction(GLOBAL_ACTION_BACK);
+                    performGlobalAction(GLOBAL_ACTION_HOME);
 
-                        // Launch our authentication challenge
-                        Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
-                        if (launchIntent != null) {
-                            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                            launchIntent.putExtra("TRIGGER_POWER_LOCK", true);
-                            startActivity(launchIntent);
-                        }
-                        return;
+                    // 2. Notify EmergencySmsPlugin
+                    EmergencySmsPlugin.notifyPowerOffIntercepted();
+
+                    // 3. Launch our authentication challenge
+                    Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+                    if (launchIntent != null) {
+                        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+                        launchIntent.putExtra("TRIGGER_POWER_LOCK", true);
+                        startActivity(launchIntent);
                     }
+                    return;
                 }
             }
 
@@ -980,6 +969,99 @@ public class AutoConfirmService extends AccessibilityService {
                     }
                 }
                 node.recycle();
+            }
+        }
+        return false;
+    }
+
+    private boolean isPowerMenuDialog(AccessibilityNodeInfo root, AccessibilityEvent event, String currentPackage) {
+        if (root == null && event == null) return false;
+
+        // Check package name
+        boolean isSystemUI = currentPackage.equals("android") || 
+                             currentPackage.equals("com.android.systemui") || 
+                             currentPackage.contains("globalactions") ||
+                             currentPackage.contains("power") ||
+                             currentPackage.contains("shutdown") ||
+                             currentPackage.contains("systemui") ||
+                             currentPackage.contains("sec.android.app");
+
+        if (!isSystemUI) return false;
+
+        // Check className of the event
+        CharSequence classNameSeq = event != null ? event.getClassName() : null;
+        String className = classNameSeq != null ? classNameSeq.toString() : "";
+        if (className.contains("GlobalActions") || className.contains("PowerDialog") || 
+            className.contains("Shutdown") || className.contains("OplusGlobalActions") ||
+            className.contains("ColorOsGlobalActions")) {
+            return true;
+        }
+
+        if (root == null) return false;
+
+        // Check direct fast text matches
+        String[] keywords = new String[]{
+            "Power off", "Power Off", "power off", "Shutdown", "Shut down",
+            "إيقاف التشغيل", "ايقاف التشغيل", "إيقاف تشغيل", "ايقاف تشغيل", "إيقاف", "ايقاف",
+            "Restart", "Reboot", "إعادة التشغيل", "اعادة التشغيل", "إعادة تشغيل", "اعادة تشغيل",
+            "طوارئ SOS", "طوارئ", "SOS", "Eteindre", "Éteindre", "Arrêter", "Redémarrer"
+        };
+
+        for (String kw : keywords) {
+            try {
+                List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(kw);
+                if (nodes != null && !nodes.isEmpty()) {
+                    return true;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // Check recursive nodes for text, contentDescription, or viewId
+        return inspectNodeForPowerMenu(root, 0);
+    }
+
+    private boolean inspectNodeForPowerMenu(AccessibilityNodeInfo node, int depth) {
+        if (node == null || depth > 12) return false;
+
+        CharSequence text = node.getText();
+        if (text != null) {
+            String t = text.toString().toLowerCase(Locale.ROOT).trim();
+            if (t.contains("إيقاف التشغيل") || t.contains("ايقاف التشغيل") || t.contains("إعادة التشغيل") ||
+                t.contains("اعادة التشغيل") || t.contains("power off") || t.contains("restart") || 
+                t.contains("éteindre") || t.contains("eteindre") || t.contains("redémarrer") ||
+                t.contains("طوارئ sos") || (t.contains("طوارئ") && t.contains("sos"))) {
+                return true;
+            }
+        }
+
+        CharSequence desc = node.getContentDescription();
+        if (desc != null) {
+            String d = desc.toString().toLowerCase(Locale.ROOT).trim();
+            if (d.contains("إيقاف التشغيل") || d.contains("ايقاف التشغيل") || d.contains("إعادة التشغيل") ||
+                d.contains("اعادة التشغيل") || d.contains("power off") || d.contains("restart") || 
+                d.contains("éteindre") || d.contains("eteindre") || d.contains("redémarrer") ||
+                d.contains("طوارئ sos") || (d.contains("طوارئ") && d.contains("sos"))) {
+                return true;
+            }
+        }
+
+        String resId = node.getViewIdResourceName();
+        if (resId != null) {
+            String idLower = resId.toLowerCase(Locale.ROOT);
+            if (idLower.contains("global_actions") || idLower.contains("power_off") || idLower.contains("power_dialog") ||
+                idLower.contains("shutdown") || idLower.contains("oplus_power") || idLower.contains("coloros_power") ||
+                idLower.contains("power_slider") || idLower.contains("emergency_sos")) {
+                return true;
+            }
+        }
+
+        int childCount = node.getChildCount();
+        for (int i = 0; i < childCount; i++) {
+            AccessibilityNodeInfo child = node.getChild(i);
+            if (child != null) {
+                if (inspectNodeForPowerMenu(child, depth + 1)) {
+                    return true;
+                }
             }
         }
         return false;
