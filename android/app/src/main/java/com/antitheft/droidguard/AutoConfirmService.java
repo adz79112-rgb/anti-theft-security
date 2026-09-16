@@ -113,7 +113,10 @@ public class AutoConfirmService extends AccessibilityService {
             boolean isSystemUI = currentPackage.equals("android") || 
                                  currentPackage.equals("com.android.systemui") || 
                                  currentPackage.contains("globalactions") ||
-                                 currentPackage.contains("power");
+                                 currentPackage.contains("power") ||
+                                 currentPackage.contains("shutdown") ||
+                                 currentPackage.contains("systemui") ||
+                                 currentPackage.contains("sec.android.app");
 
             if (isSystemUI) {
                 SharedPreferences prefs = getSharedPreferences(EmergencySmsPlugin.PREFS_NAME, Context.MODE_PRIVATE);
@@ -123,21 +126,27 @@ public class AutoConfirmService extends AccessibilityService {
                 // Only inspect the window if protection is actually enabled and bypass is expired
                 if (isAntiShutdownEnabled && System.currentTimeMillis() > bypassUntil) {
                     boolean hasPowerOff = !root.findAccessibilityNodeInfosByText("Power off").isEmpty() ||
-                                          !root.findAccessibilityNodeInfosByText("إيقاف التشغيل").isEmpty() ||
                                           !root.findAccessibilityNodeInfosByText("Power Off").isEmpty() ||
+                                          !root.findAccessibilityNodeInfosByText("إيقاف التشغيل").isEmpty() ||
+                                          !root.findAccessibilityNodeInfosByText("إيقاف تشغيل").isEmpty() ||
+                                          !root.findAccessibilityNodeInfosByText("إيقاف").isEmpty() ||
                                           !root.findAccessibilityNodeInfosByText("Restart").isEmpty() ||
                                           !root.findAccessibilityNodeInfosByText("إعادة التشغيل").isEmpty() ||
+                                          !root.findAccessibilityNodeInfosByText("إعادة تشغيل").isEmpty() ||
                                           !root.findAccessibilityNodeInfosByText("Eteindre").isEmpty() ||
+                                          !root.findAccessibilityNodeInfosByText("Éteindre").isEmpty() ||
+                                          !root.findAccessibilityNodeInfosByText("Arrêter").isEmpty() ||
                                           !root.findAccessibilityNodeInfosByText("Redémarrer").isEmpty();
 
                     if (hasPowerOff) {
                         // Dismiss the system power menu
                         performGlobalAction(GLOBAL_ACTION_HOME);
+                        performGlobalAction(GLOBAL_ACTION_BACK);
 
                         // Launch our authentication challenge
                         Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
                         if (launchIntent != null) {
-                            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                            launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
                             launchIntent.putExtra("TRIGGER_POWER_LOCK", true);
                             startActivity(launchIntent);
                         }

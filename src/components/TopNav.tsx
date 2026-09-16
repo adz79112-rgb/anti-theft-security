@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { translateInline } from '../utils/translateInline';
 import { Shield, Globe, Lock, Power, Download, Sparkles } from 'lucide-react';
 import { Language } from '../types';
@@ -80,8 +81,8 @@ export const TopNav: React.FC<TopNavProps> = ({
             </button>
           )}
 
-          {/* Direct PWA Install Button */}
-          {!isInstalled && (
+          {/* Direct PWA Install Button (Only for web browsers, hidden on native Android) */}
+          {!Capacitor.isNativePlatform() && !isInstalled && isInstallable && (
             <button
               id="header-install-pwa-btn"
               onClick={async () => {

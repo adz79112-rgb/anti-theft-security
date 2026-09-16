@@ -90,13 +90,16 @@ export const PowerOffProtectionCard: React.FC<PowerOffProtectionCardProps> = ({
         </button>
       </div>
 
-      {/* Feature Details & Brand Compatibility */}
-      <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3.5 mb-4 text-xs text-slate-300 space-y-2">
+      {/* Feature Details & Technical Security Note */}
+      <div className="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3.5 mb-4 text-xs text-slate-300 space-y-2.5">
         <div className="flex items-start gap-2">
-          <Shield className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+          <Shield className="w-4 h-4 text-rose-400 flex-shrink-0 mt-0.5" />
           <span>
-            {translateInline(lang, 'When a thief or unauthorized person holds the power button or tries to tap "Power Off" / "Restart", the system dialog is blocked immediately and locked behind this phone\'s native lock screen.', 'عندما يحاول السارق إطفاء الهاتف، يتم اعتراض قائمة الإطفاء وإظهار قفل الأمان الخاص بجهازك مباشرة (بصمتك أو الرمز السري للهاتف)!')}
+            {translateInline(lang, 'When someone attempts to power off or restart the phone, the system power menu is instantly dismissed and replaced with a mandatory Code & Biometric Lock.', 'عند محاولة إطفاء الهاتف أو الضغط على زر التشغيل، يتم حجب قائمة الإطفاء فوراً وإظهار نافذة تطلب إدخال كود الأمان أو البصمة للسماح بإطفائه!')}
           </span>
+        </div>
+        <div className="text-[11px] text-amber-400/90 bg-amber-950/30 p-2 rounded-lg border border-amber-500/20">
+          💡 {translateInline(lang, 'Hardware Hard-Reset (Power + Volume ~10s) is handled by the physical motherboard circuitry, while all screen power-offs and standard button menus are strictly locked behind your security code.', 'ملاحظة: الإطفاء الإجباري القسري بالأزرار الصلبة (Power + Vol Up) محمي عتادياً من معالج الهاتف، بينما قوائم الإطفاء وشاشات الإغلاق مقفلة تماماً وتتطلب إدخال الكود.')}
         </div>
       </div>
 

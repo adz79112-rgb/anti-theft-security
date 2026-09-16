@@ -56,7 +56,6 @@ import { detectDeviceLanguage } from './utils/languagesRegistry';
 import { LanguageSelectorModal } from './components/LanguageSelectorModal';
 import { ElevatedPermissionsModal } from './components/ElevatedPermissionsModal';
 import { TaskLockGuideModal } from './components/TaskLockGuideModal';
-import { PWAInstallBanner } from './components/PWAInstallBanner';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { PowerOffChallengeModal } from './components/PowerOffChallengeModal';
 import { addPowerOffAttemptListener } from './utils/nativeEmergencySms';
@@ -1089,9 +1088,6 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-8 space-y-8 pb-32">
-        {/* PWA Install Banner */}
-        <PWAInstallBanner lang={lang} />
-
         {/* GPS Hardware Disabled Warning Banner */}
         {Capacitor.isNativePlatform() && locationServiceActive === false && (
           <div
