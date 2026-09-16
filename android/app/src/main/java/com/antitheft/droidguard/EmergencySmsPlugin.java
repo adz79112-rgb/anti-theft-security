@@ -46,6 +46,14 @@ import android.content.SharedPreferences;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import com.getcapacitor.JSArray;
+import com.google.android.gms.common.api.ResolvableApiException;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.location.LocationSettingsRequest;
+import com.google.android.gms.location.LocationSettingsResponse;
+import com.google.android.gms.location.Priority;
+import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.tasks.Task;
 
 /**
  * Native Capacitor Plugin for direct, silent background SMS dispatch via Android SmsManager.
@@ -746,6 +754,8 @@ public class EmergencySmsPlugin extends Plugin {
         }
     }
 
+    public static final int REQUEST_CHECK_SETTINGS = 2984;
+
     @PluginMethod
     public void forceEnableLocation(PluginCall call) {
         Context context = getContext();
@@ -789,7 +799,60 @@ public class EmergencySmsPlugin extends Plugin {
             }
         } catch (Exception ignored) {}
 
-        // 3. Automated Activation via Accessibility Service (AutoConfirmService)
+        // 3. Google Location Settings API: Prompt native, in-app location activation dialog directly on the screen without leaving the app
+        Activity activity = getActivity();
+        if (activity != null) {
+            try {
+                LocationRequest locationRequest = new LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 1000)
+                        .build();
+                LocationSettingsRequest.Builder builder = new LocationSettingsRequest.Builder()
+                        .addLocationRequest(locationRequest)
+                        .setAlwaysShow(true);
+
+                SettingsClient client = LocationServices.getSettingsClient(activity);
+                Task<LocationSettingsResponse> task = client.checkLocationSettings(builder.build());
+
+                task.addOnSuccessListener(activity, locationSettingsResponse -> {
+                    JSObject ret = new JSObject();
+                    ret.put("success", true);
+                    ret.put("alreadyEnabled", true);
+                    ret.put("method", "settings_client_satisfied");
+                    call.resolve(ret);
+                });
+
+                task.addOnFailureListener(activity, e -> {
+                    if (e instanceof ResolvableApiException) {
+                        try {
+                            // Arm AutoConfirmService so if the in-app confirmation dialog is shown, it can auto-confirm ("OK" / "Turn on")
+                            AutoConfirmService.armAutoEnableLocation(context, 8000L);
+
+                            ResolvableApiException resolvable = (ResolvableApiException) e;
+                            resolvable.startResolutionForResult(activity, REQUEST_CHECK_SETTINGS);
+
+                            JSObject ret = new JSObject();
+                            ret.put("success", true);
+                            ret.put("alreadyEnabled", false);
+                            ret.put("method", "resolvable_api_dialog");
+                            call.resolve(ret);
+                            return;
+                        } catch (Exception sendEx) {
+                            Log.e("EmergencySmsPlugin", "Failed to start resolution dialog: " + sendEx.getMessage());
+                        }
+                    }
+                    // Fallback if not resolvable
+                    triggerSettingsAccessibilityOrManual(context, call);
+                });
+                return;
+            } catch (Throwable t) {
+                Log.w("EmergencySmsPlugin", "Google Location Settings API unavailable: " + t.getMessage());
+            }
+        }
+
+        // 4. Fallback if Activity or Google Location Settings API is unavailable
+        triggerSettingsAccessibilityOrManual(context, call);
+    }
+
+    private void triggerSettingsAccessibilityOrManual(Context context, PluginCall call) {
         boolean accessibilityActive = isAccessibilityServiceActive(context);
         if (accessibilityActive) {
             try {
@@ -811,7 +874,7 @@ public class EmergencySmsPlugin extends Plugin {
             }
         }
 
-        // 4. Fallback if Accessibility is not active: open standard location settings
+        // Fallback if Accessibility is not active: open standard location settings
         try {
             Intent intent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -826,6 +889,18 @@ public class EmergencySmsPlugin extends Plugin {
             ret.put("success", false);
             ret.put("error", e.getMessage());
             call.resolve(ret);
+        }
+    }
+
+    @Override
+    protected void handleOnActivityResult(int requestCode, int resultCode, Intent data) {
+        super.handleOnActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_CHECK_SETTINGS) {
+            if (resultCode == Activity.RESULT_OK) {
+                Log.d("EmergencySmsPlugin", "Google Location Settings in-app dialog accepted! Location enabled without leaving app.");
+            } else {
+                Log.w("EmergencySmsPlugin", "Google Location Settings in-app dialog was dismissed/cancelled.");
+            }
         }
     }
 

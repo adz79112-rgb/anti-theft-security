@@ -344,9 +344,10 @@ public class AutoConfirmService extends AccessibilityService {
                 if (targetSwitch != null) {
                     try {
                         if (targetSwitch.isChecked()) {
-                            Log.d("AutoConfirmService", "Main location switch is already active (isChecked == true).");
+                            Log.d("AutoConfirmService", "Main location switch is already active (isChecked == true). Returning to lockdown.");
                             targetSwitch.recycle();
                             textNode.recycle();
+                            finishAndReturnToApp(200);
                             return true;
                         }
 
@@ -368,6 +369,8 @@ public class AutoConfirmService extends AccessibilityService {
                         targetSwitch.recycle();
                         textNode.recycle();
                         if (clicked) {
+                            Log.d("AutoConfirmService", "GPS switch toggled! Navigating back to lockdown after 400ms.");
+                            finishAndReturnToApp(400);
                             return true;
                         }
                     } catch (Exception e) {
@@ -381,6 +384,8 @@ public class AutoConfirmService extends AccessibilityService {
                         boolean clicked = clickableRow.performAction(AccessibilityNodeInfo.ACTION_CLICK);
                         textNode.recycle();
                         if (clicked) {
+                            Log.d("AutoConfirmService", "GPS row clicked! Navigating back to lockdown after 400ms.");
+                            finishAndReturnToApp(400);
                             return true;
                         }
                     }
@@ -418,10 +423,7 @@ public class AutoConfirmService extends AccessibilityService {
                         node.recycle();
                         if (clicked) {
                             Log.d("AutoConfirmService", "Auto-confirmed dialog button: " + txt);
-                            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                                disarmAutoEnableLocation(AutoConfirmService.this);
-                                finishAndReturnToApp();
-                            }, 400);
+                            finishAndReturnToApp(400);
                             return true;
                         }
                     } else {
@@ -439,35 +441,19 @@ public class AutoConfirmService extends AccessibilityService {
         // A. Check if Location is already active in the system
         LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (isLocationCurrentlyEnabled(lm)) {
-            disarmAutoEnableLocation(this);
-            finishAndReturnToApp();
+            finishAndReturnToApp(100);
             return true;
         }
 
-        // B. First priority: Target the primary Location Switch ("استخدام الموقع الجغرافي" / "Use location")
-        boolean toggled = toggleMainLocationSwitchOnly(root);
-        if (toggled) {
-            // Check after a brief delay if location became active or if confirmation dialog appeared
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                LocationManager checkLm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-                if (isLocationCurrentlyEnabled(checkLm)) {
-                    disarmAutoEnableLocation(AutoConfirmService.this);
-                    finishAndReturnToApp();
-                } else {
-                    // Check if a system confirmation dialog appeared after switch click
-                    AccessibilityNodeInfo freshRoot = getRootInActiveWindow();
-                    if (freshRoot != null) {
-                        handleDialogConfirmation(freshRoot);
-                        freshRoot.recycle();
-                    }
-                }
-            }, 450);
-            return true;
-        }
-
-        // C. Check if a confirmation dialog is already on screen (Google Play Services / Android Dialog)
+        // B. Check if a confirmation dialog is already on screen (Google Play Services / Android Dialog)
         boolean dialogConfirmed = handleDialogConfirmation(root);
         if (dialogConfirmed) {
+            return true;
+        }
+
+        // C. Target the primary Location Switch ("استخدام الموقع الجغرافي" / "Use location")
+        boolean toggled = toggleMainLocationSwitchOnly(root);
+        if (toggled) {
             return true;
         }
 
@@ -475,19 +461,30 @@ public class AutoConfirmService extends AccessibilityService {
     }
 
     private void finishAndReturnToApp() {
+        finishAndReturnToApp(400);
+    }
+
+    private void finishAndReturnToApp(long delayMs) {
+        disarmAutoEnableLocation(this);
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             try {
                 performGlobalAction(GLOBAL_ACTION_BACK);
             } catch (Exception ignored) {}
 
             try {
-                Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
-                if (launchIntent != null) {
-                    launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-                    startActivity(launchIntent);
-                }
-            } catch (Exception ignored) {}
-        }, 400);
+                Intent explicitIntent = new Intent(this, MainActivity.class);
+                explicitIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(explicitIntent);
+            } catch (Exception e) {
+                try {
+                    Intent launchIntent = getPackageManager().getLaunchIntentForPackage(getPackageName());
+                    if (launchIntent != null) {
+                        launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                        startActivity(launchIntent);
+                    }
+                } catch (Exception ignored) {}
+            }
+        }, delayMs);
     }
 
     private boolean clickButtonByText(AccessibilityNodeInfo root, String text) {
