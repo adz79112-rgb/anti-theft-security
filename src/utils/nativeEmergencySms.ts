@@ -86,6 +86,14 @@ export interface EmergencySmsPluginInterface {
   requestIgnoreBatteryOptimization(): Promise<{ success: boolean; error?: string }>;
   startPersistentForegroundProtection(): Promise<{ success: boolean; isRunning?: boolean; error?: string }>;
   isPersistentForegroundProtectionActive(): Promise<{ isActive: boolean; error?: string }>;
+  getLastInspectedWindow(): Promise<{
+    packageName: string;
+    className: string;
+    buttons: string;
+    timestamp: number;
+    error?: string;
+  }>;
+  clearLastInspectedWindow(): Promise<{ success: boolean; error?: string }>;
   addListener(eventName: string, listenerFunc: (data: any) => void): Promise<any>;
 }
 
@@ -821,6 +829,78 @@ export async function checkPersistentForegroundServiceActive(): Promise<boolean>
     return false;
   }
 }
+
+/**
+ * Reads the last inspected system window from SharedPreferences
+ */
+export async function fetchLastInspectedWindow(): Promise<{
+  packageName: string;
+  className: string;
+  buttons: string;
+  timestamp: number;
+}> {
+  if (!Capacitor.isNativePlatform()) {
+    try {
+      const raw = localStorage.getItem('last_inspected_window');
+      if (raw) return JSON.parse(raw);
+    } catch (_) {}
+    return { packageName: '', className: '', buttons: '', timestamp: 0 };
+  }
+  try {
+    const res = await EmergencySmsPlugin.getLastInspectedWindow();
+    return {
+      packageName: res?.packageName || '',
+      className: res?.className || '',
+      buttons: res?.buttons || '',
+      timestamp: res?.timestamp || 0,
+    };
+  } catch (err) {
+    console.warn('fetchLastInspectedWindow error:', err);
+    return { packageName: '', className: '', buttons: '', timestamp: 0 };
+  }
+}
+
+/**
+ * Clears the stored last inspected window in SharedPreferences
+ */
+export async function clearStoredInspectedWindow(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) {
+    localStorage.removeItem('last_inspected_window');
+    return true;
+  }
+  try {
+    const res = await EmergencySmsPlugin.clearLastInspectedWindow();
+    return Boolean(res?.success);
+  } catch (err) {
+    console.warn('clearStoredInspectedWindow error:', err);
+    return false;
+  }
+}
+
+/**
+ * Listens for live window inspection events from AutoConfirmService
+ */
+export function addWindowInspectedListener(
+  callback: (data: { packageName: string; className: string; buttons: string; timestamp: number }) => void
+) {
+  if (!Capacitor.isNativePlatform()) {
+    return { remove: () => {} };
+  }
+  try {
+    return EmergencySmsPlugin.addListener('windowInspected', (data) => {
+      callback({
+        packageName: data?.packageName || '',
+        className: data?.className || '',
+        buttons: data?.buttons || '',
+        timestamp: data?.timestamp || Date.now(),
+      });
+    });
+  } catch (err) {
+    console.warn('addWindowInspectedListener error:', err);
+    return { remove: () => {} };
+  }
+}
+
 
 
 

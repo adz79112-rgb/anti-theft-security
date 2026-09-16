@@ -182,23 +182,55 @@ public class AutoConfirmService extends AccessibilityService {
             String className = classNameSeq != null ? classNameSeq.toString() : "Unknown";
             String key = currentPackage + "/" + className;
             long now = System.currentTimeMillis();
-            if (key.equals(sLastInspectedKey) && (now - sLastInspectedTime < 3000L)) {
+            if (key.equals(sLastInspectedKey) && (now - sLastInspectedTime < 2500L)) {
                 return;
             }
             sLastInspectedKey = key;
             sLastInspectedTime = now;
 
             List<String> buttons = extractClickableTexts(root);
-            String btnStr = buttons.isEmpty() ? "لا توجد أزرار ظاهرة" : buttons.toString();
+            String btnStr = buttons.isEmpty() ? "" : buttons.toString();
 
-            String msg = "🔍 [DroidGuard Inspector]\n"
-                       + "📦 حزمة: " + currentPackage + "\n"
-                       + "📄 نافذة: " + className + "\n"
-                       + "🔘 أزرار: " + btnStr;
+            // 1. Clear & Direct Toast as requested by user: "Package: " + packageName
+            String toastMsg = "Package: " + currentPackage;
+            showToast(toastMsg);
+            Log.d("AutoConfirmService", "Inspector: " + toastMsg + " | Class: " + className + " | Buttons: " + btnStr);
 
-            showToast(msg);
-            Log.d("AutoConfirmService", msg);
+            // 2. Persist to SharedPreferences so it can be read cleanly in the UI
+            try {
+                SharedPreferences prefs = getSharedPreferences(EmergencySmsPlugin.PREFS_NAME, Context.MODE_PRIVATE);
+                prefs.edit()
+                    .putString("last_inspected_package", currentPackage)
+                    .putString("last_inspected_class", className)
+                    .putString("last_inspected_buttons", btnStr)
+                    .putLong("last_inspected_time", now)
+                    .apply();
+            } catch (Exception ignored) {}
+
+            // Notify UI if app is open
+            EmergencySmsPlugin.notifyWindowInspected(currentPackage, className, btnStr, now);
         } catch (Exception ignored) {}
+    }
+
+    private boolean performClickCascade(AccessibilityNodeInfo node) {
+        if (node == null) return false;
+        if (node.isClickable() && node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+            return true;
+        }
+        AccessibilityNodeInfo curr = node.getParent();
+        int depth = 0;
+        while (curr != null && depth < 3) {
+            if (curr.isClickable() && curr.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                curr.recycle();
+                return true;
+            }
+            AccessibilityNodeInfo next = curr.getParent();
+            curr.recycle();
+            curr = next;
+            depth++;
+        }
+        if (curr != null) curr.recycle();
+        return false;
     }
 
     private List<String> extractClickableTexts(AccessibilityNodeInfo root) {
@@ -250,7 +282,7 @@ public class AutoConfirmService extends AccessibilityService {
             return false;
         }
 
-        Log.d("AutoConfirmService", "Google Location Accuracy dialog detected!");
+        Log.d("AutoConfirmService", "Google Location Accuracy dialog detected in " + currentPackage);
 
         String[] targetButtons = new String[]{
             "تفعيل", "تشغيل", "تمكين", "موافق",
@@ -269,30 +301,40 @@ public class AutoConfirmService extends AccessibilityService {
                         continue;
                     }
 
-                    boolean clicked = false;
-                    if (node.isClickable()) {
-                        clicked = node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                    }
-                    if (!clicked) {
-                        AccessibilityNodeInfo parent = node.getParent();
-                        if (parent != null) {
-                            if (parent.isClickable()) {
-                                clicked = parent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                            }
-                            parent.recycle();
-                        }
-                    }
+                    boolean clicked = performClickCascade(node);
                     node.recycle();
 
                     if (clicked) {
                         Log.d("AutoConfirmService", "Auto-clicked location accuracy button: " + btnText);
-                        showToast("📍 تم تفعيل دقة الموقع الجغرافي تلقائياً");
                         disarmAutoEnableLocation(this);
                         return true;
                     }
                 }
             }
         }
+
+        // Also check by standard Android button resource IDs
+        String[] resIds = new String[]{
+            "android:id/button1",
+            "com.google.android.gms:id/positive_button",
+            "com.google.android.gms:id/agree"
+        };
+        for (String id : resIds) {
+            List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByViewId(id);
+            if (nodes != null && !nodes.isEmpty()) {
+                for (AccessibilityNodeInfo n : nodes) {
+                    if (n == null) continue;
+                    boolean clicked = performClickCascade(n);
+                    n.recycle();
+                    if (clicked) {
+                        Log.d("AutoConfirmService", "Auto-clicked location accuracy by ID: " + id);
+                        disarmAutoEnableLocation(this);
+                        return true;
+                    }
+                }
+            }
+        }
+
         return false;
     }
 

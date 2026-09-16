@@ -133,6 +133,44 @@ public class EmergencySmsPlugin extends Plugin {
         }
     }
 
+    public static void notifyWindowInspected(String packageName, String className, String buttons, long timestamp) {
+        if (instance != null) {
+            JSObject data = new JSObject();
+            data.put("packageName", packageName != null ? packageName : "");
+            data.put("className", className != null ? className : "");
+            data.put("buttons", buttons != null ? buttons : "");
+            data.put("timestamp", timestamp);
+            instance.notifyListeners("windowInspected", data, true);
+        }
+    }
+
+    @PluginMethod
+    public void getLastInspectedWindow(PluginCall call) {
+        Context ctx = getContext();
+        SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        JSObject ret = new JSObject();
+        ret.put("packageName", prefs.getString("last_inspected_package", ""));
+        ret.put("className", prefs.getString("last_inspected_class", ""));
+        ret.put("buttons", prefs.getString("last_inspected_buttons", ""));
+        ret.put("timestamp", prefs.getLong("last_inspected_time", 0L));
+        call.resolve(ret);
+    }
+
+    @PluginMethod
+    public void clearLastInspectedWindow(PluginCall call) {
+        Context ctx = getContext();
+        SharedPreferences prefs = ctx.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit()
+            .remove("last_inspected_package")
+            .remove("last_inspected_class")
+            .remove("last_inspected_buttons")
+            .remove("last_inspected_time")
+            .apply();
+        JSObject ret = new JSObject();
+        ret.put("success", true);
+        call.resolve(ret);
+    }
+
     @PluginMethod
     public void checkSmsPermission(PluginCall call) {
         Context ctx = getContext();

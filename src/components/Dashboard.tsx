@@ -25,6 +25,7 @@ import { GmailSecurityCard } from './GmailSecurityCard';
 import { ShieldCard } from './ShieldCard';
 import { PowerOffProtectionCard } from './PowerOffProtectionCard';
 import { BrandSetupGuideCard } from './BrandSetupGuideCard';
+import { WindowInspectorCard } from './WindowInspectorCard';
 
 interface DashboardProps {
   config: SecurityConfig;
@@ -179,6 +180,9 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {lang === 'ar' ? 'تفعيل التجربة' : 'Trigger Simulation'}
         </button>
       </div>
+
+      {/* Live System Window Inspector Diagnostic Card (Captures package names for user) */}
+      <WindowInspectorCard lang={lang} />
 
       {/* Universal Multi-Brand OEM Stealth & Zero-Touch Guide Card (Condor, Samsung, Xiaomi, Realme) */}
       {onOpenUniversalOemGuide && (
