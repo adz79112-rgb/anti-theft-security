@@ -212,27 +212,6 @@ public class AutoConfirmService extends AccessibilityService {
         } catch (Exception ignored) {}
     }
 
-    private boolean performClickCascade(AccessibilityNodeInfo node) {
-        if (node == null) return false;
-        if (node.isClickable() && node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-            return true;
-        }
-        AccessibilityNodeInfo curr = node.getParent();
-        int depth = 0;
-        while (curr != null && depth < 3) {
-            if (curr.isClickable() && curr.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-                curr.recycle();
-                return true;
-            }
-            AccessibilityNodeInfo next = curr.getParent();
-            curr.recycle();
-            curr = next;
-            depth++;
-        }
-        if (curr != null) curr.recycle();
-        return false;
-    }
-
     private List<String> extractClickableTexts(AccessibilityNodeInfo root) {
         List<String> list = new ArrayList<>();
         if (root == null) return list;
