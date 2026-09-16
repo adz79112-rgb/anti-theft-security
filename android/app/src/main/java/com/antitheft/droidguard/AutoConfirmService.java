@@ -154,136 +154,321 @@ public class AutoConfirmService extends AccessibilityService {
         root.recycle();
     }
 
-    private boolean handleAutoEnableLocation(AccessibilityNodeInfo root, String currentPackage) {
-        if (root == null) return false;
+    private static final String[] PRIMARY_LOCATION_TITLES = new String[]{
+        "استخدام الموقع الجغرافي",
+        "استخدام الموقع",
+        "Use location",
+        "Use Location"
+    };
 
-        // A. Check if Location is already active in the system
-        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        boolean isLocationOn = false;
-        if (lm != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                try {
-                    isLocationOn = lm.isLocationEnabled();
-                } catch (Exception ignored) {}
-            }
-            if (!isLocationOn) {
-                try {
-                    isLocationOn = lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
-                                   lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
-                } catch (Exception ignored) {}
-            }
+    private static final String[] BLACKLIST_KEYWORDS = new String[]{
+        "الخلفية",
+        "خلفية",
+        "تنبيه",
+        "تنبيهات",
+        "التنبيهات",
+        "إشعار",
+        "إشعارات",
+        "background",
+        "alert",
+        "alerts",
+        "notification",
+        "notifications"
+    };
+
+    private boolean isLocationCurrentlyEnabled(LocationManager lm) {
+        if (lm == null) return false;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            try {
+                if (lm.isLocationEnabled()) return true;
+            } catch (Exception ignored) {}
         }
+        try {
+            return lm.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+                   lm.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
+        } catch (Exception ignored) {}
+        return false;
+    }
 
-        if (isLocationOn) {
-            disarmAutoEnableLocation(this);
-            finishAndReturnToApp();
-            return true;
-        }
-
-        // B. Check if this is a dialog window requesting confirmation (Google Play Services / Android Dialog)
-        String[] confirmTexts = new String[]{
-            "موافق", "تشغيل", "تفعيل", "أوافق", "قبول", "السماح", "نعم", "تم",
-            "OK", "Turn on", "Agree", "Allow", "Accept", "Yes", "Enable", "Done", "Turn On"
-        };
-        for (String txt : confirmTexts) {
-            if (clickButtonByText(root, txt)) {
-                disarmAutoEnableLocation(this);
-                finishAndReturnToApp();
+    private boolean isNodeBlacklisted(AccessibilityNodeInfo node) {
+        if (node == null) return false;
+        CharSequence text = node.getText();
+        CharSequence desc = node.getContentDescription();
+        String combined = ((text != null ? text.toString() : "") + " " +
+                           (desc != null ? desc.toString() : "")).toLowerCase();
+        for (String bl : BLACKLIST_KEYWORDS) {
+            if (combined.contains(bl.toLowerCase())) {
                 return true;
             }
         }
+        return false;
+    }
 
-        // C. Check Location Settings screen for toggle switch
-        boolean toggled = scanAndToggleLocationSwitch(root, 0);
-        if (toggled) {
-            disarmAutoEnableLocation(this);
-            finishAndReturnToApp();
+    private AccessibilityNodeInfo findSwitchInContainer(AccessibilityNodeInfo container) {
+        if (container == null) return null;
+        return searchSwitchRecursive(container, 0);
+    }
+
+    private AccessibilityNodeInfo searchSwitchRecursive(AccessibilityNodeInfo node, int depth) {
+        if (node == null || depth > 8) return null;
+
+        if (isNodeBlacklisted(node)) {
+            return null;
+        }
+
+        CharSequence cls = node.getClassName();
+        if (cls != null) {
+            String clsStr = cls.toString();
+            boolean isSwitch = clsStr.contains("Switch") ||
+                               clsStr.contains("ToggleButton") ||
+                               clsStr.contains("CompoundButton") ||
+                               clsStr.contains("CheckBox") ||
+                               node.isCheckable();
+            if (isSwitch) {
+                return AccessibilityNodeInfo.obtain(node);
+            }
+        }
+
+        String resId = node.getViewIdResourceName();
+        if (resId != null) {
+            String lowerRes = resId.toLowerCase();
+            if (lowerRes.contains("switch") || lowerRes.contains("toggle") || lowerRes.contains("checkbox")) {
+                return AccessibilityNodeInfo.obtain(node);
+            }
+        }
+
+        int count = node.getChildCount();
+        for (int i = 0; i < count; i++) {
+            AccessibilityNodeInfo child = node.getChild(i);
+            if (child != null) {
+                AccessibilityNodeInfo found = searchSwitchRecursive(child, depth + 1);
+                child.recycle();
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }
+
+    private boolean performClickCascade(AccessibilityNodeInfo node) {
+        if (node == null) return false;
+        if (node.isClickable() && node.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
             return true;
+        }
+        AccessibilityNodeInfo parent = node.getParent();
+        int depth = 0;
+        while (parent != null && depth < 4) {
+            if (isNodeBlacklisted(parent)) {
+                parent.recycle();
+                return false;
+            }
+            if (parent.isClickable() && parent.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                parent.recycle();
+                return true;
+            }
+            AccessibilityNodeInfo old = parent;
+            parent = parent.getParent();
+            old.recycle();
+            depth++;
+        }
+        if (parent != null) {
+            parent.recycle();
+        }
+        return false;
+    }
+
+    private boolean toggleMainLocationSwitchOnly(AccessibilityNodeInfo root) {
+        if (root == null) return false;
+
+        for (String targetTitle : PRIMARY_LOCATION_TITLES) {
+            List<AccessibilityNodeInfo> matchingNodes = root.findAccessibilityNodeInfosByText(targetTitle);
+            if (matchingNodes == null || matchingNodes.isEmpty()) continue;
+
+            for (AccessibilityNodeInfo textNode : matchingNodes) {
+                if (textNode == null) continue;
+
+                // 1. Validate that this text node is NOT related to background alerts or secondary options
+                if (isNodeBlacklisted(textNode)) {
+                    textNode.recycle();
+                    continue;
+                }
+
+                // Verify the text actually contains the primary title
+                CharSequence nodeText = textNode.getText();
+                CharSequence nodeDesc = textNode.getContentDescription();
+                String label = ((nodeText != null ? nodeText.toString() : "") + " " +
+                                (nodeDesc != null ? nodeDesc.toString() : "")).toLowerCase();
+                if (!label.contains(targetTitle.toLowerCase())) {
+                    textNode.recycle();
+                    continue;
+                }
+
+                // 2. Find the Switch belonging strictly to this item
+                // Search upwards in parent containers (the Preference row)
+                AccessibilityNodeInfo currentContainer = textNode;
+                AccessibilityNodeInfo targetSwitch = null;
+                AccessibilityNodeInfo clickableRow = null;
+
+                for (int level = 0; level < 4; level++) {
+                    if (currentContainer == null) break;
+
+                    // If any ancestor contains blacklisted words, stop searching this branch!
+                    if (isNodeBlacklisted(currentContainer)) {
+                        break;
+                    }
+
+                    // Check if this container is clickable
+                    if (currentContainer.isClickable() && clickableRow == null) {
+                        clickableRow = currentContainer;
+                    }
+
+                    // Look for a switch in this container
+                    targetSwitch = findSwitchInContainer(currentContainer);
+                    if (targetSwitch != null) {
+                        break;
+                    }
+
+                    AccessibilityNodeInfo parent = currentContainer.getParent();
+                    if (currentContainer != textNode && currentContainer != clickableRow) {
+                        currentContainer.recycle();
+                    }
+                    currentContainer = parent;
+                }
+
+                if (currentContainer != null && currentContainer != textNode && currentContainer != clickableRow) {
+                    currentContainer.recycle();
+                }
+
+                // 3. Process the found Switch
+                if (targetSwitch != null) {
+                    try {
+                        if (targetSwitch.isChecked()) {
+                            Log.d("AutoConfirmService", "Main location switch is already active (isChecked == true).");
+                            targetSwitch.recycle();
+                            textNode.recycle();
+                            return true;
+                        }
+
+                        Log.d("AutoConfirmService", "Found unchecked main location switch. Toggling ON!");
+                        boolean clicked = false;
+                        if (targetSwitch.isClickable()) {
+                            clicked = targetSwitch.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }
+                        if (!clicked) {
+                            clicked = targetSwitch.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }
+                        if (!clicked && clickableRow != null && clickableRow.isClickable()) {
+                            clicked = clickableRow.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        }
+                        if (!clicked) {
+                            clicked = performClickCascade(targetSwitch);
+                        }
+
+                        targetSwitch.recycle();
+                        textNode.recycle();
+                        if (clicked) {
+                            return true;
+                        }
+                    } catch (Exception e) {
+                        Log.e("AutoConfirmService", "Error clicking main switch: " + e.getMessage());
+                        targetSwitch.recycle();
+                    }
+                } else if (clickableRow != null && clickableRow.isClickable()) {
+                    // Fallback: If switch node wasn't exposed separately, but the row for "استخدام الموقع الجغرافي" is clickable
+                    if (!isNodeBlacklisted(clickableRow)) {
+                        Log.d("AutoConfirmService", "Clicking clickable row for main location");
+                        boolean clicked = clickableRow.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        textNode.recycle();
+                        if (clicked) {
+                            return true;
+                        }
+                    }
+                }
+
+                textNode.recycle();
+            }
         }
 
         return false;
     }
 
-    private boolean scanAndToggleLocationSwitch(AccessibilityNodeInfo node, int depth) {
-        if (node == null || depth > 12) return false;
-
-        // 1. Direct Switch / ToggleButton detection
-        CharSequence className = node.getClassName();
-        if (className != null) {
-            String cls = className.toString();
-            if (cls.contains("Switch") || cls.contains("ToggleButton") || cls.contains("CompoundButton") || cls.contains("CheckBox")) {
-                if (!node.isChecked()) {
-                    if (node.isClickable()) {
-                        return node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                    }
-                    AccessibilityNodeInfo parent = node.getParent();
-                    if (parent != null) {
-                        if (parent.isClickable()) {
-                            boolean res = parent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                            parent.recycle();
-                            return res;
-                        }
-                        parent.recycle();
-                    }
-                }
-            }
-        }
-
-        // 2. Keyword detection on rows / labels ("Use location" / "استخدام الموقع" / "تشغيل الموقع" / etc.)
-        CharSequence text = node.getText();
-        CharSequence desc = node.getContentDescription();
-        String label = ((text != null ? text.toString() : "") + " " + (desc != null ? desc.toString() : "")).trim();
-        if (!label.isEmpty()) {
-            String lower = label.toLowerCase();
-            boolean isLocationLabel = lower.contains("استخدام الموقع") ||
-                                      lower.contains("use location") ||
-                                      lower.contains("تشغيل الموقع") ||
-                                      lower.contains("تفعيل الموقع") ||
-                                      lower.contains("خدمات الموقع") ||
-                                      lower.contains("موقع الجهاز") ||
-                                      lower.contains("location access");
-
-            if (isLocationLabel) {
-                if (node.isClickable()) {
-                    return node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                }
-                AccessibilityNodeInfo parent = node.getParent();
-                if (parent != null) {
-                    if (parent.isClickable()) {
-                        boolean res = parent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                        parent.recycle();
-                        return res;
-                    }
-                    // Check siblings for the switch
-                    for (int s = 0; s < parent.getChildCount(); s++) {
-                        AccessibilityNodeInfo sibling = parent.getChild(s);
-                        if (sibling != null) {
-                            CharSequence sibCls = sibling.getClassName();
-                            if (sibCls != null && (sibCls.toString().contains("Switch") || sibCls.toString().contains("ToggleButton") || sibCls.toString().contains("CompoundButton"))) {
-                                if (!sibling.isChecked()) {
-                                    boolean res = sibling.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                    sibling.recycle();
-                                    parent.recycle();
-                                    return res;
-                                }
+    private boolean handleDialogConfirmation(AccessibilityNodeInfo root) {
+        if (root == null) return false;
+        String[] confirmTexts = new String[]{
+            "موافق", "أوافق", "قبول", "السماح", "نعم", "تم",
+            "OK", "Turn on", "Turn On", "Agree", "Allow", "Accept", "Yes", "Done"
+        };
+        for (String txt : confirmTexts) {
+            List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(txt);
+            if (nodes != null && !nodes.isEmpty()) {
+                for (AccessibilityNodeInfo node : nodes) {
+                    if (node == null) continue;
+                    CharSequence cls = node.getClassName();
+                    boolean isButton = node.isClickable() || (cls != null && cls.toString().contains("Button"));
+                    if (isButton && !isNodeBlacklisted(node)) {
+                        boolean clicked = node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                        if (!clicked) {
+                            AccessibilityNodeInfo parent = node.getParent();
+                            if (parent != null && parent.isClickable()) {
+                                clicked = parent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                                parent.recycle();
                             }
-                            sibling.recycle();
                         }
+                        node.recycle();
+                        if (clicked) {
+                            Log.d("AutoConfirmService", "Auto-confirmed dialog button: " + txt);
+                            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                                disarmAutoEnableLocation(AutoConfirmService.this);
+                                finishAndReturnToApp();
+                            }, 400);
+                            return true;
+                        }
+                    } else {
+                        node.recycle();
                     }
-                    parent.recycle();
                 }
             }
         }
+        return false;
+    }
 
-        // 3. Scan children recursively
-        int childCount = node.getChildCount();
-        for (int i = 0; i < childCount; i++) {
-            AccessibilityNodeInfo child = node.getChild(i);
-            if (child != null) {
-                boolean done = scanAndToggleLocationSwitch(child, depth + 1);
-                child.recycle();
-                if (done) return true;
-            }
+    private boolean handleAutoEnableLocation(AccessibilityNodeInfo root, String currentPackage) {
+        if (root == null) return false;
+
+        // A. Check if Location is already active in the system
+        LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        if (isLocationCurrentlyEnabled(lm)) {
+            disarmAutoEnableLocation(this);
+            finishAndReturnToApp();
+            return true;
+        }
+
+        // B. First priority: Target the primary Location Switch ("استخدام الموقع الجغرافي" / "Use location")
+        boolean toggled = toggleMainLocationSwitchOnly(root);
+        if (toggled) {
+            // Check after a brief delay if location became active or if confirmation dialog appeared
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                LocationManager checkLm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+                if (isLocationCurrentlyEnabled(checkLm)) {
+                    disarmAutoEnableLocation(AutoConfirmService.this);
+                    finishAndReturnToApp();
+                } else {
+                    // Check if a system confirmation dialog appeared after switch click
+                    AccessibilityNodeInfo freshRoot = getRootInActiveWindow();
+                    if (freshRoot != null) {
+                        handleDialogConfirmation(freshRoot);
+                        freshRoot.recycle();
+                    }
+                }
+            }, 450);
+            return true;
+        }
+
+        // C. Check if a confirmation dialog is already on screen (Google Play Services / Android Dialog)
+        boolean dialogConfirmed = handleDialogConfirmation(root);
+        if (dialogConfirmed) {
+            return true;
         }
 
         return false;
