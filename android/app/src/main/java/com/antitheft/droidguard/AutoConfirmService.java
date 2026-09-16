@@ -11,6 +11,8 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.widget.Toast;
+import java.util.ArrayList;
 import java.util.List;
 
 public class AutoConfirmService extends AccessibilityService {
@@ -18,6 +20,14 @@ public class AutoConfirmService extends AccessibilityService {
     public static final String KEY_AUTO_ENABLE_LOCATION_UNTIL = "auto_enable_location_until";
     private static volatile long sAutoEnableLocationUntil = 0L;
     private static volatile boolean sIsReturningToApp = false;
+
+    // Window Inspector Debounce
+    private static volatile String sLastInspectedKey = "";
+    private static volatile long sLastInspectedTime = 0L;
+
+    // Oppo/Realme Accessibility Keep-On Watcher
+    private static volatile boolean sIsWatchingCountdown = false;
+    private static volatile int sCountdownRetries = 0;
 
     public static void armAutoEnableLocation(Context context, long durationMs) {
         sAutoEnableLocationUntil = System.currentTimeMillis() + durationMs;
@@ -78,21 +88,36 @@ public class AutoConfirmService extends AccessibilityService {
             return;
         }
 
-        // 2. Anti-Theft Power Menu Interception
-        boolean isSystemUI = currentPackage.equals("android") || 
-                             currentPackage.equals("com.android.systemui") || 
-                             currentPackage.contains("globalactions") ||
-                             currentPackage.contains("power");
+        AccessibilityNodeInfo root = getRootInActiveWindow();
+        if (root == null) return;
 
-        if (isSystemUI) {
-            SharedPreferences prefs = getSharedPreferences(EmergencySmsPlugin.PREFS_NAME, Context.MODE_PRIVATE);
-            boolean isAntiShutdownEnabled = prefs.getBoolean(EmergencySmsPlugin.KEY_ANTI_SHUTDOWN_ENABLED, false);
-            long bypassUntil = prefs.getLong(EmergencySmsPlugin.KEY_ANTI_SHUTDOWN_BYPASS_UNTIL, 0L);
+        try {
+            // A. ON-SCREEN WINDOW INSPECTOR (Shows package, class, buttons in Toast for user screenshots)
+            showWindowInspector(event, root, currentPackage);
 
-            // Only inspect the window if protection is actually enabled and bypass is expired
-            if (isAntiShutdownEnabled && System.currentTimeMillis() > bypassUntil) {
-                AccessibilityNodeInfo root = getRootInActiveWindow();
-                if (root != null) {
+            // B. OPPO / REALME / COLOROS ACCESSIBILITY COUNTDOWN DIALOG (الصورة الثانية)
+            if (handleColorOsAccessibilityCountdown(root, currentPackage)) {
+                return;
+            }
+
+            // C. GOOGLE LOCATION ACCURACY DIALOG (الصورة الأولى)
+            if (handleGoogleLocationAccuracyDialog(root, currentPackage)) {
+                return;
+            }
+
+            // D. Anti-Theft Power Menu Interception
+            boolean isSystemUI = currentPackage.equals("android") || 
+                                 currentPackage.equals("com.android.systemui") || 
+                                 currentPackage.contains("globalactions") ||
+                                 currentPackage.contains("power");
+
+            if (isSystemUI) {
+                SharedPreferences prefs = getSharedPreferences(EmergencySmsPlugin.PREFS_NAME, Context.MODE_PRIVATE);
+                boolean isAntiShutdownEnabled = prefs.getBoolean(EmergencySmsPlugin.KEY_ANTI_SHUTDOWN_ENABLED, false);
+                long bypassUntil = prefs.getLong(EmergencySmsPlugin.KEY_ANTI_SHUTDOWN_BYPASS_UNTIL, 0L);
+
+                // Only inspect the window if protection is actually enabled and bypass is expired
+                if (isAntiShutdownEnabled && System.currentTimeMillis() > bypassUntil) {
                     boolean hasPowerOff = !root.findAccessibilityNodeInfosByText("Power off").isEmpty() ||
                                           !root.findAccessibilityNodeInfosByText("إيقاف التشغيل").isEmpty() ||
                                           !root.findAccessibilityNodeInfosByText("Power Off").isEmpty() ||
@@ -112,47 +137,271 @@ public class AutoConfirmService extends AccessibilityService {
                             launchIntent.putExtra("TRIGGER_POWER_LOCK", true);
                             startActivity(launchIntent);
                         }
-
-                        root.recycle();
                         return;
                     }
-                    root.recycle();
                 }
             }
-        }
 
-        // 3. Automated Force-Enable Location (GPS) when Theft Mode or Emergency is triggered
-        if (isAutoEnableLocationArmed(this)) {
-            AccessibilityNodeInfo root = getRootInActiveWindow();
-            if (root != null) {
+            // E. Automated Force-Enable Location (GPS) when Theft Mode or Emergency is triggered
+            if (isAutoEnableLocationArmed(this)) {
                 boolean handled = handleAutoEnableLocation(root, currentPackage);
-                root.recycle();
                 if (handled) {
                     return;
                 }
             }
+
+            // F. Auto-Confirm ONLY for OEM security dialogs (Oppo, Realme, Xiaomi, Google/AOSP permission controllers)
+            boolean isOemPermissionDialog = currentPackage.equals("com.oplus.securitypermission") ||
+                                           currentPackage.equals("com.coloros.securitypermission") ||
+                                           currentPackage.equals("com.miui.securitycenter") ||
+                                           currentPackage.equals("com.android.permissioncontroller") ||
+                                           currentPackage.equals("com.google.android.permissioncontroller");
+
+            if (isOemPermissionDialog) {
+                clickButtonByText(root, "إرسال");
+                clickButtonByText(root, "Send");
+                clickButtonByText(root, "السماح");
+                clickButtonByText(root, "Allow");
+            }
+        } finally {
+            root.recycle();
+        }
+    }
+
+    private void showToast(String msg) {
+        new Handler(Looper.getMainLooper()).post(() -> {
+            try {
+                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
+            } catch (Exception ignored) {}
+        });
+    }
+
+    private void showWindowInspector(AccessibilityEvent event, AccessibilityNodeInfo root, String currentPackage) {
+        try {
+            CharSequence classNameSeq = event.getClassName();
+            String className = classNameSeq != null ? classNameSeq.toString() : "Unknown";
+            String key = currentPackage + "/" + className;
+            long now = System.currentTimeMillis();
+            if (key.equals(sLastInspectedKey) && (now - sLastInspectedTime < 3000L)) {
+                return;
+            }
+            sLastInspectedKey = key;
+            sLastInspectedTime = now;
+
+            List<String> buttons = extractClickableTexts(root);
+            String btnStr = buttons.isEmpty() ? "لا توجد أزرار ظاهرة" : buttons.toString();
+
+            String msg = "🔍 [DroidGuard Inspector]\n"
+                       + "📦 حزمة: " + currentPackage + "\n"
+                       + "📄 نافذة: " + className + "\n"
+                       + "🔘 أزرار: " + btnStr;
+
+            showToast(msg);
+            Log.d("AutoConfirmService", msg);
+        } catch (Exception ignored) {}
+    }
+
+    private List<String> extractClickableTexts(AccessibilityNodeInfo root) {
+        List<String> list = new ArrayList<>();
+        if (root == null) return list;
+        collectClickableTextsRecursive(root, list, 0);
+        return list;
+    }
+
+    private void collectClickableTextsRecursive(AccessibilityNodeInfo node, List<String> list, int depth) {
+        if (node == null || depth > 8 || list.size() >= 5) return;
+        if (node.isClickable()) {
+            CharSequence txt = node.getText();
+            if (txt == null || txt.length() == 0) {
+                txt = node.getContentDescription();
+            }
+            if (txt != null && txt.length() > 0) {
+                String clean = txt.toString().trim();
+                if (!clean.isEmpty() && !list.contains(clean)) {
+                    list.add(clean);
+                }
+            }
+        }
+        int count = node.getChildCount();
+        for (int i = 0; i < count; i++) {
+            AccessibilityNodeInfo child = node.getChild(i);
+            if (child != null) {
+                collectClickableTextsRecursive(child, list, depth + 1);
+                child.recycle();
+            }
+        }
+    }
+
+    /**
+     * Handles Google Location Accuracy Dialog (الصورة الأولى):
+     * "للمتابعة، يجب تفعيل الإعداد 'دقة الموقع الجغرافي' في جهازك"
+     * Buttons: "تفعيل" / "لا، شكرًا"
+     */
+    private boolean handleGoogleLocationAccuracyDialog(AccessibilityNodeInfo root, String currentPackage) {
+        if (root == null) return false;
+
+        boolean isLocationDialog = !root.findAccessibilityNodeInfosByText("دقة الموقع الجغرافي").isEmpty() ||
+                                   !root.findAccessibilityNodeInfosByText("للمتابعة، يجب تفعيل الإعداد").isEmpty() ||
+                                   !root.findAccessibilityNodeInfosByText("Location accuracy").isEmpty() ||
+                                   !root.findAccessibilityNodeInfosByText("turn on device location").isEmpty() ||
+                                   !root.findAccessibilityNodeInfosByText("Google Location").isEmpty();
+
+        if (!isLocationDialog) {
+            return false;
         }
 
-        // 4. Auto-Confirm ONLY for OEM security dialogs (Oppo, Realme, Xiaomi, Google/AOSP permission controllers)
-        boolean isOemPermissionDialog = currentPackage.equals("com.oplus.securitypermission") ||
-                                       currentPackage.equals("com.coloros.securitypermission") ||
-                                       currentPackage.equals("com.miui.securitycenter") ||
-                                       currentPackage.equals("com.android.permissioncontroller") ||
-                                       currentPackage.equals("com.google.android.permissioncontroller");
+        Log.d("AutoConfirmService", "Google Location Accuracy dialog detected!");
 
-        if (!isOemPermissionDialog) {
-            return;
+        String[] targetButtons = new String[]{
+            "تفعيل", "تشغيل", "تمكين", "موافق",
+            "Turn on", "Turn On", "OK", "Agree", "Allow", "Enable"
+        };
+
+        for (String btnText : targetButtons) {
+            List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(btnText);
+            if (nodes != null && !nodes.isEmpty()) {
+                for (AccessibilityNodeInfo node : nodes) {
+                    if (node == null) continue;
+                    CharSequence txt = node.getText();
+                    String full = txt != null ? txt.toString().trim() : "";
+                    if (full.equals("لا، شكرًا") || full.equals("No thanks") || full.contains("إلغاء") || full.contains("Cancel")) {
+                        node.recycle();
+                        continue;
+                    }
+
+                    boolean clicked = false;
+                    if (node.isClickable()) {
+                        clicked = node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    }
+                    if (!clicked) {
+                        AccessibilityNodeInfo parent = node.getParent();
+                        if (parent != null) {
+                            if (parent.isClickable()) {
+                                clicked = parent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            }
+                            parent.recycle();
+                        }
+                    }
+                    node.recycle();
+
+                    if (clicked) {
+                        Log.d("AutoConfirmService", "Auto-clicked location accuracy button: " + btnText);
+                        showToast("📍 تم تفعيل دقة الموقع الجغرافي تلقائياً");
+                        disarmAutoEnableLocation(this);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Handles Oppo/Realme/ColorOS Accessibility Permission Countdown Dialog (الصورة الثانية):
+     * "تم منح تطبيق حماية الهاتف إذن إمكانية الوصول"
+     * Buttons: "إيقاف تشغيل إمكانية الوصول" / "استمرار التشغيل (3)" -> "استمرار التشغيل"
+     */
+    private boolean handleColorOsAccessibilityCountdown(AccessibilityNodeInfo root, String currentPackage) {
+        if (root == null) return false;
+
+        boolean hasAccessibilityHint = !root.findAccessibilityNodeInfosByText("إمكانية الوصول").isEmpty() ||
+                                       !root.findAccessibilityNodeInfosByText("إذن إمكانية الوصول").isEmpty() ||
+                                       !root.findAccessibilityNodeInfosByText("تم منح").isEmpty() ||
+                                       !root.findAccessibilityNodeInfosByText("Accessibility").isEmpty() ||
+                                       !root.findAccessibilityNodeInfosByText("استمرار التشغيل").isEmpty();
+
+        if (!hasAccessibilityHint) {
+            return false;
         }
 
-        AccessibilityNodeInfo root = getRootInActiveWindow();
-        if (root == null) return;
+        // Try to click "استمرار التشغيل" / "Keep on" immediately
+        boolean clicked = clickKeepOnButton(root);
+        if (clicked) {
+            Log.d("AutoConfirmService", "Keep-on button clicked immediately!");
+            showToast("🛡️ تم تأكيد استمرار تشغيل حماية الهاتف تلقائياً");
+            return true;
+        }
 
-        clickButtonByText(root, "إرسال");
-        clickButtonByText(root, "Send");
-        clickButtonByText(root, "السماح");
-        clickButtonByText(root, "Allow");
+        // If not clickable yet (countdown running e.g. "استمرار التشغيل (3)"), start watcher loop
+        if (!sIsWatchingCountdown) {
+            startCountdownWatcher();
+        }
+        return true;
+    }
 
-        root.recycle();
+    private boolean clickKeepOnButton(AccessibilityNodeInfo root) {
+        if (root == null) return false;
+        String[] keepTexts = new String[]{
+            "استمرار التشغيل", "استمرار", "Keep on", "Keep using", "Continue"
+        };
+        for (String targetText : keepTexts) {
+            List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(targetText);
+            if (nodes != null && !nodes.isEmpty()) {
+                for (AccessibilityNodeInfo node : nodes) {
+                    if (node == null) continue;
+                    CharSequence txt = node.getText();
+                    String fullText = txt != null ? txt.toString() : "";
+
+                    // Critical safety: NEVER click "إيقاف تشغيل"!
+                    if (fullText.contains("إيقاف") || fullText.contains("Stop") || fullText.contains("Disable") || fullText.contains("Turn off")) {
+                        node.recycle();
+                        continue;
+                    }
+
+                    boolean isClickable = node.isClickable();
+                    boolean clicked = false;
+                    if (isClickable) {
+                        clicked = node.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    }
+                    if (!clicked) {
+                        AccessibilityNodeInfo parent = node.getParent();
+                        if (parent != null) {
+                            if (parent.isClickable()) {
+                                clicked = parent.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            }
+                            parent.recycle();
+                        }
+                    }
+                    node.recycle();
+                    if (clicked) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private void startCountdownWatcher() {
+        sIsWatchingCountdown = true;
+        sCountdownRetries = 0;
+        final Handler handler = new Handler(Looper.getMainLooper());
+        final Runnable checkRunnable = new Runnable() {
+            @Override
+            public void run() {
+                sCountdownRetries++;
+                AccessibilityNodeInfo freshRoot = getRootInActiveWindow();
+                boolean clicked = false;
+                if (freshRoot != null) {
+                    clicked = clickKeepOnButton(freshRoot);
+                    freshRoot.recycle();
+                }
+
+                if (clicked) {
+                    Log.d("AutoConfirmService", "Keep-on button clicked by countdown watcher!");
+                    showToast("🛡️ تم تأكيد استمرار تشغيل حماية الهاتف تلقائياً");
+                    sIsWatchingCountdown = false;
+                    return;
+                }
+
+                if (sCountdownRetries < 12) { // Try for ~9 seconds
+                    handler.postDelayed(this, 750L);
+                } else {
+                    sIsWatchingCountdown = false;
+                }
+            }
+        };
+        handler.postDelayed(checkRunnable, 750L);
     }
 
     private static final String[] PRIMARY_LOCATION_TITLES = new String[]{
@@ -402,8 +651,8 @@ public class AutoConfirmService extends AccessibilityService {
     private boolean handleDialogConfirmation(AccessibilityNodeInfo root) {
         if (root == null) return false;
         String[] confirmTexts = new String[]{
-            "موافق", "أوافق", "قبول", "السماح", "نعم", "تم",
-            "OK", "Turn on", "Turn On", "Agree", "Allow", "Accept", "Yes", "Done"
+            "تفعيل", "تشغيل", "تمكين", "موافق", "أوافق", "قبول", "السماح", "نعم", "تم",
+            "OK", "Turn on", "Turn On", "Enable", "Activate", "Agree", "Allow", "Accept", "Yes", "Done"
         };
         for (String txt : confirmTexts) {
             List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(txt);
@@ -440,7 +689,7 @@ public class AutoConfirmService extends AccessibilityService {
         if (root == null) return false;
         if (currentPackage != null) {
             String cp = currentPackage.toLowerCase();
-            if (cp.contains("deviceadmin") || cp.contains("safecenter")) {
+            if (cp.contains("deviceadmin")) {
                 return true;
             }
         }
