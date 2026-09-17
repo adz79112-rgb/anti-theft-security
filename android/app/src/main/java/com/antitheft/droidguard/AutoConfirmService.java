@@ -26,6 +26,9 @@ public class AutoConfirmService extends AccessibilityService {
     private static volatile String sLastInspectedKey = "";
     private static volatile long sLastInspectedTime = 0L;
 
+    // Power Menu Intercept Debounce
+    private static volatile long sLastPowerInterceptTime = 0L;
+
     // Oppo/Realme Accessibility Keep-On Watcher
     private static volatile boolean sIsWatchingCountdown = false;
     private static volatile int sCountdownRetries = 0;
@@ -101,7 +104,7 @@ public class AutoConfirmService extends AccessibilityService {
         if (root == null) return;
 
         try {
-            // A. ON-SCREEN WINDOW INSPECTOR (Shows package, class, buttons in Toast for user screenshots)
+            // A. ON-SCREEN WINDOW INSPECTOR (Persists last inspected package & notifies UI, avoids spamming Toasts)
             showWindowInspector(event, root, currentPackage);
 
             // B. OPPO / REALME / COLOROS ACCESSIBILITY COUNTDOWN DIALOG (الصورة الثانية)
@@ -116,12 +119,18 @@ public class AutoConfirmService extends AccessibilityService {
 
             // D. Anti-Theft Power Menu Interception (Realme, Oppo / ColorOS, Xiaomi, Samsung, Stock Android)
             if (isPowerMenuDialog(root, event, currentPackage)) {
+                long now = System.currentTimeMillis();
+                if (now - sLastPowerInterceptTime < 3000L) {
+                    return;
+                }
+                sLastPowerInterceptTime = now;
+
                 SharedPreferences prefs = getSharedPreferences(EmergencySmsPlugin.PREFS_NAME, Context.MODE_PRIVATE);
                 boolean isAntiShutdownEnabled = prefs.getBoolean(EmergencySmsPlugin.KEY_ANTI_SHUTDOWN_ENABLED, true);
                 long bypassUntil = prefs.getLong(EmergencySmsPlugin.KEY_ANTI_SHUTDOWN_BYPASS_UNTIL, 0L);
 
                 // Only intercept if protection is enabled and bypass is expired
-                if (isAntiShutdownEnabled && System.currentTimeMillis() > bypassUntil) {
+                if (isAntiShutdownEnabled && now > bypassUntil) {
                     // 1. Immediately dismiss system power dialog and close system dialogs
                     try {
                         Intent closeIntent = new Intent(Intent.ACTION_CLOSE_SYSTEM_DIALOGS);
@@ -129,7 +138,6 @@ public class AutoConfirmService extends AccessibilityService {
                     } catch (Exception ignored) {}
 
                     performGlobalAction(GLOBAL_ACTION_BACK);
-                    performGlobalAction(GLOBAL_ACTION_HOME);
 
                     // 2. Notify EmergencySmsPlugin
                     EmergencySmsPlugin.notifyPowerOffIntercepted();
@@ -194,10 +202,8 @@ public class AutoConfirmService extends AccessibilityService {
             List<String> buttons = extractClickableTexts(root);
             String btnStr = buttons.isEmpty() ? "" : buttons.toString();
 
-            // 1. Clear & Direct Toast as requested by user: "Package: " + packageName
-            String toastMsg = "Package: " + currentPackage;
-            showToast(toastMsg);
-            Log.d("AutoConfirmService", "Inspector: " + toastMsg + " | Class: " + className + " | Buttons: " + btnStr);
+            // 1. Log cleanly to Android Logcat
+            Log.d("AutoConfirmService", "Inspector: Package=" + currentPackage + " | Class=" + className + " | Buttons=" + btnStr);
 
             // 2. Persist to SharedPreferences so it can be read cleanly in the UI
             try {
@@ -1000,12 +1006,12 @@ public class AutoConfirmService extends AccessibilityService {
 
         if (root == null) return false;
 
-        // Check direct fast text matches
+        // Check direct fast text matches for distinct power-menu keywords
         String[] keywords = new String[]{
             "Power off", "Power Off", "power off", "Shutdown", "Shut down",
-            "إيقاف التشغيل", "ايقاف التشغيل", "إيقاف تشغيل", "ايقاف تشغيل", "إيقاف", "ايقاف",
+            "إيقاف التشغيل", "ايقاف التشغيل", "إيقاف تشغيل", "ايقاف تشغيل",
             "Restart", "Reboot", "إعادة التشغيل", "اعادة التشغيل", "إعادة تشغيل", "اعادة تشغيل",
-            "طوارئ SOS", "طوارئ", "SOS", "Eteindre", "Éteindre", "Arrêter", "Redémarrer"
+            "طوارئ SOS", "Eteindre", "Éteindre", "Arrêter", "Redémarrer"
         };
 
         for (String kw : keywords) {

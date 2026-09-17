@@ -67,10 +67,8 @@ export const PowerOffChallengeModal: React.FC<PowerOffChallengeModalProps> = ({
       setPinError(null);
       setShowPinPad(false);
       setCountdown(60);
-      // Attempt biometric / device credential authentication automatically on display
-      handleBiometricAuth();
     }
-  }, [isOpen, handleBiometricAuth]);
+  }, [isOpen]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
