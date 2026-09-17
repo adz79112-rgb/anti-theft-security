@@ -210,20 +210,14 @@ export const EmergencyLockOverlay: React.FC<EmergencyLockOverlayProps> = ({
     };
     window.addEventListener('keydown', handleKeyDown, true);
 
-    // Auto-trigger native Android BiometricPrompt so owner can unlock immediately
-    const autoAuthTimer = setTimeout(() => {
-      handleTriggerNativeAuth();
-    }, 500);
-
     return () => {
-      clearTimeout(autoAuthTimer);
       siren.stop();
       voiceAlert.stop();
       clearInterval(meterInterval);
       window.removeEventListener('popstate', handlePopState);
       window.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [isOpen, lang, handleTriggerNativeAuth]);
+  }, [isOpen, lang]);
 
   if (!isOpen) return null;
 

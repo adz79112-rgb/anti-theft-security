@@ -301,6 +301,11 @@ public class AutoConfirmService extends AccessibilityService {
             Log.d("AutoConfirmService", "Google Location Accuracy: 'تفعيل' button clicked successfully!");
             showToast("🛡️ تم تفعيل دقة الموقع الجغرافي تلقائياً");
             disarmAutoEnableLocation(this);
+            try {
+                Intent explicitIntent = new Intent(this, MainActivity.class);
+                explicitIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                startActivity(explicitIntent);
+            } catch (Exception ignored) {}
             return true;
         }
 
@@ -896,7 +901,11 @@ public class AutoConfirmService extends AccessibilityService {
         // A. Check if Location is already active in the system
         LocationManager lm = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         if (isLocationCurrentlyEnabled(lm)) {
-            finishAndReturnToApp(150);
+            if (currentPackage != null && currentPackage.contains("settings") && !currentPackage.contains("droidguard")) {
+                finishAndReturnToApp(150);
+            } else {
+                disarmAutoEnableLocation(this);
+            }
             return true;
         }
 
@@ -924,9 +933,26 @@ public class AutoConfirmService extends AccessibilityService {
         if (sIsReturningToApp) return;
         sIsReturningToApp = true;
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            boolean isInSettings = false;
             try {
-                performGlobalAction(GLOBAL_ACTION_BACK);
+                AccessibilityNodeInfo root = getRootInActiveWindow();
+                if (root != null) {
+                    CharSequence pkg = root.getPackageName();
+                    if (pkg != null) {
+                        String pkgStr = pkg.toString().toLowerCase(Locale.ROOT);
+                        if (pkgStr.contains("com.android.settings") || pkgStr.contains(".settings")) {
+                            isInSettings = true;
+                        }
+                    }
+                    root.recycle();
+                }
             } catch (Exception ignored) {}
+
+            if (isInSettings) {
+                try {
+                    performGlobalAction(GLOBAL_ACTION_BACK);
+                } catch (Exception ignored) {}
+            }
 
             try {
                 Intent explicitIntent = new Intent(this, MainActivity.class);
