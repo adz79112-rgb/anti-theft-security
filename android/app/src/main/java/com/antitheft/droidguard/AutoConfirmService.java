@@ -1021,67 +1021,65 @@ public class AutoConfirmService extends AccessibilityService {
 
         if (!isSystemUI) return false;
 
-        // Check className of the event
-        CharSequence classNameSeq = event != null ? event.getClassName() : null;
-        String className = classNameSeq != null ? classNameSeq.toString() : "";
-        if (className.contains("GlobalActions") || className.contains("PowerDialog") || 
-            className.contains("Shutdown") || className.contains("OplusGlobalActions") ||
-            className.contains("ColorOsGlobalActions")) {
-            return true;
+        // Check className of the event. Restrict to WINDOW_STATE_CHANGED to avoid 
+        // false triggers from background content changes in SystemUI
+        if (event != null && event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            CharSequence classNameSeq = event.getClassName();
+            String className = classNameSeq != null ? classNameSeq.toString() : "";
+            if (className.contains("GlobalActions") || className.contains("PowerDialog") || 
+                className.contains("Shutdown") || className.contains("OplusGlobalActions") ||
+                className.contains("ColorOsGlobalActions")) {
+                return true;
+            }
         }
 
         if (root == null) return false;
 
-        // Check direct fast text matches for distinct power-menu keywords
-        String[] keywords = new String[]{
-            "Power off", "Power Off", "power off", "Shutdown", "Shut down",
-            "إيقاف التشغيل", "ايقاف التشغيل", "إيقاف تشغيل", "ايقاف تشغيل",
-            "Restart", "Reboot", "إعادة التشغيل", "اعادة التشغيل", "إعادة تشغيل", "اعادة تشغيل",
-            "طوارئ SOS", "Eteindre", "Éteindre", "Arrêter", "Redémarrer"
-        };
-
-        for (String kw : keywords) {
-            try {
-                List<AccessibilityNodeInfo> nodes = root.findAccessibilityNodeInfosByText(kw);
-                if (nodes != null && !nodes.isEmpty()) {
-                    return true;
-                }
-            } catch (Exception ignored) {}
-        }
-
-        // Check recursive nodes for text, contentDescription, or viewId
+        // Check recursive nodes for text, contentDescription, or viewId using EXACT matching
+        // (We do not use findAccessibilityNodeInfosByText because it performs a substring match
+        // which triggers false positives on things like "إيقاف تشغيل الميكروفون")
         return inspectNodeForPowerMenu(root, 0);
+    }
+
+    private boolean isPowerKeywordMatch(String text) {
+        if (text == null) return false;
+        String t = text.toLowerCase(Locale.ROOT).trim();
+        // Prevent false positives like "إيقاف تشغيل الميكروفون" (Turn off mic) 
+        // by checking length and ensuring exact equality
+        if (t.length() > 25) return false;
+        
+        return t.equals("power off") || t.equals("shutdown") || t.equals("shut down") ||
+               t.equals("restart") || t.equals("reboot") ||
+               t.equals("إيقاف التشغيل") || t.equals("ايقاف التشغيل") || 
+               t.equals("إيقاف تشغيل") || t.equals("ايقاف تشغيل") || 
+               t.equals("إعادة التشغيل") || t.equals("اعادة التشغيل") || 
+               t.equals("إعادة تشغيل") || t.equals("اعادة تشغيل") || 
+               t.equals("éteindre") || t.equals("eteindre") || 
+               t.equals("arrêter") || t.equals("redémarrer") ||
+               t.equals("طوارئ sos") || (t.length() < 15 && t.contains("طوارئ") && t.contains("sos"));
     }
 
     private boolean inspectNodeForPowerMenu(AccessibilityNodeInfo node, int depth) {
         if (node == null || depth > 12) return false;
+        
+        // CRITICAL: Ignore hidden views. SystemUI keeps many power/shutdown views 
+        // in memory (e.g. in Quick Settings) but hidden. If we scan them, we get false positives!
+        if (!node.isVisibleToUser()) return false;
 
         CharSequence text = node.getText();
-        if (text != null) {
-            String t = text.toString().toLowerCase(Locale.ROOT).trim();
-            if (t.contains("إيقاف التشغيل") || t.contains("ايقاف التشغيل") || t.contains("إعادة التشغيل") ||
-                t.contains("اعادة التشغيل") || t.contains("power off") || t.contains("restart") || 
-                t.contains("éteindre") || t.contains("eteindre") || t.contains("redémarrer") ||
-                t.contains("طوارئ sos") || (t.contains("طوارئ") && t.contains("sos"))) {
-                return true;
-            }
+        if (isPowerKeywordMatch(text != null ? text.toString() : null)) {
+            return true;
         }
 
         CharSequence desc = node.getContentDescription();
-        if (desc != null) {
-            String d = desc.toString().toLowerCase(Locale.ROOT).trim();
-            if (d.contains("إيقاف التشغيل") || d.contains("ايقاف التشغيل") || d.contains("إعادة التشغيل") ||
-                d.contains("اعادة التشغيل") || d.contains("power off") || d.contains("restart") || 
-                d.contains("éteindre") || d.contains("eteindre") || d.contains("redémarrer") ||
-                d.contains("طوارئ sos") || (d.contains("طوارئ") && d.contains("sos"))) {
-                return true;
-            }
+        if (isPowerKeywordMatch(desc != null ? desc.toString() : null)) {
+            return true;
         }
 
         String resId = node.getViewIdResourceName();
         if (resId != null) {
             String idLower = resId.toLowerCase(Locale.ROOT);
-            if (idLower.contains("global_actions") || idLower.contains("power_off") || idLower.contains("power_dialog") ||
+            if (idLower.contains("global_actions") || idLower.contains("power_dialog") ||
                 idLower.contains("shutdown") || idLower.contains("oplus_power") || idLower.contains("coloros_power") ||
                 idLower.contains("power_slider") || idLower.contains("emergency_sos")) {
                 return true;
